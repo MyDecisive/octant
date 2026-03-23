@@ -39,7 +39,7 @@ func TestGetIntegrations(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: integrationSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": validIntBytes,
 				},
@@ -64,7 +64,7 @@ func TestGetIntegrations(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: integrationSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": validIntBytes,
 					"team-b": []byte("invalid-json"),
@@ -85,6 +85,72 @@ func TestGetIntegrations(t *testing.T) {
 	})
 }
 
+func TestGetIntegrationByName(t *testing.T) {
+	t.Parallel()
+
+	validInt := DataDogIntegrationData{APIKey: "12345", DDUrl: "https://example.com"}
+	validIntBytes, err := json.Marshal(validInt)
+	require.NoError(t, err)
+
+	t.Run("secret does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		mockK8sClient := fake.NewClientset()
+		datadogIntegration := &DataDogIntegration{
+			K8sClient: mockK8sClient,
+		}
+
+		actual, getErr := datadogIntegration.GetIntegrationByName(t.Context(), defaultNamespace, "doesntMatter")
+		require.NoError(t, getErr)
+		require.Nil(t, actual)
+	})
+
+	t.Run("integration not found", func(t *testing.T) {
+		t.Parallel()
+
+		existingObjects := []runtime.Object{
+			&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
+				Data: map[string][]byte{
+					"team-a": validIntBytes,
+				},
+			},
+		}
+
+		mockK8sClient := fake.NewClientset(existingObjects...)
+		datadogIntegration := &DataDogIntegration{
+			K8sClient: mockK8sClient,
+		}
+
+		actual, getErr := datadogIntegration.GetIntegrationByName(t.Context(), defaultNamespace, "team-b")
+		require.ErrorContains(t, getErr, "integration 'team-b' not found")
+		require.Nil(t, actual)
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		existingObjects := []runtime.Object{
+			&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
+				Data: map[string][]byte{
+					"team-a": validIntBytes,
+				},
+			},
+		}
+
+		mockK8sClient := fake.NewClientset(existingObjects...)
+		datadogIntegration := &DataDogIntegration{
+			K8sClient: mockK8sClient,
+		}
+
+		actual, getErr := datadogIntegration.GetIntegrationByName(t.Context(), defaultNamespace, "team-a")
+		require.NoError(t, getErr)
+
+		require.True(t, assert.ObjectsAreEqual(&validInt, actual), "expected and actual don't match")
+	})
+}
+
 func TestSetIntegration(t *testing.T) {
 	t.Parallel()
 
@@ -99,14 +165,14 @@ func TestSetIntegration(t *testing.T) {
 		}
 
 		// Verify the secret doesn't exist yet
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-gateway-integration\" not found")
+		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
+		require.ErrorContains(t, err, "secrets \"mdai-datadog-integration\" not found")
 
 		err = datadogIntegration.SetIntegration(t.Context(), defaultNamespace, "team-a", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 1)
@@ -124,7 +190,7 @@ func TestSetIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: integrationSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": []byte(`{"api_key":"old-key","dd_url":"old-url"}`),
 				},
@@ -136,7 +202,7 @@ func TestSetIntegration(t *testing.T) {
 		}
 
 		// Verify the secret DOES exist already
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)
@@ -146,7 +212,7 @@ func TestSetIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 2)
@@ -172,8 +238,8 @@ func TestDeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret doesn't exist before we try to delete
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-gateway-integration\" not found")
+		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
+		require.ErrorContains(t, err, "secrets \"mdai-datadog-integration\" not found")
 
 		err = datadogIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
 		require.NoError(t, err)
@@ -184,7 +250,7 @@ func TestDeleteIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: integrationSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
 				},
@@ -196,7 +262,7 @@ func TestDeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret exists with "team-a" before we try to delete with another integration name
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)
@@ -211,7 +277,7 @@ func TestDeleteIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: integrationSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
 					"team-b": []byte(`{"api_key":"key2","dd_url":"url2"}`),
@@ -224,7 +290,7 @@ func TestDeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret exists with both integration names before we delete one of them.
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 2)
@@ -234,7 +300,7 @@ func TestDeleteIntegration(t *testing.T) {
 		err = datadogIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
 		require.NoError(t, err)
 
-		existingSecret, err = mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), integrationSecretName, metav1.GetOptions{})
+		existingSecret, err = mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)

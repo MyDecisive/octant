@@ -5,15 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
+const datadogSecretName = "mdai-datadog-integration" // nolint: gosec
+
 type DataDogIntegrationData struct {
-	APIKey string `json:"api_key"`
-	DDUrl  string `json:"dd_url"`
+	APIKey string `json:"apiKey"`
+	DDUrl  string `json:"url"`
+}
+
+func (ddid *DataDogIntegrationData) ToFields() map[string]any {
+	return map[string]any{
+		"apiKey": ddid.APIKey,
+		"url":    ddid.DDUrl,
+	}
 }
 
 type DataDogIntegration struct {
@@ -24,12 +32,12 @@ var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "mdai-gateway-integration" secret.
 func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]DataDogIntegrationData, error) {
-	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, integrationSecretName, metav1.GetOptions{})
+	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
 		}
-		return nil, fmt.Errorf("failed to get secret %s: %w", integrationSecretName, err)
+		return nil, fmt.Errorf("failed to get secret %s: %w", datadogSecretName, err)
 	}
 
 	integrations := make(map[string]DataDogIntegrationData)
@@ -44,6 +52,27 @@ func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace st
 	return integrations, nil
 }
 
+// GetIntegrationByName retrieves the existing integration in the provided namespace for the "mdai-gateway-integration" secret, if it exists.
+func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespace, name string) (*DataDogIntegrationData, error) {
+	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, nil // nolint: nilnil
+		}
+		return nil, fmt.Errorf("failed to get secret %s: %w", datadogSecretName, err)
+	}
+
+	if _, ok := secret.Data[name]; !ok {
+		return nil, fmt.Errorf("integration '%s' not found", name)
+	}
+
+	var payload DataDogIntegrationData
+	if unmarshalErr := json.Unmarshal(secret.Data[name], &payload); unmarshalErr != nil {
+		return nil, fmt.Errorf("failed to unmarshal integration data: %w", unmarshalErr)
+	}
+	return &payload, nil
+}
+
 // SetIntegration adds or updates the "mdai-gateway-integration" secret for the provided namespace.
 func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, integrationName string, integrationData DataDogIntegrationData) error {
 	jsonData, err := json.Marshal(integrationData)
@@ -51,15 +80,15 @@ func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, in
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 
-	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, integrationSecretName, metav1.GetOptions{})
+	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	isNotFound := k8serrors.IsNotFound(err)
 	if err != nil && !isNotFound {
-		return fmt.Errorf("failed to fetch secret %s: %w", integrationSecretName, err)
+		return fmt.Errorf("failed to fetch secret %s: %w", datadogSecretName, err)
 	}
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationSecretName, integrationName, jsonData)
+		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, datadogSecretName, integrationName, jsonData)
 	}
 	// Update the secret if it already exists
 	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, secret, integrationName, jsonData)
@@ -67,12 +96,12 @@ func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, in
 
 // DeleteIntegration removes a named integration from the "mdai-gateway-integration" secret in the provided namespace.
 func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, namespace, integrationName string) error {
-	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, integrationSecretName, metav1.GetOptions{})
+	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to fetch secret %s: %w", integrationSecretName, err)
+		return fmt.Errorf("failed to fetch secret %s: %w", datadogSecretName, err)
 	}
 
 	if secret.Data == nil {
@@ -86,37 +115,8 @@ func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, namespace,
 
 	_, err = ddi.K8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to update secret %s after deletion: %w", integrationSecretName, err)
+		return fmt.Errorf("failed to update secret %s after deletion: %w", datadogSecretName, err)
 	}
 
-	return nil
-}
-
-func updateSecretWithIntegration(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secret *corev1.Secret, integrationName string, jsonData []byte) error {
-	if secret.Data == nil {
-		secret.Data = make(map[string][]byte)
-	}
-	secret.Data[integrationName] = jsonData
-
-	_, err := k8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	return err
-}
-
-func createIntegrationSecret(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secretName string, integrationName string, jsonData []byte) error {
-	newSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			integrationName: jsonData,
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	_, err := k8sClient.CoreV1().Secrets(namespace).Create(ctx, newSecret, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to create secret %s: %w", secretName, err)
-	}
 	return nil
 }
