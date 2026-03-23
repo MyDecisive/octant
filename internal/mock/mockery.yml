@@ -10,3 +10,6 @@ packages:
   github.com/mydecisive/mdai-gateway/internal/integration:
     interfaces:
       Integration:
+  github.com/mydecisive/mdai-gateway/internal/connection:
+    interfaces:
+      Connection:
