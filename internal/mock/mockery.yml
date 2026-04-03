@@ -13,3 +13,6 @@ packages:
   github.com/mydecisive/mdai-gateway/internal/connection:
     interfaces:
       Connection:
+  github.com/prometheus/client_golang/api/prometheus/v1:
+    interfaces:
+      API:
