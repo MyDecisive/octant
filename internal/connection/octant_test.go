@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mydecisive/mdai-gateway/internal/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -19,9 +20,9 @@ func TestGetConnectionByName(t *testing.T) {
 
 	validConnection := OctantConnectionData{
 		SourceType: "datadog",
-		TelemetryTypes: []Telemetry{
-			Logs,
-			Traces,
+		TelemetryTypes: []telemetry.MLT{
+			telemetry.Logs,
+			telemetry.Traces,
 		},
 		Deployment: &Deployment{
 			Type: "argocd",
@@ -37,9 +38,7 @@ func TestGetConnectionByName(t *testing.T) {
 		t.Parallel()
 
 		mockK8sClient := fake.NewClientset()
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "doesntMatter")
 		require.NoError(t, getErr)
@@ -59,9 +58,7 @@ func TestGetConnectionByName(t *testing.T) {
 		}
 
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-b")
 		require.NoError(t, getErr)
@@ -81,9 +78,7 @@ func TestGetConnectionByName(t *testing.T) {
 		}
 
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-a")
 		require.ErrorContains(t, getErr, "failed to unmarshal connection data")
@@ -103,9 +98,7 @@ func TestGetConnectionByName(t *testing.T) {
 		}
 
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-a")
 		require.NoError(t, getErr)
@@ -119,9 +112,9 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 
 	newConnection := OctantConnectionData{
 		SourceType: "datadog",
-		TelemetryTypes: []Telemetry{
-			Logs,
-			Traces,
+		TelemetryTypes: []telemetry.MLT{
+			telemetry.Logs,
+			telemetry.Traces,
 		},
 		Deployment: &Deployment{
 			Type: "argocd",
@@ -135,9 +128,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		t.Parallel()
 
 		mockK8sClient := fake.NewClientset()
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		// Verify the configmap doesn't exist yet
 		_, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
@@ -172,9 +163,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 			},
 		}
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		// Verify the secret DOES exist already
 		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
@@ -208,9 +197,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		t.Parallel()
 
 		mockK8sClient := fake.NewClientset()
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		// validate configmap doesn't exist before we try to delete
 		_, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
@@ -232,9 +219,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			},
 		}
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		// validate configmap exists with "team-a" before we try to delete with another connection name
 		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
@@ -260,9 +245,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			},
 		}
 		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := &OctantConnection{
-			K8sClient: mockK8sClient,
-		}
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
 
 		// validate secret exists with both integration names before we delete one of them.
 		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})

@@ -11,10 +11,18 @@ import (
 
 const connectionsConfigmapName = "mdai-octant-connections"
 
+type Status struct {
+	ReceivingData bool   `json:"receivingData"`
+	SendingData   bool   `json:"sendingData"`
+	DataIntegrity bool   `json:"dataIntegrity"`
+	Details       string `json:"details"`
+}
+
 type Connection[T any] interface {
 	GetConnectionByName(ctx context.Context, namespace, name string) (*T, error)
 	SaveConnection(ctx context.Context, connection T, namespace, connectionName string) error
 	DeleteConnection(ctx context.Context, namespace, connectionName string) error
+	GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error)
 }
 
 func updateConfigMapWithConnection(ctx context.Context, k8sClient kubernetes.Interface, namespace string, cm *corev1.ConfigMap, connectionName, connectionData string) error {

@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/mydecisive/mdai-gateway/internal/metrics"
+	"github.com/mydecisive/mdai-gateway/internal/telemetry"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 type OctantConnectionData struct {
-	SourceType     string      `json:"sourceType"`
-	TelemetryTypes []Telemetry `json:"telemetryTypes"`
-	Deployment     *Deployment `json:"deployment,omitempty"`
+	SourceType     string          `json:"sourceType"`
+	TelemetryTypes []telemetry.MLT `json:"telemetryTypes"`
+	Deployment     *Deployment     `json:"deployment,omitempty"`
 }
 
 type Deployment struct {
@@ -28,11 +32,56 @@ type ArgoDeployment struct {
 var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
 
 type OctantConnection struct {
-	K8sClient kubernetes.Interface
+	k8sClient         kubernetes.Interface
+	logger            *zap.Logger
+	connectionMetrics *metrics.ConnectionStatus
+}
+
+func NewOctantConnection(k8sClient kubernetes.Interface, promClient promv1.API, logger *zap.Logger) *OctantConnection {
+	return &OctantConnection{
+		k8sClient:         k8sClient,
+		logger:            logger,
+		connectionMetrics: metrics.NewConnectionStatus(promClient, logger),
+	}
+}
+
+func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error) {
+	var (
+		receivingData bool
+		sendingData   bool
+		dataIntegrity bool
+	)
+	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
+	if err != nil {
+		return nil, fmt.Errorf("getting connection: %w", err)
+	}
+
+	// for each telemetry type on the connection, check for increasing metrics on the receiver (receiving data)
+	receivingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, metrics.Ingress, connection.TelemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
+	}
+
+	// for each telemetry type on the connection, check for increasing metrics on the exporter (sending data)
+	sendingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, metrics.Egress, connection.TelemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
+	}
+
+	dataIntegrity, err = oc.connectionMetrics.VerifyDataFidelity(ctx, connection.TelemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("verifying data integrity: %w", err)
+	}
+
+	return &Status{
+		ReceivingData: receivingData,
+		SendingData:   sendingData,
+		DataIntegrity: dataIntegrity,
+	}, nil
 }
 
 func (oc *OctantConnection) GetConnectionByName(ctx context.Context, namespace, name string) (*OctantConnectionData, error) {
-	configmap, err := oc.K8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -57,20 +106,20 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 		return fmt.Errorf("failed to marshal connection data: %w", err)
 	}
 
-	cm, err := oc.K8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the confmap if it does not exist
-			return createConnectionConfigMap(ctx, oc.K8sClient, namespace, connectionsConfigmapName, connectionName, string(jsonData))
+			return createConnectionConfigMap(ctx, oc.k8sClient, namespace, connectionsConfigmapName, connectionName, string(jsonData))
 		}
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 	}
 	// Update the confmap if it already exists
-	return updateConfigMapWithConnection(ctx, oc.K8sClient, namespace, cm, connectionName, string(jsonData))
+	return updateConfigMapWithConnection(ctx, oc.k8sClient, namespace, cm, connectionName, string(jsonData))
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, connectionName string) error {
-	cm, err := oc.K8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
@@ -87,7 +136,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 
 	delete(cm.Data, connectionName)
 
-	if _, err = oc.K8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+	if _, err = oc.k8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
 	}
 
