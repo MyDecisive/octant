@@ -1,0 +1,51 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ .AppName }}
+  labels:
+    app: {{ .AppName }}
+    app.kubernetes.io/instance: {{ .AppName }}
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}
+  {{- end }}
+spec:
+  podLabels:
+    app: {{ .AppName }}-collector
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.147.0
+  env:
+    {{- if .DatadogIntegrationData }}
+    - name: DD_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ .AppName }}-integration-secret
+          key: api-key
+    - name: DD_SITE
+      valueFrom:
+        secretKeyRef:
+          name: {{ .AppName }}-integration-secret
+          key: site-url
+    {{- end }}
+  config: |
+    receivers:
+      datadog:
+        endpoint: "0.0.0.0:8126"
+    processors:
+      batch:
+        send_batch_size: 1000
+        timeout: 10s
+    exporters:
+      {{- if .DatadogIntegrationData }}
+      datadog:
+        api:
+          key: "${env:DD_API_KEY}"
+          site: "${env:DD_SITE}"
+      {{- end }}
+    service:
+      pipelines:
+        {{- range .ConnectionData.TelemetryTypes }}
+          {{ . }}:
+            receivers: [datadog]
+            processors: [batch]
+            exporters: [datadog]
+        {{- end }}

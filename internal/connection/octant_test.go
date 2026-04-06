@@ -1,22 +1,95 @@
 package connection
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/mydecisive/mdai-gateway/internal/integration"
+	integrationmock "github.com/mydecisive/mdai-gateway/internal/mock/integration"
 	"github.com/mydecisive/mdai-gateway/internal/telemetry"
+	"github.com/prometheus/client_golang/api"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 const defaultNamespace = "default"
 
+// --- MOCKS ---
+
+// Helper to stand up a fake Argo API.
+func setupTestServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Return success for all standard operations
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/applications/team-a":
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status": {"health": {"status": "Healthy"}}}`)) // nolint: errcheck,gosec,revive
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/applications":
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/applications/team-a/sync":
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/applications/team-a":
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusOK) // Catch-all for tests not strictly checking response bodies
+		}
+	}))
+}
+
+// --- FIXTURE HELPER ---
+
+type octantTestFixture struct {
+	k8sClient   *fake.Clientset
+	argoMock    *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
+	datadogMock *integrationmock.MockIntegration[integration.DataDogIntegrationData]
+	httpClient  *http.Client
+}
+
+// setupFixture initializes a default set of dependencies for OctantConnection.
+// It accepts optional runtime objects to seed the fake Kubernetes client.
+func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
+	t.Helper()
+	return &octantTestFixture{
+		k8sClient:   fake.NewClientset(objects...),
+		argoMock:    integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
+		datadogMock: integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
+		httpClient:  http.DefaultClient, // Default safe client; tests can override with httptest server clients
+	}
+}
+
+// build creates the OctantConnection with the current state of the fixture.
+func (f *octantTestFixture) build() *OctantConnection {
+	return NewOctantConnection(
+		f.httpClient,
+		f.k8sClient,
+		f.argoMock,
+		f.datadogMock,
+		nil,
+		zap.NewNop(),
+	)
+}
+
+// --- TESTS ---
+
 func TestGetConnectionByName(t *testing.T) {
 	t.Parallel()
+
+	ts := setupTestServer()
+	defer ts.Close()
 
 	validConnection := OctantConnectionData{
 		SourceType: "datadog",
@@ -25,244 +98,540 @@ func TestGetConnectionByName(t *testing.T) {
 			telemetry.Traces,
 		},
 		Deployment: &Deployment{
-			Type: "argocd",
-			Fields: map[string]any{
-				"branch": "tv/bestBranch",
-			},
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
 		},
 	}
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
 
-	t.Run("configmap does not exist", func(t *testing.T) {
-		t.Parallel()
-
-		mockK8sClient := fake.NewClientset()
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
-
-		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "doesntMatter")
-		require.NoError(t, getErr)
-		require.Nil(t, actual)
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(validConnectionBytes),
+		},
 	})
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl:       ts.URL,
+		AccountToken: "fake-token",
+	}, nil)
 
-	t.Run("connection not found", func(t *testing.T) {
-		t.Parallel()
+	octantConnection := f.build()
 
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": string(validConnectionBytes),
-				},
-			},
-		}
+	actual, getErr := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+	require.NoError(t, getErr)
+	require.NotNil(t, actual)
 
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
-
-		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-b")
-		require.NoError(t, getErr)
-		require.Nil(t, actual)
-	})
-
-	t.Run("connection unmarshal error", func(t *testing.T) {
-		t.Parallel()
-
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": "not gonna work",
-				},
-			},
-		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
-
-		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-a")
-		require.ErrorContains(t, getErr, "failed to unmarshal connection data")
-		require.Nil(t, actual)
-	})
-
-	t.Run("configmap exists with valid connections", func(t *testing.T) {
-		t.Parallel()
-
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": string(validConnectionBytes),
-				},
-			},
-		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
-
-		actual, getErr := octantConnection.GetConnectionByName(t.Context(), defaultNamespace, "team-a")
-		require.NoError(t, getErr)
-
-		require.True(t, assert.ObjectsAreEqual(&validConnection, actual), "expected and actual don't match")
-	})
+	statusMap, ok := actual.Status.(*ArgoApp)
+	require.True(t, ok)
+	assert.Equal(t, "Healthy", statusMap.Status.Health.Status)
 }
 
-func TestArgoCD_SetIntegration(t *testing.T) {
+func TestGetConnectionByName_NotFound_NoConfigMap(t *testing.T) {
 	t.Parallel()
+
+	f := setupFixture(t)
+	octantConnection := f.build()
+
+	actual, err := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+
+	require.NoError(t, err)
+	assert.Nil(t, actual)
+}
+
+func TestGetConnectionByName_NotFound_KeyMissing(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-b": `{"sourceType": "datadog"}`, // Populating team-b
+		},
+	})
+
+	octantConnection := f.build()
+
+	actual, err := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+
+	require.NoError(t, err)
+	assert.Nil(t, actual)
+}
+
+func TestGetConnectionByName_Error_ConfigMapGetFailed(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t)
+	f.k8sClient.PrependReactor("get", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("injected get error")
+	})
+
+	octantConnection := f.build()
+
+	_, err := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get configmap")
+	assert.Contains(t, err.Error(), "injected get error")
+}
+
+func TestGetConnectionByName_Error_InvalidJSON(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": "not gonna work",
+		},
+	})
+
+	octantConnection := f.build()
+
+	_, err := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unmarshal connection data")
+}
+
+func TestGetConnectionByName_Error_ArgoStatusFailed(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	validConnection := OctantConnectionData{
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+	}
+	validConnectionBytes, err := json.Marshal(validConnection)
+	require.NoError(t, err)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(validConnectionBytes),
+		},
+	})
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+
+	octantConnection := f.build()
+
+	_, err = octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, err)
+}
+
+func TestSaveConnection(t *testing.T) {
+	t.Parallel()
+
+	ts := setupTestServer()
+	defer ts.Close()
 
 	newConnection := OctantConnectionData{
 		SourceType: "datadog",
+		Destinations: []OctantConnectionDestination{
+			{DestinationType: "datadog", IntegrationName: "dd-test"},
+		},
 		TelemetryTypes: []telemetry.MLT{
 			telemetry.Logs,
 			telemetry.Traces,
 		},
 		Deployment: &Deployment{
-			Type: "argocd",
-			Fields: map[string]any{
-				"branch": "tv/bestBranch",
-			},
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
 		},
 	}
 
-	t.Run("creates configmap when it does not exist", func(t *testing.T) {
-		t.Parallel()
+	f := setupFixture(t)
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+	f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Destinations[0].IntegrationName).Return(&integration.DataDogIntegrationData{}, nil)
 
-		mockK8sClient := fake.NewClientset()
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
+	octantConnection := f.build()
 
-		// Verify the configmap doesn't exist yet
-		_, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "configmaps \"mdai-octant-connections\" not found")
+	err := octantConnection.SaveConnection(context.Background(), newConnection, defaultNamespace, "team-a")
+	require.NoError(t, err)
 
-		err = octantConnection.SaveConnection(t.Context(), newConnection, defaultNamespace, "team-a")
-		require.NoError(t, err)
-
-		// Verify the configmap actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, getErr)
-		require.NotNil(t, secret.Data)
-		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, "team-a")
-
-		var teamData OctantConnectionData
-		err = json.Unmarshal([]byte(secret.Data["team-a"]), &teamData)
-		require.NoError(t, err)
-
-		assert.Equal(t, newConnection, teamData)
-	})
-
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": `{"sourceType": "datadog", "telemetryTypes": ["logs", "traces"], "deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
-				},
-			},
-		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
-
-		// Verify the secret DOES exist already
-		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingConfigmap.Data)
-		require.Len(t, existingConfigmap.Data, 1)
-		require.Contains(t, existingConfigmap.Data, "team-a")
-
-		err = octantConnection.SaveConnection(t.Context(), newConnection, defaultNamespace, "team-b")
-		require.NoError(t, err)
-
-		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, getErr)
-		require.NotNil(t, secret.Data)
-		require.Len(t, secret.Data, 2)
-		require.Contains(t, secret.Data, "team-b")
-
-		var teamData OctantConnectionData
-		err = json.Unmarshal([]byte(secret.Data["team-b"]), &teamData)
-		require.NoError(t, err)
-
-		assert.Equal(t, newConnection, teamData)
-	})
+	cm, err := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Contains(t, cm.Data, "team-a")
 }
 
-func TestArgoCD_DeleteIntegration(t *testing.T) {
+func TestSaveConnection_UpdateExistingConfigMap(t *testing.T) {
 	t.Parallel()
 
-	t.Run("secret does not exist - silently succeeds", func(t *testing.T) {
-		t.Parallel()
+	ts := setupTestServer()
+	defer ts.Close()
 
-		mockK8sClient := fake.NewClientset()
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"existing-team": `{"sourceType": "datadog", "telemetryTypes": ["logs", "traces"], "deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
+		},
+	})
+	f.httpClient = ts.Client()
 
-		// validate configmap doesn't exist before we try to delete
-		_, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "configmaps \"mdai-octant-connections\" not found")
+	newConnection := OctantConnectionData{
+		Deployment: &Deployment{
+			Type: ArgoManifestsDeploymentType,
+		},
+	}
 
-		err = octantConnection.DeleteConnection(t.Context(), defaultNamespace, "team-a")
-		require.NoError(t, err)
+	octantConnection := f.build()
+
+	err := octantConnection.SaveConnection(context.Background(), newConnection, defaultNamespace, "team-a")
+	require.NoError(t, err)
+
+	cm, err := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Contains(t, cm.Data, "team-a")
+	require.Contains(t, cm.Data, "existing-team")
+}
+
+func TestSaveConnection_Error_InvalidDeploymentType(t *testing.T) {
+	t.Parallel()
+
+	invalidConnection := OctantConnectionData{
+		Deployment: &Deployment{
+			Type: "invalid-deployment-type",
+		},
+	}
+
+	f := setupFixture(t)
+	octantConnection := f.build()
+
+	err := octantConnection.SaveConnection(context.Background(), invalidConnection, defaultNamespace, "team-a")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid deployment type: invalid-deployment-type")
+}
+
+func TestSaveConnection_Error_ConfigMapGetFailed(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t)
+	f.k8sClient.PrependReactor("get", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("injected get error")
 	})
 
-	t.Run("connection does not exist in configmap - silently succeeds", func(t *testing.T) {
-		t.Parallel()
+	octantConnection := f.build()
 
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": `{"sourceType": "datadog", "telemetryTypes": ["logs", "traces"], "deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
-				},
-			},
-		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
+	validConnection := OctantConnectionData{
+		Deployment: &Deployment{
+			Type: ArgoManifestsDeploymentType,
+		},
+	}
 
-		// validate configmap exists with "team-a" before we try to delete with another connection name
-		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingConfigmap.Data)
-		require.Len(t, existingConfigmap.Data, 1)
-		require.Contains(t, existingConfigmap.Data, "team-a")
+	err := octantConnection.SaveConnection(context.Background(), validConnection, defaultNamespace, "team-a")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch configmap")
+}
 
-		err = octantConnection.DeleteConnection(t.Context(), defaultNamespace, "team-b")
-		require.NoError(t, err)
+func TestSaveConnection_Error_ArgoPushFailed(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	connection := OctantConnectionData{
+		Destinations: []OctantConnectionDestination{
+			{DestinationType: "datadog", IntegrationName: "dd-1"},
+		},
+		Deployment: &Deployment{
+			Type: ArgoSideloadDeploymentType,
+		},
+	}
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data:       map[string]string{},
+	})
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+	f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Destinations[0].IntegrationName).Return(&integration.DataDogIntegrationData{}, nil)
+
+	octantConnection := f.build()
+
+	err := octantConnection.SaveConnection(context.Background(), connection, defaultNamespace, "team-a")
+	require.Error(t, err)
+}
+
+func TestDeleteConnection(t *testing.T) {
+	t.Parallel()
+
+	ts := setupTestServer()
+	defer ts.Close()
+
+	existingConnection := OctantConnectionData{
+		SourceType: "datadog",
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+	}
+	existingConnectionBytes, marshalErr := json.Marshal(existingConnection)
+	require.NoError(t, marshalErr)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(existingConnectionBytes),
+		},
+	})
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, existingConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+
+	octantConnection := f.build()
+
+	deleteErr := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.NoError(t, deleteErr)
+
+	cm, getCMErr := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	require.NoError(t, getCMErr)
+	require.NotContains(t, cm.Data, "team-a")
+}
+
+func TestDeleteConnection_NotFound_SilentlyReturns(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t)
+	octantConnection := f.build()
+
+	err := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.NoError(t, err)
+}
+
+func TestDeleteConnection_KeyMissing_SilentlyReturns(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-b": `{"sourceType": "datadog"}`,
+		},
+	})
+	octantConnection := f.build()
+
+	err := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.NoError(t, err)
+}
+
+func TestDeleteConnection_Error_ConfigMapGetFailed(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t)
+	f.k8sClient.PrependReactor("get", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("injected get error")
 	})
 
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
+	octantConnection := f.build()
 
-		existingObjects := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"team-a": `{"sourceType": "datadog", "telemetryTypes": ["logs", "traces"], "deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
-					"team-b": `{"sourceType": "datadog", "telemetryTypes": ["metrics"], "deployment": {"type": "argocd", "fields": {"branch": "main"}}}`,
-				},
-			},
-		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
-		octantConnection := NewOctantConnection(mockK8sClient, nil, nil)
+	err := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch configmap")
+}
 
-		// validate secret exists with both integration names before we delete one of them.
-		existingConfigmap, err := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingConfigmap.Data)
-		require.Len(t, existingConfigmap.Data, 2)
-		require.Contains(t, existingConfigmap.Data, "team-a")
-		require.Contains(t, existingConfigmap.Data, "team-b")
+func TestDeleteConnection_Error_InvalidJSON(t *testing.T) {
+	t.Parallel()
 
-		err = octantConnection.DeleteConnection(t.Context(), defaultNamespace, "team-a")
-		require.NoError(t, err)
-
-		existingConfigmap, err = mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingConfigmap.Data)
-		require.Len(t, existingConfigmap.Data, 1)
-		require.NotContains(t, existingConfigmap.Data, "team-a") // team-a was deleted
-		require.Contains(t, existingConfigmap.Data, "team-b")
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": "{ invalid json ",
+		},
 	})
+	octantConnection := f.build()
+
+	err := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unmarshal connection data")
+}
+
+func TestDeleteConnection_Error_ArgoDeleteFailed(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	connection := OctantConnectionData{
+		Deployment: &Deployment{
+			Type: ArgoSideloadDeploymentType,
+		},
+	}
+	connBytes, err := json.Marshal(connection)
+	require.NoError(t, err)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(connBytes),
+		},
+	})
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+
+	octantConnection := f.build()
+
+	deleteErr := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, deleteErr)
+}
+
+func TestDeleteConnection_Error_ConfigMapUpdateFailed(t *testing.T) {
+	t.Parallel()
+
+	connection := OctantConnectionData{}
+	connBytes, err := json.Marshal(connection)
+	require.NoError(t, err)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(connBytes),
+		},
+	})
+	f.k8sClient.PrependReactor("update", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("injected update error")
+	})
+
+	octantConnection := f.build()
+
+	updateErr := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
+	require.Error(t, updateErr)
+	assert.Contains(t, updateErr.Error(), "failed to update configmap")
+}
+
+func TestGetConnectionStatus_Success(t *testing.T) {
+	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType: "datadog",
+		TelemetryTypes: []telemetry.MLT{
+			telemetry.Logs,
+		},
+	}
+	validConnectionBytes, err := json.Marshal(validConnection)
+	require.NoError(t, err)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(validConnectionBytes),
+		},
+	})
+
+	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"success","data":{"resultType":"matrix","result":[{"metric":{},"values":[[1712419691,"5"], [1712419751,"10"]]}]}}`)) // nolint: errcheck,gosec,revive
+	}))
+	defer promServer.Close()
+
+	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
+	require.NoError(t, err)
+	promAPI := promv1.NewAPI(promClient)
+
+	octantConnection := NewOctantConnection(
+		f.httpClient,
+		f.k8sClient,
+		f.argoMock,
+		f.datadogMock,
+		promAPI,
+		zap.NewNop(),
+	)
+
+	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
+
+	require.NoError(t, err)
+	require.NotNil(t, status)
+	assert.True(t, status.ReceivingData)
+	assert.True(t, status.SendingData)
+}
+
+func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
+	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		TelemetryTypes: []telemetry.MLT{telemetry.Logs},
+	}
+	validConnectionBytes, err := json.Marshal(validConnection)
+	require.NoError(t, err)
+
+	f := setupFixture(t, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+		Data: map[string]string{
+			"team-a": string(validConnectionBytes),
+		},
+	})
+
+	// Mock Prometheus server returning a 500 error
+	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer promServer.Close()
+
+	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
+	require.NoError(t, err)
+	promAPI := promv1.NewAPI(promClient)
+
+	octantConnection := NewOctantConnection(
+		f.httpClient,
+		f.k8sClient,
+		f.argoMock,
+		f.datadogMock,
+		promAPI,
+		zap.NewNop(),
+	)
+
+	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "querying telemetry")
+	assert.Nil(t, status)
+}
+
+func TestGetConnectionStatus_Error_K8sGetFailed(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t)
+	octantConnection := f.build()
+
+	// Force a hard K8s error so GetConnectionByName returns an actual error
+	f.k8sClient.PrependReactor("get", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("k8s api failure")
+	})
+
+	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "getting connection")
+	assert.Contains(t, err.Error(), "k8s api failure")
+	assert.Nil(t, status)
+}
+
+func TestGetConnectionStatus_NotFound_ReturnsError(t *testing.T) {
+	t.Parallel()
+
+	f := setupFixture(t) // Empty fixture, ConfigMap doesn't exist
+	octantConnection := f.build()
+
+	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "missing-team")
+
+	require.Error(t, err)
+	assert.Nil(t, status)
 }

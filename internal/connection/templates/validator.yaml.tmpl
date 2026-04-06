@@ -1,0 +1,29 @@
+apiVersion: hub.mydecisive.ai/v1
+kind: TelemetryValidation
+metadata:
+  name: {{ .AppName }}-telemetry-validation
+spec:
+  enabled: true
+  collectorRef:
+    name: {{ .AppName }}
+  validator: {}
+  signals:
+    {{- range .ConnectionData.TelemetryTypes }}
+    - {{ . }}
+    {{ end }}
+  shadowCollector:
+    enabled: true
+  ingressCapture:
+    enabled: true
+  exporterRewrites:
+    {{- if .DatadogIntegrationData }}
+    - name: datadog-default
+      matchExporterPrefixes:
+        - datadog
+      set:
+        api.site: {{ .DatadogIntegrationData.DDUrl }}
+        tls.insecure_skip_verify: true
+        {{- range .ConnectionData.TelemetryTypes }}
+        {{ . }}.endpoint: "http://{{ $.AppName }}-fidelity-validator.mdai.svc.cluster.local:18081/intake/exporter/mdai/sample/gateway/datadog"
+        {{- end }}
+    {{- end }}
