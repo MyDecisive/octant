@@ -42,7 +42,6 @@ func TestGetArgoAppStatus(t *testing.T) {
 
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/api/v1/applications/my-app", r.URL.Path)
-				assert.Equal(t, "upsert=true", r.URL.RawQuery)
 				assert.Equal(t, "Bearer fake-token", r.Header.Get("Authorization"))
 
 				w.WriteHeader(tc.serverResponse)
@@ -307,11 +306,12 @@ func TestDeleteArgoApp_Error_HTTPDoFailed(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestDeleteArgoApp_Error_BadStatusCode(t *testing.T) {
+func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "invalid session: token signature is invalid: signature is invalid","code": 16,"message": "invalid session: token signature is invalid: signature is invalid"}`)) // nolint: errcheck,gosec,revive
 	}))
 	defer ts.Close()
 
@@ -328,7 +328,36 @@ func TestDeleteArgoApp_Error_BadStatusCode(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected status code: 500")
+	assert.Contains(t, err.Error(), "got 401 forbidden response from ArgoCD API")
+	assert.Contains(t, err.Error(), "Account token in ArgoCD integration 'argo-test' may be incorrect or expired.")
+	assert.Contains(t, err.Error(), "Response body: \n{\n  \"error\":")
+}
+
+func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`ooky spooky`)) // nolint: errcheck,gosec,revive
+	}))
+	defer ts.Close()
+
+	f := setupFixture(t)
+	f.httpClient = ts.Client()
+	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
+		APIUrl: ts.URL,
+	}, nil)
+
+	octantConnection := f.build()
+
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+		Deployment: &Deployment{IntegrationName: "argo-test"},
+	})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "got unexpected response code from ArgoCD API")
+	assert.Contains(t, err.Error(), "Status 500")
+	assert.Contains(t, err.Error(), "Body: ooky spooky")
 }
 
 func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {

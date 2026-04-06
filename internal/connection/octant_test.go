@@ -123,7 +123,7 @@ func TestGetConnectionByName(t *testing.T) {
 	require.NoError(t, getErr)
 	require.NotNil(t, actual)
 
-	statusMap, ok := actual.Status.(*ArgoApp)
+	statusMap, ok := actual.Status.(*argoApp)
 	require.True(t, ok)
 	assert.Equal(t, "Healthy", statusMap.Status.Health.Status)
 }

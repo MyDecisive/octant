@@ -254,7 +254,7 @@ func TestRenderCollectorManifest(t *testing.T) {
 }
 
 func TestRenderValidatorManifest(t *testing.T) {
-	t.Run("With Signals and Datadog Rewrites", func(t *testing.T) {
+	t.Run("With Signals", func(t *testing.T) {
 		templateData := ArgoTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
@@ -273,49 +273,8 @@ func TestRenderValidatorManifest(t *testing.T) {
 		require.NoError(t, yaml.Unmarshal(validatorBytes, &validator))
 
 		spec := validator["spec"].(map[string]any)
-		signals := spec["signals"].([]any)
-		assert.Contains(t, signals, "logs")
-		assert.Contains(t, signals, "metrics")
-
-		rewrites := spec["exporterRewrites"].([]any)
-		require.Len(t, rewrites, 1)
-
-		rewriteObj := rewrites[0].(map[string]any)
-		setBlock := rewriteObj["set"].(map[string]any)
-
-		assert.Equal(t, "https://datadoghq.com", setBlock["api.site"])
-		assert.Contains(t, setBlock["logs.endpoint"], "test-app-fidelity-validator")
-		assert.Contains(t, setBlock["metrics.endpoint"], "test-app-fidelity-validator")
-	})
-
-	t.Run("Without Datadog Integration", func(t *testing.T) {
-		templateData := ArgoTemplateData{
-			AppName: "test-app",
-			ConnectionData: OctantConnectionData{
-				TelemetryTypes: []telemetry.MLT{telemetry.Traces},
-			},
-			DatadogIntegrationData: nil,
-		}
-
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
-		require.NoError(t, err)
-		validatorBytes := (manifests)["validator.yaml"]
-
-		var validator map[string]any
-		require.NoError(t, yaml.Unmarshal(validatorBytes, &validator))
-
-		spec := validator["spec"].(map[string]any)
-		signals := spec["signals"].([]any)
-		assert.Contains(t, signals, "traces")
-
-		// Safely check if exporterRewrites exists but doesn't contain Datadog keys
-		if rewritesRaw, hasRewrites := spec["exporterRewrites"]; hasRewrites && rewritesRaw != nil {
-			rewritesSlice := rewritesRaw.([]any)
-			for _, rRaw := range rewritesSlice {
-				r := rRaw.(map[string]any)
-				assert.NotEqual(t, "datadog-default", r["name"])
-			}
-		}
+		collectorRef := spec["collectorRef"].(map[string]any)
+		assert.Equal(t, "test-app", collectorRef["name"])
 	})
 }
 

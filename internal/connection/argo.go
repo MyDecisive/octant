@@ -5,39 +5,55 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/mydecisive/mdai-gateway/internal/integration"
 )
 
-type ArgoApp struct {
-	Status ArgoAppStatus `json:"status"`
+type argoApp struct {
+	Status argoAppStatus `json:"status"`
 }
 
-type ArgoAppStatus struct {
-	Resources []ArgoAppResources `json:"resources"`
-	Health    ArgoAppHealth      `json:"health"`
+type argoAppStatus struct {
+	Resources []argoAppResources `json:"resources"`
+	Health    argoAppHealth      `json:"health"`
 }
 
-type ArgoAppHealth struct {
+type argoAppHealth struct {
 	Status             string    `json:"status"`
 	LastTransitionTime time.Time `json:"lastTransitionTime"`
 }
 
-type ArgoAppResources struct {
+type argoAppResources struct {
 	Kind string `json:"kind"`
 	Name string `json:"name"`
 }
 
-func (oc *OctantConnection) getArgoAppStatus(ctx context.Context, name string, namespace string, connection OctantConnectionData) (*ArgoApp, error) {
+type argoSyncPayload struct {
+	Revision  string           `json:"revision"`
+	Prune     bool             `json:"prune"`
+	DryRun    bool             `json:"dryRun"`
+	Strategy  argoSyncStrategy `json:"strategy"`
+	Manifests []string         `json:"manifests"`
+}
+
+type argoSyncStrategy struct {
+	Apply argoSyncApply `json:"apply"`
+}
+
+type argoSyncApply struct {
+	Force bool `json:"force"`
+}
+
+func (oc *OctantConnection) getArgoAppStatus(ctx context.Context, name string, namespace string, connection OctantConnectionData) (*argoApp, error) {
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(ctx, namespace, connection.Deployment.IntegrationName)
 	if getArgoIntErr != nil {
 		return nil, getArgoIntErr
 	}
 
-	// GET APP
-	getAppURL := fmt.Sprintf("%s/api/v1/applications/%s?upsert=true", argoIntegration.APIUrl, name)
+	getAppURL := fmt.Sprintf("%s/api/v1/applications/%s", argoIntegration.APIUrl, name)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getAppURL, http.NoBody)
 	if err != nil {
 		return nil, err
@@ -52,9 +68,9 @@ func (oc *OctantConnection) getArgoAppStatus(ctx context.Context, name string, n
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, handleArgoErrorResponse(resp, connection)
 	}
-	var app ArgoApp
+	var app argoApp
 	if err := json.NewDecoder(resp.Body).Decode(&app); err != nil {
 		return nil, err
 	}
@@ -76,14 +92,14 @@ func (oc *OctantConnection) pushArgoApp(ctx context.Context, namespace, name str
 		return fmt.Errorf("no ArgoCD integration found with name %s", connection.Deployment.IntegrationName)
 	}
 
-	if appCreateErr := oc.doArgoAppCreation(ctx, templateData, argoIntegration); appCreateErr != nil {
+	if appCreateErr := oc.doArgoAppCreation(ctx, templateData, connection, argoIntegration); appCreateErr != nil {
 		return appCreateErr
 	}
 
-	return oc.doArgoAppSync(ctx, templateData, argoIntegration, name)
+	return oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name)
 }
 
-func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *ArgoTemplateData, argoIntegration *integration.ArgoCDIntegrationData, name string) error {
+func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *ArgoTemplateData, connection OctantConnectionData, argoIntegration *integration.ArgoCDIntegrationData, name string) error {
 	manifests, err := renderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -94,18 +110,18 @@ func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *Arg
 		manifestsSlice = append(manifestsSlice, string(manifest))
 	}
 
-	// TODO: Make a struct for this
-	syncPayload := map[string]any{
-		"revision": "HEAD",
-		"prune":    false,
-		"dryRun":   false,
-		"strategy": map[string]any{
-			"apply": map[string]bool{
-				"force": false,
+	syncPayload := argoSyncPayload{
+		Revision: "HEAD",
+		Prune:    false,
+		DryRun:   false,
+		Strategy: argoSyncStrategy{
+			Apply: argoSyncApply{
+				Force: false,
 			},
 		},
-		"manifests": manifestsSlice,
+		Manifests: manifestsSlice,
 	}
+
 	syncPayloadJSON, err := json.Marshal(syncPayload)
 	if err != nil {
 		return err
@@ -126,13 +142,12 @@ func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *Arg
 		_ = syncResp.Body.Close()
 	}()
 	if syncResp.StatusCode != http.StatusOK {
-		// TODO: Handle this error better. Return the argo response too, and/or pass along better messages
-		return fmt.Errorf("unexpected status code: %d", syncResp.StatusCode)
+		return handleArgoErrorResponse(syncResp, connection)
 	}
 	return nil
 }
 
-func (oc *OctantConnection) doArgoAppCreation(ctx context.Context, templateData *ArgoTemplateData, argoIntegration *integration.ArgoCDIntegrationData) error {
+func (oc *OctantConnection) doArgoAppCreation(ctx context.Context, templateData *ArgoTemplateData, connection OctantConnectionData, argoIntegration *integration.ArgoCDIntegrationData) error {
 	appJSON, err := renderArgoAppManifest(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -153,8 +168,7 @@ func (oc *OctantConnection) doArgoAppCreation(ctx context.Context, templateData 
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != http.StatusOK {
-		// TODO: Handle this error better. Return the argo response too, and/or pass along better messages
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return handleArgoErrorResponse(resp, connection)
 	}
 	return nil
 }
@@ -182,8 +196,33 @@ func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, name
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != http.StatusOK {
-		// TODO: Handle this error better. Return the argo response too, and/or pass along better messages
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return handleArgoErrorResponse(resp, connection)
 	}
 	return nil
+}
+
+func handleArgoErrorResponse(resp *http.Response, connection OctantConnectionData) error {
+	bodyBytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return fmt.Errorf("unexpected status %d; also failed to read error body: %w", resp.StatusCode, readErr)
+	}
+
+	var bodyStr string
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, bodyBytes, "", "  "); err == nil {
+		bodyStr = "\n" + prettyJSON.String()
+	} else {
+		bodyStr = string(bytes.TrimSpace(bodyBytes))
+	}
+
+	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return fmt.Errorf(
+			"got 401 forbidden response from ArgoCD API. Account token in ArgoCD integration '%s' may be incorrect or expired. Response body: %v",
+			connection.Deployment.IntegrationName,
+			bodyStr,
+		)
+	default:
+		return fmt.Errorf("got unexpected response code from ArgoCD API: Status %d, Body: %s", resp.StatusCode, bodyStr)
+	}
 }
