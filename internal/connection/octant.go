@@ -72,13 +72,13 @@ func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, 
 	}
 
 	// for each telemetry type on the connection, check for increasing metrics on the receiver (receiving data)
-	receivingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, metrics.Ingress, connection.TelemetryTypes)
+	receivingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Ingress, connection.TelemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
 	}
 
 	// for each telemetry type on the connection, check for increasing metrics on the exporter (sending data)
-	sendingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, metrics.Egress, connection.TelemetryTypes)
+	sendingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Egress, connection.TelemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
 	}

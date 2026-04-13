@@ -1,4 +1,4 @@
-apiVersion: opentelemetry.io/v1alpha1
+apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
   name: {{ .AppName }}
@@ -26,7 +26,7 @@ spec:
           name: {{ .AppName }}-integration-secret
           key: site-url
     {{- end }}
-  config: |
+  config:
     receivers:
       datadog:
         endpoint: "0.0.0.0:8126"
@@ -42,6 +42,21 @@ spec:
           site: "${env:DD_SITE}"
       {{- end }}
     service:
+      telemetry:
+        resource:
+          mdai_connection: "{{ .AppName }}"
+          service.name: "{{ .AppName }}-collector"
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: "0.0.0.0"
+                    port: 8888
+                    with_resource_constant_labels:
+                      included:
+                        - mdai_connection
+                        - service.name
       pipelines:
         {{- range .ConnectionData.TelemetryTypes }}
           {{ . }}:

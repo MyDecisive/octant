@@ -193,9 +193,9 @@ func TestRenderCollectorManifest(t *testing.T) {
 		_, hasEnv := spec["env"]
 		assert.True(t, hasEnv, "Env block should exist for Datadog integration")
 
-		configStr := spec["config"].(string)
-		var otelConfig map[string]any
-		require.NoError(t, yaml.Unmarshal([]byte(configStr), &otelConfig))
+		otelConfigRaw, hasOtelConfig := getNestedField(spec, "config")
+		assert.True(t, hasOtelConfig, "OTEL config should exist")
+		otelConfig := otelConfigRaw.(map[string]any)
 
 		// Check Datadog Exporter
 		apiBlock, found := getNestedField(otelConfig, "exporters", "datadog", "api")
@@ -203,6 +203,22 @@ func TestRenderCollectorManifest(t *testing.T) {
 		apiMap := apiBlock.(map[string]any)
 		assert.Equal(t, "${env:DD_API_KEY}", apiMap["key"])
 		assert.Equal(t, "${env:DD_SITE}", apiMap["site"])
+
+		connectionName, hasConnectionName := getNestedField(otelConfig, "service", "telemetry", "resource", "mdai_connection")
+		assert.True(t, hasConnectionName, "Connection name should be configured")
+		assert.Equal(t, "test-app", connectionName)
+		serviceName, hasServiceName := getNestedField(otelConfig, "service", "telemetry", "resource", "service.name")
+		assert.True(t, hasServiceName, "Service name should be configured")
+		assert.Equal(t, "test-app-collector", serviceName)
+
+		metricsReaders, hasMetricsReaders := getNestedField(otelConfig, "service", "telemetry", "metrics", "readers")
+		assert.True(t, hasMetricsReaders, "Metrics reader should be configured")
+		metricsReadersSlice := metricsReaders.([]any)
+		assert.Len(t, metricsReadersSlice, 1)
+		includedLabels, hasIncludedLabels := getNestedField(metricsReadersSlice[0].(map[string]any), "pull", "exporter", "prometheus", "with_resource_constant_labels", "included")
+		assert.True(t, hasIncludedLabels, "Prometheus pull exporter included labels should be configured")
+		assert.Contains(t, includedLabels, "mdai_connection")
+		assert.Contains(t, includedLabels, "service.name")
 
 		// Check Dynamic Pipelines
 		for _, tel := range []string{"logs", "traces"} {
@@ -241,9 +257,9 @@ func TestRenderCollectorManifest(t *testing.T) {
 			}
 		}
 
-		configStr := spec["config"].(string)
-		var otelConfig map[string]any
-		require.NoError(t, yaml.Unmarshal([]byte(configStr), &otelConfig))
+		otelConfigRaw, hasOtelConfig := getNestedField(spec, "config")
+		assert.True(t, hasOtelConfig, "OTEL config should exist")
+		otelConfig := otelConfigRaw.(map[string]any)
 
 		_, foundExporters := getNestedField(otelConfig, "exporters", "datadog", "api")
 		assert.False(t, foundExporters, "Datadog API exporter should NOT be configured")
