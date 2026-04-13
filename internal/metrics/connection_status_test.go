@@ -244,7 +244,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.ErrorContains(t, err, "unknown telemetry type: invalid")
 	})
@@ -254,7 +254,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
@@ -263,7 +263,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.ErrorContains(t, err, "failed to query prometheus")
 	})
@@ -281,7 +281,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(queryResults, nil, nil).
 			Times(1)
 
@@ -290,7 +290,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.ErrorContains(t, err, "analyzing query range results")
 	})
@@ -334,11 +334,11 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 
@@ -347,7 +347,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.NoError(t, err)
 	})
@@ -413,15 +413,15 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_metric_points_total{receiver=\"datadog\", job=\"otel-collector\"}", mock.Anything).
+			QueryRange(mock.Anything, "otelcol_receiver_accepted_metric_points_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
 			Return(metricsResults, nil, nil).
 			Times(1)
 
@@ -430,7 +430,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
+		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
 		require.True(t, actual)
 		require.NoError(t, err)
 	})

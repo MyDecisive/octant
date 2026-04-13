@@ -94,27 +94,27 @@ func dataFidelityCheck(logger *zap.Logger, resultMatrix model.Matrix, telemetryT
 	return true
 }
 
-func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
+func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
 	for _, connectionType := range telemetryTypes {
 		var promQuery string
 		switch connectionType {
 		case telemetry.Logs:
 			promQuery = lo.Ternary(
 				ie == Ingress,
-				"otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", job=\"otel-collector\"}",
-				"otelcol_exporter_sent_log_records{receiver=\"datadog\", job=\"otel-collector\"}",
+				fmt.Sprintf("otelcol_receiver_accepted_log_records_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
+				fmt.Sprintf("otelcol_exporter_sent_log_records{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
 			)
 		case telemetry.Traces:
 			promQuery = lo.Ternary(
 				ie == Ingress,
-				"otelcol_receiver_accepted_spans_total{receiver=\"datadog\", job=\"otel-collector\"}",
-				"otelcol_exporter_sent_spans{receiver=\"datadog\", job=\"otel-collector\"}",
+				fmt.Sprintf("otelcol_receiver_accepted_spans_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
+				fmt.Sprintf("otelcol_exporter_sent_spans{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
 			)
 		case telemetry.Metrics:
 			promQuery = lo.Ternary(
 				ie == Ingress,
-				"otelcol_receiver_accepted_metric_points_total{receiver=\"datadog\", job=\"otel-collector\"}",
-				"otelcol_exporter_sent_metric_points{receiver=\"datadog\", job=\"otel-collector\"}",
+				fmt.Sprintf("otelcol_receiver_accepted_metric_points_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
+				fmt.Sprintf("otelcol_exporter_sent_metric_points{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
 			)
 		default:
 			return false, fmt.Errorf("unknown telemetry type: %s", connectionType)
