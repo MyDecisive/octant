@@ -9,4 +9,6 @@ on:
 jobs:
   docker-push:
     uses: MyDecisive/ci/.github/workflows/docker-ghcr.yaml@main
+    with:
+      build_contexts: "ui-repo=https://github.com/MyDecisive/octant-ui.git#main"
     secrets: inherit # pass all secrets
