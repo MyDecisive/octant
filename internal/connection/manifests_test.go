@@ -189,6 +189,10 @@ func TestRenderCollectorManifest(t *testing.T) {
 		var otel map[string]any
 		require.NoError(t, yaml.Unmarshal(collectorBytes, &otel))
 
+		labels, hasLabels := getNestedField(otel, "metadata", "labels")
+		assert.True(t, hasLabels)
+		assert.Equal(t, "connection-collector", labels.(map[string]any)["hub.mydecisive.ai/role"])
+
 		spec := otel["spec"].(map[string]any)
 		_, hasEnv := spec["env"]
 		assert.True(t, hasEnv, "Env block should exist for Datadog integration")

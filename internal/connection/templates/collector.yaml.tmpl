@@ -5,14 +5,13 @@ metadata:
   labels:
     app: {{ .AppName }}
     app.kubernetes.io/instance: {{ .AppName }}
+    hub.mydecisive.ai/role: connection-collector
   {{- if .IsArgoSideload }}
   annotations:
     argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}
   {{- end }}
 spec:
-  podLabels:
-    app: {{ .AppName }}-collector
-  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.147.0
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
   env:
     {{- if .DatadogIntegrationData }}
     - name: DD_API_KEY
