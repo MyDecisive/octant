@@ -1,0 +1,12 @@
+name: Docker push for main branch
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  docker-push:
+    uses: MyDecisive/ci/.github/workflows/docker-ghcr.yaml@main
+    secrets: inherit # pass all secrets
