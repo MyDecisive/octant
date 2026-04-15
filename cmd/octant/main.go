@@ -26,18 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	mainRouter := http.NewServeMux()
-
-	apiRouter := http.NewServeMux()
-	apiRouter.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
-		_, err = writer.Write([]byte("OK"))
-		if err != nil {
-			logger.Error("failed to write health response", zap.Error(err))
-		}
-	})
-
-	// octant API
-	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", apiRouter))
+	mainRouter := setupRouter(logger)
 
 	httpPort := helpers.GetEnvVariableWithDefault(httpPortEnvVarKey, defaultHTTPPort)
 	logger.Info("starting server", zap.String("address", ":"+httpPort))
