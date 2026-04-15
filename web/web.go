@@ -1,3 +1,6 @@
+//go:build webapp
+// +build webapp
+
 package web
 
 import "embed"

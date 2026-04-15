@@ -20,7 +20,7 @@ COPY --from=ui-builder /web/dist ./web
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags="-w -s" -o /octant ./cmd/octant
+    go build -trimpath -tags webapp -ldflags="-w -s" -o /octant ./cmd/octant
 
 FROM gcr.io/distroless/static-debian13:nonroot AS final
 WORKDIR /

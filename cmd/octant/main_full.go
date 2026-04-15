@@ -1,12 +1,15 @@
-//go:build !webapp
+//go:build webapp
+// +build webapp
 
 package main
 
 import (
+	"io/fs"
 	"net/http"
 	"time"
 
 	"github.com/mydecisive/mdai-data-core/helpers"
+	"github.com/mydecisive/octant/web"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +31,11 @@ func main() {
 
 	mainRouter := http.NewServeMux()
 
+	octantApp, err := fs.Sub(web.App, "dist")
+	if err != nil {
+		logger.Fatal("failed to load embedded octant UI", zap.Error(err))
+	}
+
 	apiRouter := http.NewServeMux()
 	apiRouter.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		_, err = writer.Write([]byte("OK"))
@@ -36,6 +44,8 @@ func main() {
 		}
 	})
 
+	// octant UI
+	mainRouter.Handle("/", http.FileServerFS(octantApp))
 	// octant API
 	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", apiRouter))
 

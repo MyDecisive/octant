@@ -23,7 +23,7 @@ docker-push: tidy docker-login
 
 .PHONY: build
 build: tidy
-	$(GO) build -trimpath -ldflags="-w -s" -o octant ./cmd/octant
+	$(GO) build -trimpath -tags webapp -ldflags="-w -s" -o octant ./cmd/octant
 
 .PHONY: test
 test: tidy
