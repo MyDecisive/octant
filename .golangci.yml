@@ -1,0 +1,161 @@
+version: "2"
+run:
+  allow-parallel-runners: true
+linters:
+  default: all
+  disable:
+    - depguard
+    - err113
+    - godox
+    - lll
+    - nlreturn
+    - noinlineerr
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - testpackage
+    - unqueryvet
+    - varnamelen
+    - wrapcheck
+    - wsl
+    - wsl_v5
+
+  settings:
+    cyclop:
+      max-complexity: 15
+    funlen:
+      lines: 85
+    gocritic:
+      enable-all: true
+      disabled-checks:
+        - hugeParam
+        - paramTypeCombine
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    testifylint:
+      enable-all: true
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: add-constant
+          exclude: [ "**/*_test.go" ]
+          disabled: true
+        - name: blank-imports
+        - name: cognitive-complexity
+          exclude: [ "**/*_test.go" ]
+          disabled: true
+        - name: cyclomatic
+          exclude: [ "**/*_test.go" ]
+          disabled: true
+        - name: early-return
+          arguments:
+            - preserveScope
+        - name: exported
+          disabled: true
+        - name: function-length
+          exclude: [ "**/*_test.go" ]
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: superfluous-else
+          arguments:
+            - preserveScope
+        - name: unchecked-type-assertion
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+          yaml: camel
+          xml: camel
+          toml: camel
+          bson: camel
+          avro: snake
+          mapstructure: kebab
+          env: upperSnake
+          envconfig: upperSnake
+    unparam:
+      check-exported: true
+    unused:
+      exported-fields-are-used: false
+    forbidigo:
+      analyze-types: true
+      exclude-godoc-examples: false
+      forbid:
+        - pattern: ^print(ln)?$
+          msg: do not commit print statements
+        - pattern: ^fmt\.Print.*$
+          msg: Do not commit print statements.
+        - pattern: log.Fatal
+          msg: use zap instead
+        - pattern: ^os.Exit$
+          msg: return errors and exit from main()
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          deny:
+            - pkg: "math/rand$"
+              desc: use math/rand/v2
+            - pkg: "github.com/sirupsen/logrus"
+              desc: use zap
+            - pkg: "github.com/pkg/errors"
+              desc: should be replaced by standard lib errors package
+            - pkg: "io/ioutil"
+              desc: deprecated
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - cyclop
+          - dupl
+          - forcetypeassert
+          - funlen
+          - gochecknoglobals
+          - goconst
+          - maintidx
+          - tagliatelle
+          - unparam
+      - path: mocks/*
+        linters:
+          - forcetypeassert
+          - mnd
+          - gocritic
+      - path: internal/server/*
+        linters:
+          - dupl  # this code is not duplicate, it uses generics
+      - path: internal/connection/*
+        linters:
+          - tagliatelle
+      - path: internal/integration/*
+        linters:
+          - tagliatelle
+      - linters:
+          - lll
+        path: internal/*
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra-rules: false
+    gofmt:
+      simplify: true
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+        - pattern: 'a[b:len(a)]'
+          replacement: 'a[b:]'
