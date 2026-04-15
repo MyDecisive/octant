@@ -1,22 +1,18 @@
 # syntax=docker/dockerfile:1
 ARG GO_VERSION=1.25
 
-FROM node:lts-alpine as ui-builder
-WORKDIR /web
-COPY --from=ui-repo . .
-RUN npm install && npm run build
+FROM ghcr.io/mydecisive/octant-ui:latest as ui-builder
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-bookworm AS binary-builder
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
-
 COPY --link go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 COPY --link . .
-COPY --from=ui-builder /web/dist ./web
+COPY --from=ui-builder /usr/share/nginx/html ./web/dist/
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \

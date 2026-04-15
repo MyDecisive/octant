@@ -38,8 +38,7 @@ func main() {
 
 	apiRouter := http.NewServeMux()
 	apiRouter.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
-		_, err = writer.Write([]byte("OK"))
-		if err != nil {
+		if _, err = writer.Write([]byte("OK")); err != nil {
 			logger.Error("failed to write health response", zap.Error(err))
 		}
 	})

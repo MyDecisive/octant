@@ -39,4 +39,4 @@ spec:
         - name: HTTP_PORT
           value: "{{ .Values.deployment.containerPort }}"
         - name: PROMETHEUS_ENDPOINT
-          value: http://kube-prometheus-stack-prometheus.mdai.svc.cluster.local:9090
+          value: "{{ .Values.deployment.prometheusEndpoint }}"

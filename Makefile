@@ -6,8 +6,8 @@ GOTOOLCHAIN ?= go1.25.0
 GO := CGO_ENABLED=0 GOTOOLCHAIN=$(GOTOOLCHAIN) go
 GO_TEST := $(GO) test -count=1
 
-docker-login docker-build docker-push: AWS_ECR_REPO := public.ecr.aws/decisiveai
-docker-build docker-push: DOCKER_IMAGE := $(AWS_ECR_REPO)/$(REPO_NAME):$(DOCKER_TAG)
+docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
+docker-build docker-push: DOCKER_IMAGE ?= $(AWS_ECR_REPO)/$(REPO_NAME):$(DOCKER_TAG)
 
 .PHONY: docker-login
 docker-login:
@@ -15,11 +15,11 @@ docker-login:
 
 .PHONY: docker-build
 docker-build: tidy
-	docker buildx build --platform $(BUILD_PLATFORMS) -t $(DOCKER_IMAGE) . --load --build-context ui-repo=https://github.com/MyDecisive/octant-ui.git#main
+	docker buildx build --platform $(BUILD_PLATFORMS) -t $(DOCKER_IMAGE) . --load
 
 .PHONY: docker-push
 docker-push: tidy docker-login
-	docker buildx build --platform $(BUILD_PLATFORMS) -t $(DOCKER_IMAGE) . --push --build-context ui-repo=https://github.com/MyDecisive/octant-ui.git#main
+	docker buildx build --platform $(BUILD_PLATFORMS) -t $(DOCKER_IMAGE) . --push
 
 .PHONY: build
 build: tidy
