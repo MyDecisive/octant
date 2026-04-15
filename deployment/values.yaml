@@ -18,7 +18,7 @@ deployment:
   prometheusEndpoint: "http://kube-prometheus-stack-prometheus:9090"
 
 image:
-  repository: public.ecr.aws/decisiveai/octant
+  repository: ghcr.io/mydecisive/octant
   # tag: 0.0.1
 
 service:
