@@ -1,0 +1,29 @@
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: "octant"
+  integrationSecretNames:
+    - "mdai-datadog-integration"
+    - "mdai-argocd-integration"
+
+deployment:
+  name: octant
+  replicas: 1
+  containerPort: 5678
+  tolerations: []
+  nodeSelector: {}
+  affinity: {}
+  annotations: {}
+  prometheusEndpoint: "http://kube-prometheus-stack-prometheus:9090"
+
+image:
+  repository: ghcr.io/mydecisive/octant
+  # tag: 0.0.1
+
+service:
+  name: octant
+  replicas: 1
+  port: 5678
+  targetPort: 5678
+  type: ClusterIP
