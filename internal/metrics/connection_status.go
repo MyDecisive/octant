@@ -21,6 +21,47 @@ const (
 	Egress
 )
 
+type collectorMetric string
+
+const (
+	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
+	logsSentMetric        collectorMetric = "otelcol_exporter_sent_log_records_total"
+	metricsAcceptedMetric collectorMetric = "otelcol_receiver_accepted_metric_points_total"
+	metricsSentMetric     collectorMetric = "otelcol_exporter_sent_metric_points_total"
+	spansAcceptedMetric   collectorMetric = "otelcol_receiver_accepted_spans_total"
+	spansSentMetric       collectorMetric = "otelcol_exporter_sent_spans_total"
+)
+
+func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {
+	// this is fugly, but gochecknoglobals decreed that my map was no good 🙃
+	switch telemetryType {
+	case telemetry.Logs:
+		if ie == Ingress {
+			return logsAcceptedMetric
+		}
+		return logsSentMetric
+	case telemetry.Metrics:
+		if ie == Ingress {
+			return metricsAcceptedMetric
+		}
+		return metricsSentMetric
+	case telemetry.Traces:
+		if ie == Ingress {
+			return spansAcceptedMetric
+		}
+		return spansSentMetric
+	default:
+		return ""
+	}
+}
+
+func (ie IngressEgress) getComponentType() string {
+	if ie == Ingress {
+		return "receiver"
+	}
+	return "exporter"
+}
+
 const (
 	fidelityCheckFail = "fail"
 	fidelityCheckPass = "pass"
@@ -28,7 +69,7 @@ const (
 	fidelityMetricResult = "result"
 	fidelityMetricSignal = "signal"
 
-	tenMinutes = 10 * time.Minute
+	tenMinutes = 10 * time.Minute //nolint: revive
 )
 
 type ConnectionStatus struct {
@@ -94,48 +135,41 @@ func dataFidelityCheck(logger *zap.Logger, resultMatrix model.Matrix, telemetryT
 	return true
 }
 
+func buildQuery(connectionName string, ingressEgress IngressEgress, telemetryType telemetry.MLT) string {
+	return fmt.Sprintf(
+		"increase(%s{%s=%q, mdai_connection=%q, service_name=%q}[10m])",
+		ingressEgress.getCollectorMLTMetric(telemetryType),
+		ingressEgress.getComponentType(),
+		"datadog", connectionName,
+		connectionName+"-collector",
+	)
+}
+
 func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
 	for _, connectionType := range telemetryTypes {
 		var promQuery string
 		switch connectionType {
 		case telemetry.Logs:
-			promQuery = lo.Ternary(
-				ie == Ingress,
-				fmt.Sprintf("otelcol_receiver_accepted_log_records_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
-				fmt.Sprintf("otelcol_exporter_sent_log_records{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
-			)
+			promQuery = buildQuery(connectionName, ie, telemetry.Logs)
 		case telemetry.Traces:
-			promQuery = lo.Ternary(
-				ie == Ingress,
-				fmt.Sprintf("otelcol_receiver_accepted_spans_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
-				fmt.Sprintf("otelcol_exporter_sent_spans{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
-			)
+			promQuery = buildQuery(connectionName, ie, telemetry.Traces)
 		case telemetry.Metrics:
-			promQuery = lo.Ternary(
-				ie == Ingress,
-				fmt.Sprintf("otelcol_receiver_accepted_metric_points_total{receiver=%q, mdai_connection=%q}", "datadog", connectionName),
-				fmt.Sprintf("otelcol_exporter_sent_metric_points{exporter=%q, mdai_connection=%q}", "datadog", connectionName),
-			)
+			promQuery = buildQuery(connectionName, ie, telemetry.Metrics)
 		default:
 			return false, fmt.Errorf("unknown telemetry type: %s", connectionType)
 		}
 
-		// TODO: figure out how to query a label to get EXACTLY the collector we want to look at, don't want to sum across multiple collectors
 		// compare the last minute of results
-		results, _, err := cs.promClient.QueryRange(ctx, promQuery, promv1.Range{
-			Start: time.Now().Add(-1 * time.Minute),
-			End:   time.Now(),
-			Step:  time.Minute,
-		})
+		results, _, err := cs.promClient.Query(ctx, promQuery, time.Now())
 		if err != nil {
 			return false, fmt.Errorf("failed to query prometheus: %w", err)
 		}
 
-		var metricsIncreasing bool
-		metricsIncreasing, err = areMatrixValuesIncreasing(results)
-		if err != nil {
-			return false, fmt.Errorf("analyzing query range results: %w", err)
+		resultVector, ok := results.(model.Vector)
+		if !ok || len(resultVector) == 0 {
+			return false, nil
 		}
+		metricsIncreasing := float64(resultVector[0].Value) > 0
 
 		// return immediately if one of the telemetry types isn't increasing, we don't need to keep checking
 		if !metricsIncreasing {

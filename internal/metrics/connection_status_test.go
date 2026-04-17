@@ -254,7 +254,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
@@ -268,20 +268,13 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		require.ErrorContains(t, err, "failed to query prometheus")
 	})
 
-	t.Run("error - invalid query results", func(t *testing.T) {
+	t.Run("empty query results", func(t *testing.T) {
 		t.Parallel()
 
-		queryResults := model.Vector{
-			{
-				Value: model.SampleValue(1.23),
-			},
-			{
-				Value: model.SampleValue(1.32),
-			},
-		}
+		queryResults := model.Vector{}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(queryResults, nil, nil).
 			Times(1)
 
@@ -292,53 +285,29 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
-		require.ErrorContains(t, err, "analyzing query range results")
+		require.NoError(t, err)
 	})
 
 	t.Run("happy path - not increasing", func(t *testing.T) {
 		t.Parallel()
 
-		logsResults := model.Matrix{
+		logsResults := model.Vector{
 			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(2.23),
-					},
-				},
-			},
-			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(1.24),
-					},
-				},
+				Value: model.SampleValue(1.23), // > 0 means increasing
 			},
 		}
-		tracesResults := model.Matrix{
+		tracesResults := model.Vector{
 			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(1.21),
-					},
-				},
+				Value: model.SampleValue(0.0), // <= 0 means NOT increasing
 			},
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 
@@ -355,73 +324,32 @@ func TestIsTelemetryFlowing(t *testing.T) {
 	t.Run("happy path - increasing", func(t *testing.T) {
 		t.Parallel()
 
-		logsResults := model.Matrix{
+		logsResults := model.Vector{
 			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(2.23),
-					},
-				},
-			},
-			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(1.22),
-					},
-				},
+				Value: model.SampleValue(1.23), // > 0
 			},
 		}
-		tracesResults := model.Matrix{
+		tracesResults := model.Vector{
 			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(0.23),
-					},
-				},
-			},
-			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(1.24),
-					},
-				},
+				Value: model.SampleValue(1.23), // > 0
 			},
 		}
-		metricsResults := model.Matrix{
+		metricsResults := model.Vector{
 			{
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.23),
-					},
-					{
-						Value: model.SampleValue(2.23),
-					},
-				},
+				Value: model.SampleValue(1.23), // > 0
 			},
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_log_records_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_spans_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "otelcol_receiver_accepted_metric_points_total{receiver=\"datadog\", mdai_connection=\"foobar\"}", mock.Anything).
+			Query(mock.Anything, `increase(otelcol_receiver_accepted_metric_points_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
 			Return(metricsResults, nil, nil).
 			Times(1)
 
@@ -599,5 +527,64 @@ func TestVerifyDataFidelity(t *testing.T) {
 		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Traces})
 		require.NoError(t, err)
 		require.True(t, result)
+	})
+}
+
+func TestGetCollectorMetric(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		telemetryType telemetry.MLT
+		ingressEgress IngressEgress
+		expected      collectorMetric
+	}{
+		{"Logs Ingress", telemetry.Logs, Ingress, logsAcceptedMetric},
+		{"Logs Egress", telemetry.Logs, Egress, logsSentMetric},
+		{"Metrics Ingress", telemetry.Metrics, Ingress, metricsAcceptedMetric},
+		{"Metrics Egress", telemetry.Metrics, Egress, metricsSentMetric},
+		{"Traces Ingress", telemetry.Traces, Ingress, spansAcceptedMetric},
+		{"Traces Egress", telemetry.Traces, Egress, spansSentMetric},
+		{"Unknown Type", "unknown", Ingress, ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			actual := tc.ingressEgress.getCollectorMLTMetric(tc.telemetryType)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestGetReceiverExporter(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Ingress returns receiver", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(t, "receiver", Ingress.getComponentType())
+	})
+
+	t.Run("Egress returns exporter", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(t, "exporter", Egress.getComponentType())
+	})
+}
+
+func TestBuildQuery(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Logs Ingress", func(t *testing.T) {
+		t.Parallel()
+		expected := `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])`
+		actual := buildQuery("my-conn", Ingress, telemetry.Logs)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("Traces Egress", func(t *testing.T) {
+		t.Parallel()
+		expected := `increase(otelcol_exporter_sent_spans_total{exporter="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])`
+		actual := buildQuery("my-conn", Egress, telemetry.Traces)
+		assert.Equal(t, expected, actual)
 	})
 }
