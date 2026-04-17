@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,11 +18,14 @@ type DataDogIntegrationData struct {
 	DDUrl  string `json:"url"`
 }
 
-func (ddid *DataDogIntegrationData) ToFields() map[string]any {
-	return map[string]any{
-		"apiKey": ddid.APIKey,
-		"url":    ddid.DDUrl,
+func (d DataDogIntegrationData) IsKnownDatadogTLD() bool {
+	knownDatadogSites := []string{"datadoghq.com", "datadoghq.eu", "ddog-gov.com"}
+	for _, site := range knownDatadogSites {
+		if strings.Contains(d.DDUrl, site) {
+			return true
+		}
 	}
+	return false
 }
 
 type DataDogIntegration struct {
