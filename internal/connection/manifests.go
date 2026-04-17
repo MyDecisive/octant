@@ -76,7 +76,16 @@ func CreateExportableArgoManifests(namespace string, name string, connection Oct
 	if err != nil {
 		return nil, err
 	}
-	return renderCollectorDeploymentManifests(templateData, format)
+	manifests, err := renderCollectorDeploymentManifests(templateData, format)
+	if err != nil {
+		return nil, err
+	}
+	appManifest, err := renderArgoAppManifest(templateData, format)
+	if err != nil {
+		return nil, err
+	}
+	manifests[fmt.Sprintf("argo-app.%s", format)] = appManifest
+	return manifests, nil
 }
 
 // CreateExportableTemplateData TODO: Combine these template data methods instead of copypasta

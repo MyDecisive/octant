@@ -313,6 +313,15 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 	manifests, err := CreateExportableArgoManifests("test-namespace", "test-app", connection, YAMLOutputFormat)
 	require.NoError(t, err)
 
+	_, hasCollector := manifests["collector.yaml"]
+	assert.True(t, hasCollector, "collector.yaml should exist")
+	_, hasSecret := manifests["secret.yaml"]
+	assert.True(t, hasSecret, "secret.yaml should exist")
+	_, hasValidator := manifests["validator.yaml"]
+	assert.True(t, hasValidator, "validator.yaml should exist")
+	_, hasArgoApp := manifests["argo-app.yaml"]
+	assert.True(t, hasArgoApp, "argo-app.yaml should exist")
+
 	secretBytes, exists := (manifests)["secret.yaml"]
 	require.True(t, exists, "Exportable secret manifest missing")
 
