@@ -29,17 +29,21 @@ spec:
     receivers:
       datadog:
         endpoint: "0.0.0.0:8126"
-    processors:
-      batch:
-        send_batch_size: 1000
-        timeout: 10s
     exporters:
-      {{- if .DatadogIntegrationData }}
+     {{- if .DatadogIntegrationData }}
       datadog:
         api:
-          key: "${env:DD_API_KEY}"
+          key: ${env:DD_API_KEY}
           site: "${env:DD_SITE}"
-      {{- end }}
+        {{- if not .DatadogIntegrationData.IsKnownDatadogTLD }}
+        traces:
+          endpoint: "http://${env:DD_SITE}:8126"
+        logs:
+          endpoint: "http://${env:DD_SITE}:8126"
+        metrics:
+          endpoint: "http://${env:DD_SITE}:8126"
+        {{- end }}
+     {{- end }}
     service:
       telemetry:
         resource:
@@ -60,6 +64,5 @@ spec:
         {{- range .ConnectionData.TelemetryTypes }}
           {{ . }}:
             receivers: [datadog]
-            processors: [batch]
             exporters: [datadog]
         {{- end }}
