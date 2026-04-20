@@ -9,7 +9,7 @@ import (
 func setup() (*zap.Logger, *config.Configuration, func()) {
 	configuration, err := config.Read()
 	if err != nil {
-		log.Fatalf("reading config: %w\n", err) // nolint:forbidigo // zap not setup yet
+		log.Fatalf("reading config: %v\n", err) // nolint:forbidigo // zap not setup yet
 	}
 
 	// Setup logger

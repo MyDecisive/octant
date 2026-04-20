@@ -14,5 +14,6 @@ func main() {
 
 	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(), rpchandler.NewInstallHandler())
 
+	logger.Info("starting RPC server", zap.Int("port", int(configuration.RPC.Port)))
 	logger.Fatal("starting server", zap.Error(rpcServer.Start()))
 }

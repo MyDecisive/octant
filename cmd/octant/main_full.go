@@ -47,7 +47,6 @@ func main() {
 	mainRouter.Handle("/", http.FileServerFS(octantApp))
 
 	httpPort := helpers.GetEnvVariableWithDefault(httpPortEnvVarKey, defaultHTTPPort)
-	logger.Info("starting server", zap.String("address", ":"+httpPort))
 
 	httpServer := &http.Server{
 		Addr:              ":" + httpPort,
@@ -77,9 +76,11 @@ func main() {
 
 	// Start servers
 	g.Go(func() error {
+		logger.Info("starting RPC server", zap.Int("port", int(configuration.RPC.Port)))
 		return fmt.Errorf("rpc server: %w", rpcServer.Start())
 	})
 	g.Go(func() error {
+		logger.Info("starting UI server", zap.String("port", httpPort))
 		return fmt.Errorf("UI server: %w", httpServer.ListenAndServe())
 	})
 
