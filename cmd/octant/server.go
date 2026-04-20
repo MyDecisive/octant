@@ -1,23 +1,38 @@
 package main
 
 import (
-	"net/http"
-
+	"github.com/mydecisive/octant/internal/config"
 	"go.uber.org/zap"
+	"log"
 )
 
-func setupRouter(logger *zap.Logger) *http.ServeMux {
-	mainRouter := http.NewServeMux()
+func setup() (*zap.Logger, *config.Configuration, func()) {
+	configuration, err := config.Read()
+	if err != nil {
+		log.Fatalf("reading config: %w\n", err) // nolint:forbidigo // zap not setup yet
+	}
 
-	apiRouter := http.NewServeMux()
-	apiRouter.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
-		_, err := writer.Write([]byte("OK"))
+	// Setup logger
+	var logger *zap.Logger
+	if configuration.Env == config.Prod {
+		logger, err = zap.NewProduction()
 		if err != nil {
-			logger.Error("failed to write health response", zap.Error(err))
+			log.Fatalf("Setup logger: %v\n", err) // nolint:forbidigo // zap not setup yet
 		}
-	})
+	} else {
+		logger, err = zap.NewDevelopment()
+		if err != nil {
+			log.Fatalf("Setup logger: %v\n", err) // nolint:forbidigo // zap not setup yet
+		}
+	}
 
-	// octant API
-	mainRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", apiRouter))
-	return mainRouter
+	undo := zap.ReplaceGlobals(logger)
+	reset := zap.RedirectStdLog(logger)
+	return logger, configuration, func() {
+		if err = logger.Sync(); err != nil {
+			logger.Error("syncing logger", zap.Error(err))
+		}
+		undo()
+		reset()
+	}
 }

@@ -4,8 +4,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"github.com/mydecisive/octant/internal/rpc"
+	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sys/unix"
 	"io/fs"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/mydecisive/mdai-data-core/helpers"
@@ -25,12 +33,10 @@ const (
 )
 
 func main() {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
+	logger, configuration, cleanup := setup()
+	defer cleanup()
 
-	mainRouter := setupRouter(logger)
+	mainRouter := http.NewServeMux()
 
 	octantApp, err := fs.Sub(web.App, "dist")
 	if err != nil {
@@ -52,5 +58,32 @@ func main() {
 		IdleTimeout:       defaultIdleTimeout,
 	}
 
-	logger.Fatal("failed to start server", zap.Error(httpServer.ListenAndServe()))
+	// Init Servers
+	g, _ := errgroup.WithContext(context.Background())
+	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(), rpchandler.NewInstallHandler())
+
+	// Setup graceful shutdown
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGTSTP)
+	go func() {
+		<-sigs
+		signal.Stop(sigs)
+		close(sigs)
+
+		// Stop whole system
+		logger.Info("shutting down servers...")
+		os.Exit(0) // nolint: forbidigo
+	}()
+
+	// Start servers
+	g.Go(func() error {
+		return fmt.Errorf("rpc server: %w", rpcServer.Start())
+	})
+	g.Go(func() error {
+		return fmt.Errorf("UI server: %w", httpServer.ListenAndServe())
+	})
+
+	if err = g.Wait(); err != nil {
+		logger.Fatal("starting servers", zap.Error(err))
+	}
 }

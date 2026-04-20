@@ -3,42 +3,16 @@
 package main
 
 import (
-	"net/http"
-	"time"
-
-	"github.com/mydecisive/mdai-data-core/helpers"
+	"github.com/mydecisive/octant/internal/rpc"
+	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"go.uber.org/zap"
 )
 
-const (
-	httpPortEnvVarKey = "HTTP_PORT"
-	defaultHTTPPort   = "5678"
-
-	defaultReadHeaderTimeout = 5 * time.Second
-	defaultReadTimeout       = 10 * time.Second
-	defaultWriteTimeout      = 10 * time.Second
-	defaultIdleTimeout       = 120 * time.Second
-)
-
 func main() {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
+	logger, configuration, cleanup := setup()
+	defer cleanup()
 
-	mainRouter := setupRouter(logger)
+	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(), rpchandler.NewInstallHandler())
 
-	httpPort := helpers.GetEnvVariableWithDefault(httpPortEnvVarKey, defaultHTTPPort)
-	logger.Info("starting server", zap.String("address", ":"+httpPort))
-
-	httpServer := &http.Server{
-		Addr:              ":" + httpPort,
-		Handler:           mainRouter,
-		ReadHeaderTimeout: defaultReadHeaderTimeout,
-		ReadTimeout:       defaultReadTimeout,
-		WriteTimeout:      defaultWriteTimeout,
-		IdleTimeout:       defaultIdleTimeout,
-	}
-
-	logger.Fatal("failed to start server", zap.Error(httpServer.ListenAndServe()))
+	logger.Fatal("starting server", zap.Error(rpcServer.Start()))
 }
