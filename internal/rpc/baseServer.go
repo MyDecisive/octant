@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
+	"connectrpc.com/otelconnect"
 	"connectrpc.com/validate"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -49,7 +50,13 @@ func (BaseServer) Run(
 
 // GetInterceptors returns list of interceptors to be applied to all services as an option.
 func (BaseServer) GetInterceptors() (connect.Option, error) {
-	interceptor := validate.NewInterceptor()
+	validateInterceptor := validate.NewInterceptor()
+	otelInterceptor, err := otelconnect.NewInterceptor(
+		otelconnect.WithoutServerPeerAttributes(), // https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create otelconnect interceptor: %w", err)
+	}
 
-	return connect.WithInterceptors(interceptor), nil
+	return connect.WithInterceptors(validateInterceptor, otelInterceptor), nil
 }

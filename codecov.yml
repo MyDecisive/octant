@@ -1,0 +1,9 @@
+coverage:
+  status:
+    patch:
+      default:
+        target: 75%
+ignore:
+  - "cmd/"
+  - "internal/config"
+  - "web/"
