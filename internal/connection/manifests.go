@@ -18,6 +18,9 @@ var argoAppTemplate string
 //go:embed templates/collector.yaml.tmpl
 var primaryCollectorTemplate string
 
+//go:embed templates/hub.yaml.tmpl
+var hubTemplate string
+
 //go:embed templates/validator.yaml.tmpl
 var validatorTemplate string
 
@@ -148,6 +151,7 @@ func renderCollectorDeploymentManifests(templateData *ArgoTemplateData, outputFo
 	manifests := make(map[string][]byte)
 	for templateName, templateString := range map[string]string{
 		"collector": primaryCollectorTemplate,
+		"hub":       hubTemplate,
 		"validator": validatorTemplate,
 		"secret":    secretTemplate,
 	} {

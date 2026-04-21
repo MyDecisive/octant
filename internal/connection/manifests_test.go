@@ -61,6 +61,7 @@ func TestRenderManifestFormats(t *testing.T) {
 
 			expectedFiles := []string{
 				fmt.Sprintf("collector.%s", format),
+				fmt.Sprintf("hub.%s", format),
 				fmt.Sprintf("validator.%s", format),
 				fmt.Sprintf("secret.%s", format),
 			}
@@ -298,6 +299,48 @@ func TestRenderValidatorManifest(t *testing.T) {
 	})
 }
 
+func TestRenderHubManifest(t *testing.T) {
+	t.Run("With Signals", func(t *testing.T) {
+		templateData := ArgoTemplateData{
+			AppName: "test-app",
+			ConnectionData: OctantConnectionData{
+				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
+			},
+			DatadogIntegrationData: &integration.DataDogIntegrationData{
+				DDUrl: "https://datadoghq.com",
+			},
+		}
+
+		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		require.NoError(t, err)
+		hubBytes := (manifests)["hub.yaml"]
+
+		var hub map[string]any
+		require.NoError(t, yaml.Unmarshal(hubBytes, &hub))
+
+		spec := hub["spec"].(map[string]any)
+		if variablesRaw, hasVar := spec["variables"]; hasVar && variablesRaw != nil {
+			varSlice := variablesRaw.([]any)
+			logRatio := varSlice[0].(map[string]any)
+			assert.Equal(t, "logs_ratio_number", logRatio["key"])
+			assert.Equal(t, "string", logRatio["dataType"])
+			assert.Contains(t, "LOGS_RATIO_NUMBER", logRatio["serializeAs"].([]any)[0].(map[string]any)["name"])
+			logErr := varSlice[1].(map[string]any)
+			assert.Equal(t, "logs_persist_errors", logErr["key"])
+			assert.Equal(t, "boolean", logErr["dataType"])
+			assert.Contains(t, "LOGS_PERSIST_ERRORS", logErr["serializeAs"].([]any)[0].(map[string]any)["name"])
+			traceRatio := varSlice[2].(map[string]any)
+			assert.Equal(t, "traces_ratio_number", traceRatio["key"])
+			assert.Equal(t, "string", traceRatio["dataType"])
+			assert.Contains(t, "TRACES_RATIO_NUMBER", traceRatio["serializeAs"].([]any)[0].(map[string]any)["name"])
+			traceErr := varSlice[3].(map[string]any)
+			assert.Equal(t, "traces_persist_errors", traceErr["key"])
+			assert.Equal(t, "boolean", traceErr["dataType"])
+			assert.Contains(t, "TRACES_PERSIST_ERRORS", traceErr["serializeAs"].([]any)[0].(map[string]any)["name"])
+		}
+	})
+}
+
 func TestCreateExportableArgoManifests(t *testing.T) {
 	t.Parallel()
 
@@ -315,6 +358,8 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 
 	_, hasCollector := manifests["collector.yaml"]
 	assert.True(t, hasCollector, "collector.yaml should exist")
+	_, hasHub := manifests["hub.yaml"]
+	assert.True(t, hasHub, "hub.yaml should exist")
 	_, hasSecret := manifests["secret.yaml"]
 	assert.True(t, hasSecret, "secret.yaml should exist")
 	_, hasValidator := manifests["validator.yaml"]
