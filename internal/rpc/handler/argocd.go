@@ -44,13 +44,15 @@ func (ah *ArgoCDHandler) TestConnection(
 		AuthToken:  argoAccountToken,
 		Insecure:   ah.config.Env == config.Dev, // ignore certs in localdev
 	}
-	success := ah.argoClient.TestConnection(ctx, logger, clientOpts)
+	success, err := ah.argoClient.TestConnection(ctx, logger, clientOpts)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
-	return &connect.Response[octantv1alpha.TestConnectionResponse]{
-		Msg: &octantv1alpha.TestConnectionResponse{
+	return connect.NewResponse[octantv1alpha.TestConnectionResponse](
+		&octantv1alpha.TestConnectionResponse{
 			Success: success,
-		},
-	}, nil
+		}), nil
 }
 
 func (ah *ArgoCDHandler) SaveArgoConnection(

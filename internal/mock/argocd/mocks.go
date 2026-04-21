@@ -40,7 +40,7 @@ func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 }
 
 // TestConnection provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) bool {
+func (_mock *MockAPIClient) TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error) {
 	ret := _mock.Called(ctx, logger, clientOpts)
 
 	if len(ret) == 0 {
@@ -48,12 +48,21 @@ func (_mock *MockAPIClient) TestConnection(ctx context.Context, logger *zap.Logg
 	}
 
 	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) (bool, error)); ok {
+		return returnFunc(ctx, logger, clientOpts)
+	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) bool); ok {
 		r0 = returnFunc(ctx, logger, clientOpts)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) error); ok {
+		r1 = returnFunc(ctx, logger, clientOpts)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockAPIClient_TestConnection_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'TestConnection'
@@ -92,12 +101,12 @@ func (_c *MockAPIClient_TestConnection_Call) Run(run func(ctx context.Context, l
 	return _c
 }
 
-func (_c *MockAPIClient_TestConnection_Call) Return(b bool) *MockAPIClient_TestConnection_Call {
-	_c.Call.Return(b)
+func (_c *MockAPIClient_TestConnection_Call) Return(b bool, err error) *MockAPIClient_TestConnection_Call {
+	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *MockAPIClient_TestConnection_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) bool) *MockAPIClient_TestConnection_Call {
+func (_c *MockAPIClient_TestConnection_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error)) *MockAPIClient_TestConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }
