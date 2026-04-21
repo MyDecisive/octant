@@ -12,7 +12,7 @@ func main() {
 	logger, configuration, cleanup := setup()
 	defer cleanup()
 
-	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(), rpchandler.NewInstallHandler())
+	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(configuration), rpchandler.NewInstallHandler())
 
 	logger.Info("starting RPC server", zap.Int("port", int(configuration.RPC.Port)))
 	logger.Fatal("starting server", zap.Error(rpcServer.Start()))

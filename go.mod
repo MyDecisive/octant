@@ -12,6 +12,7 @@ require (
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mydecisive/mdai-data-core v0.3.1
+	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.48.0

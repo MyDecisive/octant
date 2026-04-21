@@ -59,7 +59,7 @@ func main() {
 
 	// Init Servers
 	g, _ := errgroup.WithContext(context.Background())
-	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(), rpchandler.NewInstallHandler())
+	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(configuration), rpchandler.NewInstallHandler())
 
 	// Setup graceful shutdown
 	sigs := make(chan os.Signal, 1)
