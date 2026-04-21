@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/mydecisive/mdai-gateway/internal/integration"
-	"github.com/mydecisive/mdai-gateway/internal/metrics"
-	"github.com/mydecisive/mdai-gateway/internal/telemetry"
+	"github.com/mydecisive/octant/internal/integration"
+	"github.com/mydecisive/octant/internal/metrics"
+	"github.com/mydecisive/octant/internal/telemetry"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

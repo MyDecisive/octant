@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mydecisive/mdai-gateway/internal/integration"
-	integrationmock "github.com/mydecisive/mdai-gateway/internal/mock/integration"
-	"github.com/mydecisive/mdai-gateway/internal/telemetry"
+	"github.com/mydecisive/octant/internal/integration"
+	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/prometheus/client_golang/api"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/stretchr/testify/assert"

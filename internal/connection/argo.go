@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mydecisive/mdai-gateway/internal/integration"
+	"github.com/mydecisive/octant/internal/integration"
 )
 
 type argoApp struct {

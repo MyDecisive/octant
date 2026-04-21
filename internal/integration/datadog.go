@@ -34,7 +34,7 @@ type DataDogIntegration struct {
 
 var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 
-// GetIntegrations retrieves any existing integrations in the provided namespace for the "mdai-gateway-integration" secret.
+// GetIntegrations retrieves any existing integrations in the provided namespace for the "octant-integration" secret.
 func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]DataDogIntegrationData, error) {
 	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
@@ -56,7 +56,7 @@ func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace st
 	return integrations, nil
 }
 
-// GetIntegrationByName retrieves the existing integration in the provided namespace for the "mdai-gateway-integration" secret, if it exists.
+// GetIntegrationByName retrieves the existing integration in the provided namespace for the "octant-integration" secret, if it exists.
 func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespace, name string) (*DataDogIntegrationData, error) {
 	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
@@ -77,7 +77,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespa
 	return &payload, nil
 }
 
-// SetIntegration adds or updates the "mdai-gateway-integration" secret for the provided namespace.
+// SetIntegration adds or updates the "octant-integration" secret for the provided namespace.
 func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, integrationName string, integrationData DataDogIntegrationData) error {
 	jsonData, err := json.Marshal(integrationData)
 	if err != nil {
@@ -98,7 +98,7 @@ func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, in
 	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, secret, integrationName, jsonData)
 }
 
-// DeleteIntegration removes a named integration from the "mdai-gateway-integration" secret in the provided namespace.
+// DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.
 func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, namespace, integrationName string) error {
 	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {

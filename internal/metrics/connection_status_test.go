@@ -3,9 +3,9 @@ package metrics
 import (
 	"testing"
 
-	v1mock "github.com/mydecisive/mdai-gateway/internal/mock/v1"
-	"github.com/mydecisive/mdai-gateway/internal/telemetry"
-	"github.com/mydecisive/mdai-gateway/internal/test"
+	v1mock "github.com/mydecisive/octant/internal/mock/v1"
+	"github.com/mydecisive/octant/internal/telemetry"
+	"github.com/mydecisive/octant/internal/test"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

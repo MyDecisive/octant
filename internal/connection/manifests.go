@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/mydecisive/mdai-gateway/internal/integration"
+	"github.com/mydecisive/octant/internal/integration"
 	"sigs.k8s.io/yaml"
 )
 

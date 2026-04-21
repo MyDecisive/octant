@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/mydecisive/mdai-gateway/internal/telemetry"
+	"github.com/mydecisive/octant/internal/telemetry"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/samber/lo"

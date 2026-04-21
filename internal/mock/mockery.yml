@@ -7,10 +7,10 @@ pkgname: '{{.SrcPackageName}}mock'
 recursive: false
 template: testify
 packages:
-  github.com/mydecisive/mdai-gateway/internal/integration:
+  github.com/mydecisive/octant/internal/integration:
     interfaces:
       Integration:
-  github.com/mydecisive/mdai-gateway/internal/connection:
+  github.com/mydecisive/octant/internal/connection:
     interfaces:
       Connection:
   github.com/prometheus/client_golang/api/prometheus/v1:

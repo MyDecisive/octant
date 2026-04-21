@@ -7,7 +7,7 @@ package connectionmock
 import (
 	"context"
 
-	"github.com/mydecisive/mdai-gateway/internal/connection"
+	"github.com/mydecisive/octant/internal/connection"
 	mock "github.com/stretchr/testify/mock"
 )
 
