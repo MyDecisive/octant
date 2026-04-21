@@ -16,7 +16,6 @@ type mockAppServerV3 struct {
 	application.UnimplementedApplicationServiceServer
 }
 
-// Ensure the signature matches v3 (v3 often uses context.Context as the first param)
 func (m *mockAppServerV3) List(ctx context.Context, req *application.ApplicationQuery) (*v1alpha1.ApplicationList, error) {
 	return &v1alpha1.ApplicationList{}, nil
 }
