@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"golang.org/x/sync/errgroup"
@@ -59,7 +60,11 @@ func main() {
 
 	// Init Servers
 	g, _ := errgroup.WithContext(context.Background())
-	rpcServer := rpc.NewServer(*configuration, rpchandler.NewArgoCDHandler(configuration), rpchandler.NewInstallHandler())
+	rpcServer := rpc.NewServer(
+		*configuration,
+		rpchandler.NewArgoCDHandler(configuration, argocd.NewArgoCDClient()),
+		rpchandler.NewInstallHandler(),
+	)
 
 	// Setup graceful shutdown
 	sigs := make(chan os.Signal, 1)

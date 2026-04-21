@@ -6,4 +6,5 @@ coverage:
 ignore:
   - "cmd/"
   - "internal/config"
+  - "internal/mock"
   - "web/"
