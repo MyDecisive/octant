@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/mydecisive/octant/internal/integration"
@@ -538,14 +536,7 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 	})
 
 	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bodyBytes, _ := io.ReadAll(r.Body)
-		defer r.Body.Close() // nolint: errcheck
-		bodyString := string(bodyBytes)
-
-		responseString := `{"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1712419691,"5"]}]}}`
-		if strings.Contains(bodyString, "mdai_fidelity_required_signal_checks_total") {
-			responseString = `{"status":"success","data":{"resultType":"matrix","result":[{"metric":{},"values":[[1712419691,"5"], [1712419751,"10"]]}]}}`
-		}
+		responseString := `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"signal":"logs","result":"pass"},"value":[1712419691,"5"]}]}}`
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -572,6 +563,7 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 	require.NotNil(t, status)
 	assert.True(t, status.ReceivingData)
 	assert.True(t, status.SendingData)
+	assert.True(t, status.DataIntegrity)
 }
 
 func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {

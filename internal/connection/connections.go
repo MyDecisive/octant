@@ -3,6 +3,8 @@ package connection
 import (
 	"context"
 	"fmt"
+	"github.com/mydecisive/octant/internal/metrics"
+	"github.com/mydecisive/octant/internal/telemetry"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,10 +14,11 @@ import (
 const connectionsConfigmapName = "mdai-octant-connections"
 
 type Status struct {
-	ReceivingData bool   `json:"receivingData"`
-	SendingData   bool   `json:"sendingData"`
-	DataIntegrity bool   `json:"dataIntegrity"`
-	Details       string `json:"details"`
+	ReceivingData     bool                                       `json:"receivingData"`
+	SendingData       bool                                       `json:"sendingData"`
+	DataIntegrity     bool                                       `json:"dataIntegrity"`
+	Details           string                                     `json:"details"`
+	ValidationResults map[telemetry.MLT]metrics.ValidationResult `json:"validationResults"`
 }
 
 type Connection[T any] interface {
