@@ -65,7 +65,7 @@ func main() {
 		*deps.config,
 		rpchandler.NewArgoCDHandler(deps.config, argocd.NewArgoCDClient(), &integration.ArgoCDIntegration{
 			K8sClient: deps.k8sClient,
-		}, deps.k8sNamespace),
+		}),
 		rpchandler.NewInstallHandler(),
 	)
 

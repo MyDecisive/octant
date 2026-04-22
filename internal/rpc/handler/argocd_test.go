@@ -28,11 +28,12 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
+			InstallNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(false, assert.AnError).Once()
 
-		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil, defaultNamespace)
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil)
 
 		response, err := handler.TestConnection(
 			t.Context(),
@@ -57,11 +58,12 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
+			InstallNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 
-		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil, defaultNamespace)
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil)
 
 		response, err := handler.TestConnection(
 			t.Context(),
@@ -97,7 +99,10 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 			Return(assert.AnError).
 			Times(1)
 
-		handler := NewArgoCDHandler(nil, nil, mockArgoCDClient, defaultNamespace)
+		testConfig := &config.Configuration{
+			InstallNamespace: defaultNamespace,
+		}
+		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
 		response, err := handler.SaveArgoConnection(
 			t.Context(),
 			connect.NewRequest(&octantv1alpha.SaveArgoConnectionRequest{
@@ -125,7 +130,10 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 			Return(nil).
 			Times(1)
 
-		handler := NewArgoCDHandler(nil, nil, mockArgoCDClient, defaultNamespace)
+		testConfig := &config.Configuration{
+			InstallNamespace: defaultNamespace,
+		}
+		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
 		response, err := handler.SaveArgoConnection(
 			t.Context(),
 			connect.NewRequest(&octantv1alpha.SaveArgoConnectionRequest{

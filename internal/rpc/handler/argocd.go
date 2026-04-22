@@ -20,20 +20,17 @@ type ArgoCDHandler struct {
 	config          *config.Configuration
 	argoClient      argocd.APIClient
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
-	k8sNamespace    string
 }
 
 func NewArgoCDHandler(
 	config *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	k8sNamespace string,
 ) *ArgoCDHandler {
 	return &ArgoCDHandler{
 		config:          config,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
-		k8sNamespace:    k8sNamespace,
 	}
 }
 
@@ -76,7 +73,7 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 
 	logger.Debug("received save connection request")
 
-	err := ah.argoIntegration.SetIntegration(ctx, ah.k8sNamespace, "mdai", integration.ArgoCDIntegrationData{
+	err := ah.argoIntegration.SetIntegration(ctx, ah.config.InstallNamespace, "mdai", integration.ArgoCDIntegrationData{
 		APIUrl:       argoEndpoint,
 		AccountToken: accountToken,
 	})
