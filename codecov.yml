@@ -7,3 +7,5 @@ ignore:
   - "cmd/"
   - "internal/config"
   - "web/"
+  - "internal/test"
+  - "internal/mock"
