@@ -1,0 +1,12 @@
+all: false
+dir: '{{.SrcPackageName}}'
+filename: 'mocks.go'
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}mock'
+recursive: false
+template: testify
+packages:
+  github.com/mydecisive/octant/internal/argocd:
+    interfaces:
+      APIClient:
