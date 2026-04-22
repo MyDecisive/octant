@@ -15,12 +15,12 @@ func setup() (*zap.Logger, *config.Configuration, func()) {
 	// Setup logger
 	var logger *zap.Logger
 	if configuration.Env == config.Prod {
-		logger, err = zap.NewProduction()
+		logger, err = zap.NewProduction(zap.AddStacktrace(zap.PanicLevel))
 		if err != nil {
 			log.Fatalf("Setup logger: %v\n", err) // nolint:forbidigo // zap not setup yet
 		}
 	} else {
-		logger, err = zap.NewDevelopment()
+		logger, err = zap.NewDevelopment(zap.AddStacktrace(zap.PanicLevel))
 		if err != nil {
 			log.Fatalf("Setup logger: %v\n", err) // nolint:forbidigo // zap not setup yet
 		}

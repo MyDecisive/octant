@@ -2,6 +2,10 @@ package rpchandler
 
 import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/config"
+	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -12,10 +16,49 @@ import (
 func TestArgoCDHandler_TestConnection(t *testing.T) {
 	t.Parallel()
 
+	t.Run("error testing connection", func(t *testing.T) {
+		t.Parallel()
+
+		testConfig := &config.Configuration{
+			Env: config.Dev,
+			RPC: config.RPC{
+				Port: 1234,
+			},
+		}
+		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
+		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(false, assert.AnError).Once()
+
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient)
+
+		response, err := handler.TestConnection(
+			t.Context(),
+			connect.NewRequest(&octantv1alpha.TestConnectionRequest{
+				ArgoAccountToken: "abc123",
+				ArgoEndpoint:     "https://argocd-server",
+			}),
+		)
+		require.Error(t, err)
+		require.Nil(t, response)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
+	})
+
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		handler := NewArgoCDHandler()
+		testConfig := &config.Configuration{
+			Env: config.Dev,
+			RPC: config.RPC{
+				Port: 1234,
+			},
+		}
+		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
+		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
+
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient)
+
 		response, err := handler.TestConnection(
 			t.Context(),
 			connect.NewRequest(&octantv1alpha.TestConnectionRequest{
@@ -39,7 +82,7 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		handler := NewArgoCDHandler()
+		handler := NewArgoCDHandler(nil, nil)
 		response, err := handler.SaveArgoConnection(
 			t.Context(),
 			connect.NewRequest(&octantv1alpha.SaveArgoConnectionRequest{
