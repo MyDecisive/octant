@@ -2,29 +2,38 @@
 package rpchandler
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"google.golang.org/protobuf/types/known/emptypb"
-
-	"connectrpc.com/connect"
+	"github.com/mydecisive/octant/internal/integration"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ArgoCDHandler struct {
 	octantv1alphaconnect.UnimplementedArgoCDServiceHandler
 
-	config     *config.Configuration
-	argoClient argocd.APIClient
+	config          *config.Configuration
+	argoClient      argocd.APIClient
+	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
+	k8sNamespace    string
 }
 
-func NewArgoCDHandler(config *config.Configuration, argoClient argocd.APIClient) *ArgoCDHandler {
+func NewArgoCDHandler(
+	config *config.Configuration,
+	argoClient argocd.APIClient,
+	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	k8sNamespace string,
+) *ArgoCDHandler {
 	return &ArgoCDHandler{
-		config:     config,
-		argoClient: argoClient,
+		config:          config,
+		argoClient:      argoClient,
+		argoIntegration: argoIntegration,
+		k8sNamespace:    k8sNamespace,
 	}
 }
 
@@ -46,6 +55,7 @@ func (ah *ArgoCDHandler) TestConnection(
 	}
 	success, err := ah.argoClient.TestConnection(ctx, logger, clientOpts)
 	if err != nil {
+		logger.Error("testing argocd connection", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -56,14 +66,23 @@ func (ah *ArgoCDHandler) TestConnection(
 }
 
 func (ah *ArgoCDHandler) SaveArgoConnection(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[octantv1alpha.SaveArgoConnectionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	argoEndpoint := req.Msg.GetArgoEndpoint()
-	_ = req.Msg.GetArgoAccountToken()
+	accountToken := req.Msg.GetArgoAccountToken()
 
 	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
 
 	logger.Debug("received save connection request")
+
+	err := ah.argoIntegration.SetIntegration(ctx, ah.k8sNamespace, "mdai", integration.ArgoCDIntegrationData{
+		APIUrl:       argoEndpoint,
+		AccountToken: accountToken,
+	})
+	if err != nil {
+		logger.Error("setting integration", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 	return &connect.Response[emptypb.Empty]{}, nil
 }
