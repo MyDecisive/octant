@@ -63,7 +63,7 @@ func main() {
 	g, _ := errgroup.WithContext(context.Background())
 	rpcServer := rpc.NewServer(
 		*deps.config,
-		rpchandler.NewArgoCDHandler(deps.config, argocd.NewArgoCDClient(), integration.ArgoCDIntegration{
+		rpchandler.NewArgoCDHandler(deps.config, argocd.NewArgoCDClient(), &integration.ArgoCDIntegration{
 			K8sClient: deps.k8sClient,
 		}, deps.k8sNamespace),
 		rpchandler.NewInstallHandler(),
