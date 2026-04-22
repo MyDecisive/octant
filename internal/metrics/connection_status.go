@@ -177,13 +177,15 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 				continue
 			}
 
-			// If it's the first time we see this attribute, assume it passes
-			if _, exists := attrs[signal][vType][attrName]; !exists {
-				attrs[signal][vType][attrName] = true
-			}
-
-			// If we ever see a failure for this attribute, explicitly mark it false
-			if result == fidelityCheckFail {
+			// Only a strict "pass" can initialize the attribute as true,
+			// and only if we haven't already marked it as false.
+			if result == fidelityCheckPass {
+				if _, exists := attrs[signal][vType][attrName]; !exists {
+					attrs[signal][vType][attrName] = true
+				}
+			} else {
+				// "fail", "unknown", or any unexpected value explicitly marks it false.
+				// This will overwrite a previously recorded "true" for this attribute.
 				attrs[signal][vType][attrName] = false
 			}
 		}
