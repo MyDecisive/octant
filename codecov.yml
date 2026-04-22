@@ -8,3 +8,5 @@ ignore:
   - "internal/config"
   - "internal/mock"
   - "web/"
+  - "internal/test"
+  - "internal/mock"

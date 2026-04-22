@@ -7,6 +7,15 @@ pkgname: '{{.SrcPackageName}}mock'
 recursive: false
 template: testify
 packages:
+  github.com/mydecisive/octant/internal/integration:
+    interfaces:
+      Integration:
+  github.com/mydecisive/octant/internal/connection:
+    interfaces:
+      Connection:
+  github.com/prometheus/client_golang/api/prometheus/v1:
+    interfaces:
+      API:
   github.com/mydecisive/octant/internal/argocd:
     interfaces:
       APIClient:

@@ -1,0 +1,68 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ .AppName }}
+  labels:
+    app: {{ .AppName }}
+    app.kubernetes.io/instance: {{ .AppName }}
+    hub.mydecisive.ai/role: connection-collector
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}
+  {{- end }}
+spec:
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
+  env:
+    {{- if .DatadogIntegrationData }}
+    - name: DD_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ .AppName }}-integration-secret
+          key: api-key
+    - name: DD_SITE
+      valueFrom:
+        secretKeyRef:
+          name: {{ .AppName }}-integration-secret
+          key: site-url
+    {{- end }}
+  config:
+    receivers:
+      datadog:
+        endpoint: "0.0.0.0:8126"
+    exporters:
+     {{- if .DatadogIntegrationData }}
+      datadog:
+        api:
+          key: ${env:DD_API_KEY}
+          site: "${env:DD_SITE}"
+        {{- if not .DatadogIntegrationData.IsKnownDatadogTLD }}
+        traces:
+          endpoint: "http://${env:DD_SITE}:8126"
+        logs:
+          endpoint: "http://${env:DD_SITE}:8126"
+        metrics:
+          endpoint: "http://${env:DD_SITE}:8126"
+        {{- end }}
+     {{- end }}
+    service:
+      telemetry:
+        resource:
+          mdai_connection: "{{ .AppName }}"
+          service.name: "{{ .AppName }}-collector"
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: "0.0.0.0"
+                    port: 8888
+                    with_resource_constant_labels:
+                      included:
+                        - mdai_connection
+                        - service.name
+      pipelines:
+        {{- range .ConnectionData.TelemetryTypes }}
+          {{ . }}:
+            receivers: [datadog]
+            exporters: [datadog]
+        {{- end }}

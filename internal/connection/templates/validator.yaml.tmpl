@@ -1,0 +1,7 @@
+apiVersion: hub.mydecisive.ai/v1
+kind: TelemetryValidation
+metadata:
+  name: {{ .AppName }}-telemetry-validation
+spec:
+  collectorRef:
+    name: {{ .AppName }}
