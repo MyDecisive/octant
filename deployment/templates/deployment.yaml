@@ -34,7 +34,7 @@ spec:
       - name: {{ .Values.deployment.name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         ports:
-        - containerPort: {{ .Values.deployment.containerPort }}
+        {{- .Values.deployment.ports | toYaml | nindent 8 }}
         env:
         - name: HTTP_PORT
           value: "{{ .Values.deployment.containerPort }}"

@@ -16,24 +16,24 @@ type Integration[T any] interface {
 	DeleteIntegration(ctx context.Context, namespace, integrationName string) error
 }
 
-func updateSecretWithIntegration(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secret *corev1.Secret, integrationName string, jsonData []byte) error {
+func updateSecretWithIntegration(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secret *corev1.Secret, jsonData []byte) error {
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
-	secret.Data[integrationName] = jsonData
+	secret.Data[secret.Name] = jsonData
 
 	_, err := k8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
 }
 
-func createIntegrationSecret(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secretName string, integrationName string, jsonData []byte) error {
+func createIntegrationSecret(ctx context.Context, k8sClient kubernetes.Interface, namespace, secretName string, jsonData []byte) error {
 	newSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
-			integrationName: jsonData,
+			secretName: jsonData,
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
