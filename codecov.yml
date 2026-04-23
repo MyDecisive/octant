@@ -10,3 +10,4 @@ ignore:
   - "web/"
   - "internal/test"
   - "internal/mock"
+  - "internal/registry"
