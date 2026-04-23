@@ -338,6 +338,173 @@ func TestVerifyDataFidelity(t *testing.T) {
 		require.True(t, exists)
 		require.False(t, val)
 	})
+
+	t.Run("fails override passes in the same time window", func(t *testing.T) {
+		t.Parallel()
+
+		mixedVector := model.Vector{
+			{ // Pass sample
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 5.0,
+			},
+			{ // Fail sample
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckFail,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 2.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(mixedVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		// The signal should be false because the fail overrides the pass
+		require.False(t, validations[telemetry.Traces].Parity)
+
+		// The attribute should be false for the same reason
+		val, exists := validations[telemetry.Traces].Attributes.Parity["span_id"]
+		require.True(t, exists)
+		require.False(t, val)
+	})
+
+	t.Run("samples with zero or negative values are completely ignored", func(t *testing.T) {
+		t.Parallel()
+
+		zeroVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "ignored_attr",
+				},
+				Value: 0.0, // Should be skipped!
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(zeroVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		// Signals default to false
+		require.False(t, validations[telemetry.Traces].Parity)
+
+		// The attribute should not even exist in the map
+		_, exists := validations[telemetry.Traces].Attributes.Parity["ignored_attr"]
+		require.False(t, exists)
+	})
+
+	t.Run("unrequested telemetry types and empty attributes are ignored", func(t *testing.T) {
+		t.Parallel()
+
+		weirdVector := model.Vector{
+			{ // We only requested Logs, so Traces should be ignored
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 5.0,
+			},
+			{ // Empty attribute name should be ignored
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Logs),
+					fidelityMetricAttribute: "",
+				},
+				Value: 5.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(weirdVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+
+		// We explicitly only ask for Logs
+		_, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.NoError(t, err)
+
+		// Traces should not have been added to the root map
+		_, tracesExist := validations[telemetry.Traces]
+		require.False(t, tracesExist)
+
+		// Empty attribute should not be in the logs parity map
+		_, emptyAttrExists := validations[telemetry.Logs].Attributes.Parity[""]
+		require.False(t, emptyAttrExists)
+	})
+
+	t.Run("unknown result labels default to fail", func(t *testing.T) {
+		t.Parallel()
+
+		unknownVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult:    "some_weird_string",
+					fidelityMetricSignal:    model.LabelValue(telemetry.Logs),
+					fidelityMetricAttribute: "log_body",
+				},
+				Value: 5.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(unknownVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		require.False(t, validations[telemetry.Logs].Parity)
+
+		// Unknown string should record the attribute as false
+		val, exists := validations[telemetry.Logs].Attributes.Parity["log_body"]
+		require.True(t, exists)
+		require.False(t, val)
+	})
 }
 
 func TestGetCollectorMetric(t *testing.T) {
