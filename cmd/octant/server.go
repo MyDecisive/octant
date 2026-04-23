@@ -1,16 +1,30 @@
 package main
 
 import (
+	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/config"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	"log"
+	"os"
+	"strings"
 )
 
-func setup() (*zap.Logger, *config.Configuration, func()) {
+const namespaceFilePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+
+type dependencies struct {
+	logger    *zap.Logger
+	config    *config.Configuration
+	k8sClient kubernetes.Interface
+}
+
+func setup() (dependencies, func()) {
 	configuration, err := config.Read()
 	if err != nil {
 		log.Fatalf("reading config: %v\n", err) // nolint:forbidigo // zap not setup yet
 	}
+
+	configuration.CurrentNamespace = getCurrentNamespace()
 
 	// Setup logger
 	var logger *zap.Logger
@@ -28,11 +42,35 @@ func setup() (*zap.Logger, *config.Configuration, func()) {
 
 	undo := zap.ReplaceGlobals(logger)
 	reset := zap.RedirectStdLog(logger)
-	return logger, configuration, func() {
-		if err = logger.Sync(); err != nil {
-			logger.Error("syncing logger", zap.Error(err))
-		}
-		undo()
-		reset()
+
+	clientset, err := datacorekube.NewK8sClient(logger)
+	if err != nil {
+		logger.Fatal("creating kubernetes client: %w", zap.Error(err))
 	}
+	return dependencies{
+			logger:    logger,
+			config:    configuration,
+			k8sClient: clientset,
+		}, func() {
+			if err = logger.Sync(); err != nil {
+				logger.Error("syncing logger", zap.Error(err))
+			}
+			undo()
+			reset()
+		}
+}
+
+func getCurrentNamespace() string {
+	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
+		return ns
+	}
+
+	if data, err := os.ReadFile(namespaceFilePath); err == nil {
+		ns := strings.TrimSpace(string(data))
+		if ns != "" {
+			return ns
+		}
+	}
+
+	return "default"
 }
