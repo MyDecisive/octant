@@ -75,19 +75,16 @@ func SetupGracefulShutdown() {
 
 // initLogger setup global zap logger.
 func initLogger(configuration *config.Configuration) error {
-	var logger *zap.Logger
-	var err error
+	newLogger := zap.NewDevelopment
 	if configuration.Env == config.Prod {
-		logger, err = zap.NewProduction(zap.AddStacktrace(zap.PanicLevel))
-		if err != nil {
-			return err
-		}
-	} else {
-		logger, err = zap.NewDevelopment(zap.AddStacktrace(zap.PanicLevel))
-		if err != nil {
-			return err
-		}
+		newLogger = zap.NewProduction
 	}
+
+	logger, err := newLogger(zap.AddStacktrace(zap.PanicLevel))
+	if err != nil {
+		return err
+	}
+
 	zap.ReplaceGlobals(logger)
 	zap.RedirectStdLog(logger)
 	return nil
