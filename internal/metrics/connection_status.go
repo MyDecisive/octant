@@ -12,34 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type IngressEgress int
-
 const (
 	Ingress IngressEgress = iota
 	Egress
-)
 
-type ValidationType string
-
-const (
 	PolicyValidation ValidationType = "policyValidation"
 	ParityValidation ValidationType = "parityValidation"
-)
 
-type SignalChecks map[ValidationType]bool
-
-type collectorMetric string
-
-const (
-	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
-	logsSentMetric        collectorMetric = "otelcol_exporter_sent_log_records_total"
-	metricsAcceptedMetric collectorMetric = "otelcol_receiver_accepted_metric_points_total"
-	metricsSentMetric     collectorMetric = "otelcol_exporter_sent_metric_points_total"
-	spansAcceptedMetric   collectorMetric = "otelcol_receiver_accepted_spans_total"
-	spansSentMetric       collectorMetric = "otelcol_exporter_sent_spans_total"
-)
-
-const (
 	fidelityCheckFail = "fail"
 	fidelityCheckPass = "pass"
 
@@ -47,11 +26,35 @@ const (
 	fidelityMetricSignal    = "signal"
 	fidelityMetricAttribute = "attribute"
 
-	metricFidelitySignal         = "mdai_fidelity_signal_checks_total"
-	metricFidelityRequiredSignal = "mdai_fidelity_required_signal_checks_total"
-	metricFidelityAttr           = "mdai_fidelity_attribute_checks_total"
-	metricFidelityRequiredAttr   = "mdai_fidelity_required_attribute_checks_total"
+	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
+	logsSentMetric        collectorMetric = "otelcol_exporter_sent_log_records_total"
+	metricsAcceptedMetric collectorMetric = "otelcol_receiver_accepted_metric_points_total"
+	metricsSentMetric     collectorMetric = "otelcol_exporter_sent_metric_points_total"
+	spansAcceptedMetric   collectorMetric = "otelcol_receiver_accepted_spans_total"
+	spansSentMetric       collectorMetric = "otelcol_exporter_sent_spans_total"
+
+	signalParityFidelityMetric    fidelityMetric = "mdai_fidelity_signal_checks_total"
+	signalPolicyFidelityMetric    fidelityMetric = "mdai_fidelity_required_signal_checks_total"
+	attributeParityFidelityMetric fidelityMetric = "mdai_fidelity_attribute_checks_total"
+	attributePolicyFidelityMetric fidelityMetric = "mdai_fidelity_required_attribute_checks_total"
 )
+
+var (
+	signalParityMetricsToValidationType = map[fidelityMetric]ValidationType{
+		signalParityFidelityMetric: ParityValidation,
+		signalPolicyFidelityMetric: PolicyValidation,
+	}
+	attributeParityMetricsToValidationType = map[fidelityMetric]ValidationType{
+		attributeParityFidelityMetric: ParityValidation,
+		attributePolicyFidelityMetric: PolicyValidation,
+	}
+)
+
+type IngressEgress int
+type ValidationType string
+type collectorMetric string
+type fidelityMetric string
+type SignalChecks map[ValidationType]bool
 
 type ValidationResult struct {
 	Parity     bool                 `json:"parity"`
@@ -146,12 +149,7 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 		}
 	}
 
-	metrics := map[string]ValidationType{
-		metricFidelityAttr:         ParityValidation,
-		metricFidelityRequiredAttr: PolicyValidation,
-	}
-
-	for metricName, vType := range metrics {
+	for metricName, vType := range attributeParityMetricsToValidationType {
 		query := buildValidationQuery(metricName, connectionName)
 		vector, err := cs.queryVector(ctx, query)
 		if err != nil {
@@ -216,12 +214,7 @@ func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionN
 		}
 	}
 
-	metrics := map[string]ValidationType{
-		metricFidelitySignal:         ParityValidation,
-		metricFidelityRequiredSignal: PolicyValidation,
-	}
-
-	for metricName, vType := range metrics {
+	for metricName, vType := range signalParityMetricsToValidationType {
 		query := buildValidationQuery(metricName, connectionName)
 		vector, err := cs.queryVector(ctx, query)
 		if err != nil {
@@ -284,7 +277,7 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 	)
 }
 
-func buildValidationQuery(metricName string, connectionName string) string {
+func buildValidationQuery(metricName fidelityMetric, connectionName string) string {
 	return fmt.Sprintf(`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`, metricName, connectionName)
 }
 
