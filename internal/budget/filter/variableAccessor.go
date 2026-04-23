@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	mdaiGatewayRootURLFormatter = "%s.%s.svc.cluster.local%s"
+	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local"
 	mdaiGatewayGetVarFormatter  = "/variables/values/hub/%s/var/%s"
 	mdaiGatewayPostVarFormatter = "/variables/hub/%s/var/%s"
 )
@@ -44,7 +44,7 @@ func NewMDAIGateway(c *config.Configuration, client *http.Client) *MDAIGateway {
 
 // GetVariable returns the value of the given variable from MDAI gateway.
 func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName string) (string, error) {
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace, fmt.Sprintf(mdaiGatewayGetVarFormatter, hubName, varName))
+	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayGetVarFormatter, hubName, varName)
 	resp, err := mdai.client.Get(url)
 	if err != nil {
 		return "", err
@@ -67,7 +67,7 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 // UpdateVariable updates the value of the given variable in MDAI gateway.
 // This will return `ErrInvalid` if the operation failed.
 func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varName string, value any) error {
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace, fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName))
+	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName)
 	jsonValue, _ := json.Marshal(map[string]any{"data": value})
 	resp, err := mdai.client.Post(url, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
