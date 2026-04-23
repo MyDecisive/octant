@@ -148,7 +148,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 func TestVerifyDataFidelity(t *testing.T) {
 	t.Parallel()
 
-	t.Run("error - unexpected query error", func(t *testing.T) {
+	t.Run("error - unexpected while querying prometheus", func(t *testing.T) {
 		t.Parallel()
 
 		mockPromAPI := v1mock.NewMockAPI(t)
@@ -162,7 +162,8 @@ func TestVerifyDataFidelity(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 		result, _, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
-		require.ErrorContains(t, err, "checking attribute fidelity")
+
+		require.ErrorContains(t, err, "checking attribute parity fidelity")
 		require.False(t, result)
 	})
 

@@ -12,20 +12,26 @@ import (
 	"go.uber.org/zap"
 )
 
+type IngressEgress int
+
 const (
 	Ingress IngressEgress = iota
 	Egress
+)
 
-	PolicyValidation ValidationType = "policyValidation"
-	ParityValidation ValidationType = "parityValidation"
-
+const (
 	fidelityCheckFail = "fail"
 	fidelityCheckPass = "pass"
 
 	fidelityMetricResult    = "result"
 	fidelityMetricSignal    = "signal"
 	fidelityMetricAttribute = "attribute"
+)
 
+type collectorMetric string
+type fidelityMetric string
+
+const (
 	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
 	logsSentMetric        collectorMetric = "otelcol_exporter_sent_log_records_total"
 	metricsAcceptedMetric collectorMetric = "otelcol_receiver_accepted_metric_points_total"
@@ -39,23 +45,6 @@ const (
 	attributePolicyFidelityMetric fidelityMetric = "mdai_fidelity_required_attribute_checks_total"
 )
 
-var (
-	signalParityMetricsToValidationType = map[fidelityMetric]ValidationType{
-		signalParityFidelityMetric: ParityValidation,
-		signalPolicyFidelityMetric: PolicyValidation,
-	}
-	attributeParityMetricsToValidationType = map[fidelityMetric]ValidationType{
-		attributeParityFidelityMetric: ParityValidation,
-		attributePolicyFidelityMetric: PolicyValidation,
-	}
-)
-
-type IngressEgress int
-type ValidationType string
-type collectorMetric string
-type fidelityMetric string
-type SignalChecks map[ValidationType]bool
-
 type ValidationResult struct {
 	Parity     bool                 `json:"parity"`
 	Policy     bool                 `json:"policy"`
@@ -65,6 +54,14 @@ type ValidationResult struct {
 type ValidationAttributes struct {
 	Parity map[string]bool `json:"parity"`
 	Policy map[string]bool `json:"policy"`
+}
+
+// parsedSample holds strictly typed data extracted from a model.Sample
+type parsedSample struct {
+	Value     float64
+	Signal    telemetry.MLT
+	Result    string
+	Attribute string
 }
 
 type ConnectionStatus struct {
@@ -82,22 +79,35 @@ func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionS
 func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (bool, map[telemetry.MLT]ValidationResult, error) {
 	dataIntegrity := true
 
-	attrData, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes)
+	attrParity, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributeParityFidelityMetric)
 	if err != nil {
-		return false, nil, fmt.Errorf("checking attribute fidelity: %w", err)
+		return false, nil, fmt.Errorf("checking attribute parity fidelity: %w", err)
 	}
 
-	signalData, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes)
+	attrPolicy, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributePolicyFidelityMetric)
 	if err != nil {
-		return false, nil, fmt.Errorf("checking signal fidelity: %w", err)
+		return false, nil, fmt.Errorf("checking attribute policy fidelity: %w", err)
+	}
+
+	signalParity, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalParityFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking signal parity fidelity: %w", err)
+	}
+
+	signalPolicy, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalPolicyFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
 	}
 
 	results := make(map[telemetry.MLT]ValidationResult)
 	for _, t := range telemetryTypes {
 		res := ValidationResult{
-			Parity:     signalData[t][ParityValidation],
-			Policy:     signalData[t][PolicyValidation],
-			Attributes: attrData[t],
+			Parity: signalParity[t],
+			Policy: signalPolicy[t],
+			Attributes: ValidationAttributes{
+				Parity: attrParity[t],
+				Policy: attrPolicy[t],
+			},
 		}
 
 		if !res.Parity && !res.Policy {
@@ -140,124 +150,101 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionNa
 	return true, nil
 }
 
-func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]ValidationAttributes, error) {
-	attrs := makeEmptyAttributeValidationMap(telemetryTypes)
+func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]map[string]bool, error) {
+	attrs := make(map[telemetry.MLT]map[string]bool)
+	for _, t := range telemetryTypes {
+		attrs[t] = make(map[string]bool)
+	}
 
-	for metricName, vType := range attributeParityMetricsToValidationType {
-		query := buildValidationQuery(metricName, connectionName)
-		vector, err := cs.queryVector(ctx, query)
-		if err != nil {
-			return nil, err
+	query := buildValidationQuery(metricName, connectionName)
+	vector, err := cs.queryVector(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sample := range vector {
+		parsed, ok := parseFidelitySample(sample)
+		if !ok || parsed.Attribute == "" {
+			continue
 		}
 
-		for _, sample := range vector {
-			val := float64(sample.Value)
-			if val <= 0 {
-				continue
+		targetMap, exists := attrs[parsed.Signal]
+		if !exists {
+			continue
+		}
+
+		// Only a strict "pass" can initialize the attribute as true,
+		// and only if we haven't already marked it as false.
+		if parsed.Result == fidelityCheckPass {
+			if _, exists := targetMap[parsed.Attribute]; !exists {
+				targetMap[parsed.Attribute] = true
 			}
-
-			signal := telemetry.MLT(sample.Metric[fidelityMetricSignal])
-			attrGroup, exists := attrs[signal]
-			if !exists {
-				continue
-			}
-
-			attrName := string(sample.Metric[fidelityMetricAttribute])
-			result := string(sample.Metric[fidelityMetricResult])
-
-			if attrName == "" {
-				continue
-			}
-
-			targetMap := attrGroup.Parity
-			if vType == PolicyValidation {
-				targetMap = attrGroup.Policy
-			}
-
-			// Only a strict "pass" can initialize the attribute as true,
-			// and only if we haven't already marked it as false.
-			if result == fidelityCheckPass {
-				if _, exists := targetMap[attrName]; !exists {
-					targetMap[attrName] = true
-				}
-			} else {
-				// "fail", "unknown", or any unexpected value explicitly marks it false.
-				// This will overwrite a previously recorded "true" for this attribute.
-				targetMap[attrName] = false
-			}
-
-			attrs[signal] = attrGroup
+		} else {
+			// "fail", "unknown", or any unexpected value explicitly marks it false.
+			// This will overwrite a previously recorded "true" for this attribute.
+			targetMap[parsed.Attribute] = false
 		}
 	}
 
 	return attrs, nil
 }
 
-func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]SignalChecks, error) {
-	signals, failsSeen := makeEmptySignalCheckMaps(telemetryTypes)
+func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]bool, error) {
+	signals := make(map[telemetry.MLT]bool)
+	failsSeen := make(map[telemetry.MLT]bool)
 
-	for metricName, vType := range signalParityMetricsToValidationType {
-		query := buildValidationQuery(metricName, connectionName)
-		vector, err := cs.queryVector(ctx, query)
-		if err != nil {
-			return nil, err
+	for _, t := range telemetryTypes {
+		signals[t] = false
+		failsSeen[t] = false
+	}
+
+	query := buildValidationQuery(metricName, connectionName)
+	vector, err := cs.queryVector(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sample := range vector {
+		parsed, ok := parseFidelitySample(sample)
+		if !ok {
+			continue
 		}
 
-		for _, sample := range vector {
-			val := float64(sample.Value)
-			if val <= 0 {
-				continue
-			}
+		if _, exists := signals[parsed.Signal]; !exists {
+			continue
+		}
 
-			signal := telemetry.MLT(sample.Metric[fidelityMetricSignal])
-			if _, exists := signals[signal]; !exists {
-				continue
+		switch parsed.Result {
+		case fidelityCheckFail:
+			signals[parsed.Signal] = false
+			failsSeen[parsed.Signal] = true
+		case fidelityCheckPass:
+			if !failsSeen[parsed.Signal] {
+				signals[parsed.Signal] = true
 			}
-
-			result := string(sample.Metric[fidelityMetricResult])
-			switch result {
-			case fidelityCheckFail:
-				signals[signal][vType] = false
-				failsSeen[signal][vType] = true
-			case fidelityCheckPass:
-				if !failsSeen[signal][vType] {
-					signals[signal][vType] = true
-				}
-			default:
-				cs.logger.Info(fmt.Sprintf("encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s", fidelityMetricResult, result, metricName, signal))
-			}
+		default:
+			cs.logger.Info(fmt.Sprintf("encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s", fidelityMetricResult, parsed.Result, metricName, parsed.Signal))
 		}
 	}
 
 	return signals, nil
 }
 
-func makeEmptyAttributeValidationMap(telemetryTypes []telemetry.MLT) map[telemetry.MLT]ValidationAttributes {
-	attrs := make(map[telemetry.MLT]ValidationAttributes)
-	for _, t := range telemetryTypes {
-		attrs[t] = ValidationAttributes{
-			Parity: make(map[string]bool),
-			Policy: make(map[string]bool),
-		}
+// parseFidelitySample extracts strongly typed data from a PromQL sample.
+// It returns false if the sample is mathematically insignificant (<= 0)
+// or should otherwise be skipped.
+func parseFidelitySample(sample *model.Sample) (parsedSample, bool) {
+	val := float64(sample.Value)
+	if val <= 0 {
+		return parsedSample{}, false
 	}
-	return attrs
-}
 
-func makeEmptySignalCheckMaps(telemetryTypes []telemetry.MLT) (map[telemetry.MLT]SignalChecks, map[telemetry.MLT]SignalChecks) {
-	signals := make(map[telemetry.MLT]SignalChecks)
-	failsSeen := make(map[telemetry.MLT]SignalChecks)
-
-	for _, t := range telemetryTypes {
-		signals[t] = SignalChecks{
-			ParityValidation: false,
-			PolicyValidation: false,
-		}
-		failsSeen[t] = SignalChecks{
-			ParityValidation: false,
-			PolicyValidation: false,
-		}
-	}
-	return signals, failsSeen
+	return parsedSample{
+		Value:     val,
+		Signal:    telemetry.MLT(sample.Metric[fidelityMetricSignal]),
+		Result:    string(sample.Metric[fidelityMetricResult]),
+		Attribute: string(sample.Metric[fidelityMetricAttribute]),
+	}, true
 }
 
 func (cs *ConnectionStatus) queryVector(ctx context.Context, query string) (model.Vector, error) {
