@@ -2,16 +2,17 @@
 package rpc
 
 import (
+	"fmt"
+	"net/http"
+
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/otelconnect"
 	"connectrpc.com/validate"
-	"fmt"
 	"github.com/mydecisive/octant/internal/config"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"net/http"
 
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 
@@ -20,22 +21,25 @@ import (
 
 // Server that will serve internal RPC endpoint handlers.
 type Server struct {
-	configuration config.Configuration
+	configuration *config.Configuration
 
 	argocdHandler  *rpchandler.ArgoCDHandler
 	installHandler *rpchandler.InstallHandler
+	datadogHander  *rpchandler.DatadogHandler
 }
 
 // NewServer create a new Server.
 func NewServer(
-	configuration config.Configuration,
+	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
+	datadogHander *rpchandler.DatadogHandler,
 ) *Server {
 	return &Server{
 		configuration:  configuration,
 		argocdHandler:  argocdHandler,
 		installHandler: installHandler,
+		datadogHander:  datadogHander,
 	}
 }
 
@@ -61,6 +65,7 @@ func (s Server) Start() error {
 	// Service Handlers
 	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHander, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -76,6 +81,7 @@ func (Server) getServices() []string {
 	return []string{
 		octantv1alphaconnect.ArgoCDServiceName,
 		octantv1alphaconnect.InstallServiceName,
+		octantv1alphaconnect.DatadogServiceName,
 	}
 }
 
