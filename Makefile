@@ -6,6 +6,17 @@ GOTOOLCHAIN ?= go1.25.0
 GO := CGO_ENABLED=0 GOTOOLCHAIN=$(GOTOOLCHAIN) go
 GO_TEST := $(GO) test -count=1
 
+.PHONY: install-tools
+install-tools:
+	@echo "$@: Install development tools"
+	@go install github.com/vektra/mockery/v3@v3.7.0
+	@go install github.com/dmarkham/enumer@v1.6.3
+# Only install following tools if not in CI
+ifndef CI
+# Don't forget to update the golangci-lint version in CI
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+endif
+
 docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
 docker-build docker-push: DOCKER_IMAGE ?= $(AWS_ECR_REPO)/$(REPO_NAME):$(DOCKER_TAG)
 
