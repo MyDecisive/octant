@@ -3,7 +3,9 @@ package rpchandler
 import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
+	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -16,6 +18,8 @@ import (
 func TestArgoCDHandler_TestConnection(t *testing.T) {
 	t.Parallel()
 
+	defaultNamespace := "default"
+
 	t.Run("error testing connection", func(t *testing.T) {
 		t.Parallel()
 
@@ -24,11 +28,12 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
+			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(false, assert.AnError).Once()
 
-		handler := NewArgoCDHandler(testConfig, mockArgoCDClient)
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil)
 
 		response, err := handler.TestConnection(
 			t.Context(),
@@ -53,11 +58,12 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
+			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 
-		handler := NewArgoCDHandler(testConfig, mockArgoCDClient)
+		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil)
 
 		response, err := handler.TestConnection(
 			t.Context(),
@@ -79,10 +85,55 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 	t.Parallel()
 
+	defaultNamespace := "default"
+
+	t.Run("error saving argo details", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoCDClient := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDClient.EXPECT().
+			SetIntegration(mock.Anything, defaultNamespace, "mdai", mock.MatchedBy(func(integrationData any) bool {
+				argocdIntegrationData, ok := integrationData.(integration.ArgoCDIntegrationData)
+				return ok && argocdIntegrationData.AccountToken == "abc123"
+			})).
+			Return(assert.AnError).
+			Times(1)
+
+		testConfig := &config.Configuration{
+			CurrentNamespace: defaultNamespace,
+		}
+		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
+		response, err := handler.SaveArgoConnection(
+			t.Context(),
+			connect.NewRequest(&octantv1alpha.SaveArgoConnectionRequest{
+				ArgoAccountToken: "abc123",
+				ArgoEndpoint:     "https://argocd-server",
+			}),
+		)
+		require.Error(t, err)
+		require.Nil(t, response)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
+	})
+
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		handler := NewArgoCDHandler(nil, nil)
+		mockArgoCDClient := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDClient.EXPECT().
+			SetIntegration(mock.Anything, defaultNamespace, "mdai", mock.MatchedBy(func(integrationData any) bool {
+				argocdIntegrationData, ok := integrationData.(integration.ArgoCDIntegrationData)
+				return ok && argocdIntegrationData.AccountToken == "abc123"
+			})).
+			Return(nil).
+			Times(1)
+
+		testConfig := &config.Configuration{
+			CurrentNamespace: defaultNamespace,
+		}
+		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
 		response, err := handler.SaveArgoConnection(
 			t.Context(),
 			connect.NewRequest(&octantv1alpha.SaveArgoConnectionRequest{
