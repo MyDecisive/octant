@@ -28,7 +28,7 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
-			InstallNamespace: defaultNamespace,
+			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(false, assert.AnError).Once()
@@ -58,7 +58,7 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			RPC: config.RPC{
 				Port: 1234,
 			},
-			InstallNamespace: defaultNamespace,
+			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
 		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
@@ -100,7 +100,7 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 			Times(1)
 
 		testConfig := &config.Configuration{
-			InstallNamespace: defaultNamespace,
+			CurrentNamespace: defaultNamespace,
 		}
 		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
 		response, err := handler.SaveArgoConnection(
@@ -131,7 +131,7 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 			Times(1)
 
 		testConfig := &config.Configuration{
-			InstallNamespace: defaultNamespace,
+			CurrentNamespace: defaultNamespace,
 		}
 		handler := NewArgoCDHandler(testConfig, nil, mockArgoCDClient)
 		response, err := handler.SaveArgoConnection(

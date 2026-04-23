@@ -24,7 +24,7 @@ func setup() (dependencies, func()) {
 		log.Fatalf("reading config: %v\n", err) // nolint:forbidigo // zap not setup yet
 	}
 
-	configuration.InstallNamespace = getCurrentNamespace()
+	configuration.CurrentNamespace = getCurrentNamespace()
 
 	// Setup logger
 	var logger *zap.Logger

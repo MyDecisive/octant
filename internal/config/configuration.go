@@ -26,7 +26,7 @@ const (
 type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
 	RPC              RPC         `yaml:"rpc"`
-	InstallNamespace string      `yaml:"install_namespace" env:"OCTANT_INSTALL_NAMESPACE" env-default:"default"`
+	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
 }
 
 // RPC contains configuration for RPC related code.
