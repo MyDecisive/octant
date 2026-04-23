@@ -33,6 +33,9 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(integration.NewDataDogIntegration, dig.As(new(integration.Integration[integration.DataDogIntegrationData]))); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(integration.NewArgoCDIntegration, dig.As(new(integration.Integration[integration.ArgoCDIntegrationData]))); err != nil {
+		return nil, err
+	}
 	if err := container.Provide(argocd.NewArgoCDClient, dig.As(new(argocd.APIClient))); err != nil {
 		return nil, err
 	}
