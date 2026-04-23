@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mdai
+  namespace: {{ .Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  sources:
+  - repoURL: oci://ghcr.io/mydecisive/mdai-hub
+    chart: mdai
+    targetRevision: {{ .MdaiVersion }}
+    helm:
+      valueFiles:
+      - $values/argocd/mdai/chart/values.yaml
+  - repoURL: https://github.com/MyDecisive/example-argocd.git
+    targetRevision: HEAD
+    path: argocd/mdai/chart
+    ref: values
+  destination:
+    name: "in-cluster"
+    namespace: {{ .Namespace }}
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+    syncOptions:
+    - PruneLast=true
+    - CreateNamespace=true
+    - ServerSideApply=true
+    retry:
+      limit: 2
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates
+    - kind: ConfigMap
+      jsonPointers:
+        - /data/DEPLOY_TIMESTAMP

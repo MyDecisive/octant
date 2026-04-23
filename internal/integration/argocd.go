@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const argocdSecretName = "mdai-argocd-integration" // nolint: gosec
+const ArgocdSecretName = "mdai-argocd-integration" // nolint: gosec
 
 type ArgoCDIntegrationData struct {
 	APIUrl       string `json:"apiUrl"`
@@ -25,12 +25,12 @@ var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "mdai-argocd-integration" secret.
 func (aci *ArgoCDIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, ArgocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
 		}
-		return nil, fmt.Errorf("failed to get secret %s: %w", argocdSecretName, err)
+		return nil, fmt.Errorf("failed to get secret %s: %w", ArgocdSecretName, err)
 	}
 
 	integrations := make(map[string]ArgoCDIntegrationData)
@@ -47,12 +47,12 @@ func (aci *ArgoCDIntegration) GetIntegrations(ctx context.Context, namespace str
 
 // GetIntegrationByName retrieves the existing integration in the provided namespace for the "mdai-argocd-integration" secret, if it exists.
 func (aci *ArgoCDIntegration) GetIntegrationByName(ctx context.Context, namespace, name string) (*ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, ArgocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
 		}
-		return nil, fmt.Errorf("failed to get secret %s: %w", argocdSecretName, err)
+		return nil, fmt.Errorf("failed to get secret %s: %w", ArgocdSecretName, err)
 	}
 
 	if _, ok := secret.Data[name]; !ok {
@@ -73,13 +73,13 @@ func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, _ s
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, ArgocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
-			return createIntegrationSecret(ctx, aci.K8sClient, namespace, argocdSecretName, jsonData)
+			return createIntegrationSecret(ctx, aci.K8sClient, namespace, ArgocdSecretName, jsonData)
 		}
-		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
+		return fmt.Errorf("failed to fetch secret %s: %w", ArgocdSecretName, err)
 	}
 	// Update the secret if it already exists
 	return updateSecretWithIntegration(ctx, aci.K8sClient, namespace, secret, jsonData)
@@ -87,12 +87,12 @@ func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, _ s
 
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.
 func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, namespace, integrationName string) error {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, ArgocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
+		return fmt.Errorf("failed to fetch secret %s: %w", ArgocdSecretName, err)
 	}
 
 	if secret.Data == nil {
@@ -105,7 +105,7 @@ func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, namespace, 
 	delete(secret.Data, integrationName)
 
 	if _, err = aci.K8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("failed to update secret %s after deletion: %w", argocdSecretName, err)
+		return fmt.Errorf("failed to update secret %s after deletion: %w", ArgocdSecretName, err)
 	}
 
 	return nil

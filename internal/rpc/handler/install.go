@@ -3,8 +3,12 @@ package rpchandler
 
 import (
 	"context"
+	"fmt"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/integration"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"time"
 
@@ -14,14 +18,20 @@ import (
 
 type InstallHandler struct {
 	octantv1alphaconnect.UnimplementedInstallServiceHandler
+
+	config          *config.Configuration
+	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
 }
 
-func NewInstallHandler() *InstallHandler {
-	return &InstallHandler{}
+func NewInstallHandler(config *config.Configuration, argoIntegration integration.Integration[integration.ArgoCDIntegrationData]) *InstallHandler {
+	return &InstallHandler{
+		config:          config,
+		argoIntegration: argoIntegration,
+	}
 }
 
 func (ih *InstallHandler) InstallMDAIHub(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[octantv1alpha.InstallMDAIHubRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	installNamespace := req.Msg.GetNamespace()
@@ -29,6 +39,18 @@ func (ih *InstallHandler) InstallMDAIHub(
 	logger := zap.L().With(zap.String("installNamespace", installNamespace))
 
 	logger.Debug("received install MDAIHub request")
+
+	// get the argo integration details
+	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, integration.ArgocdSecretName)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	if argoIntegration == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", integration.ArgocdSecretName))
+	}
+
+	// create the argo app template, and apply the application to the argo cluster
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 
