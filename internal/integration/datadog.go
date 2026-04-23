@@ -32,6 +32,13 @@ type DataDogIntegration struct {
 	K8sClient kubernetes.Interface
 }
 
+// NewDataDogIntegration returns a new instance of DataDogIntegration.
+func NewDataDogIntegration(K8sClient kubernetes.Interface) *DataDogIntegration {
+	return &DataDogIntegration{
+		K8sClient: K8sClient,
+	}
+}
+
 var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "octant-integration" secret.
@@ -78,7 +85,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespa
 }
 
 // SetIntegration adds or updates the "octant-integration" secret for the provided namespace.
-func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, integrationName string, integrationData DataDogIntegrationData) error {
+func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, _ string, integrationData DataDogIntegrationData) error {
 	jsonData, err := json.Marshal(integrationData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal integration data: %w", err)
@@ -92,10 +99,10 @@ func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, in
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, datadogSecretName, integrationName, jsonData)
+		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, datadogSecretName, jsonData)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, secret, integrationName, jsonData)
+	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, secret, jsonData)
 }
 
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.

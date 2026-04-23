@@ -1,24 +1,18 @@
-//go:build !webapp
-
 package main
 
 import (
-	"github.com/mydecisive/octant/internal/argocd"
-	"github.com/mydecisive/octant/internal/rpc"
-	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"github.com/mydecisive/octant/internal/registry"
 	"go.uber.org/zap"
 )
 
 func main() {
-	logger, configuration, cleanup := setup()
-	defer cleanup()
+	container, err := registry.Initialize()
+	if err != nil {
+		zap.L().Fatal("Failed to setup", zap.Error(err))
+	}
+	registry.SetupGracefulShutdown()
 
-	rpcServer := rpc.NewServer(
-		*configuration,
-		rpchandler.NewArgoCDHandler(configuration, argocd.NewArgoCDClient()),
-		rpchandler.NewInstallHandler(),
-	)
-
-	logger.Info("starting RPC server", zap.Int("port", int(configuration.RPC.Port)))
-	logger.Fatal("starting server", zap.Error(rpcServer.Start()))
+	if err := container.Invoke(registry.Start); err != nil {
+		zap.L().Fatal("Start servers", zap.Error(err))
+	}
 }

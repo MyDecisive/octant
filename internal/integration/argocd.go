@@ -23,6 +23,13 @@ type ArgoCDIntegration struct {
 
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
+// NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
+func NewArgoCDIntegration(K8sClient kubernetes.Interface) *ArgoCDIntegration {
+	return &ArgoCDIntegration{
+		K8sClient: K8sClient,
+	}
+}
+
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "mdai-argocd-integration" secret.
 func (aci *ArgoCDIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]ArgoCDIntegrationData, error) {
 	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
@@ -67,7 +74,7 @@ func (aci *ArgoCDIntegration) GetIntegrationByName(ctx context.Context, namespac
 }
 
 // SetIntegration adds or updates the "mdai-argocd-integration" secret for the provided namespace.
-func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, integrationName string, integrationData ArgoCDIntegrationData) error {
+func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, _ string, integrationData ArgoCDIntegrationData) error {
 	jsonData, err := json.Marshal(integrationData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal integration data: %w", err)
@@ -77,12 +84,12 @@ func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, int
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
-			return createIntegrationSecret(ctx, aci.K8sClient, namespace, argocdSecretName, integrationName, jsonData)
+			return createIntegrationSecret(ctx, aci.K8sClient, namespace, argocdSecretName, jsonData)
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, aci.K8sClient, namespace, secret, integrationName, jsonData)
+	return updateSecretWithIntegration(ctx, aci.K8sClient, namespace, secret, jsonData)
 }
 
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.

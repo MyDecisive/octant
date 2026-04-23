@@ -2,7 +2,7 @@ DOCKER_TAG ?= 0.1.0
 CHART_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
 BUILD_PLATFORMS ?= linux/arm64,linux/amd64
-GOTOOLCHAIN ?= go1.25.0
+GOTOOLCHAIN ?= go1.25.9
 GO := CGO_ENABLED=0 GOTOOLCHAIN=$(GOTOOLCHAIN) go
 GO_TEST := $(GO) test -count=1
 
