@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/mydecisive/octant/internal/registry"
 	"go.uber.org/zap"
 )
@@ -10,7 +8,7 @@ import (
 func main() {
 	container, err := registry.Initialize()
 	if err != nil {
-		log.Fatalf("Failed to setup: %v\n", err) //nolint:forbidigo //no zap yet
+		zap.L().Fatal("Failed to setup", zap.Error(err))
 	}
 	registry.SetupGracefulShutdown()
 

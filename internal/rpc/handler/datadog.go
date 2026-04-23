@@ -29,7 +29,7 @@ func NewDatadogHandler(config *config.Configuration, datadog integration.Integra
 }
 
 func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[octantv1alpha.GetDatadogIntegrationsResponse], error) {
-	logger := zap.L().With(zap.String("operation", "datadog:GetIntegrations"))
+	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
 	ddInt, err := dh.datadog.GetIntegrations(ctx, dh.config.CurrentNamespace)
 	if err != nil {
 		logger.Error("Failed to get integration", zap.Error(err))
@@ -47,7 +47,7 @@ func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect
 }
 
 func (dh *DatadogHandler) SaveDatadogIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
-	logger := zap.L().With(zap.String("operation", "datadog:SaveIntegration"))
+	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceSaveDatadogIntegrationProcedure))
 
 	if err := dh.datadog.SetIntegration(ctx, dh.config.CurrentNamespace, request.Msg.Name, integration.DataDogIntegrationData{
 		APIKey: request.Msg.ApiKey,
