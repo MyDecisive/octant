@@ -28,7 +28,7 @@ func NewDatadogHandler(config *config.Configuration, datadog integration.Integra
 	}
 }
 
-func (dh *DatadogHandler) GetIntegrations(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[octantv1alpha.GetIntegrationsResponse], error) {
+func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[octantv1alpha.GetDatadogIntegrationsResponse], error) {
 	logger := zap.L().With(zap.String("operation", "datadog:GetIntegrations"))
 	ddInt, err := dh.datadog.GetIntegrations(ctx, dh.config.CurrentNamespace)
 	if err != nil {
@@ -41,12 +41,12 @@ func (dh *DatadogHandler) GetIntegrations(ctx context.Context, _ *connect.Reques
 		names = append(names, intName)
 	}
 
-	return connect.NewResponse(&octantv1alpha.GetIntegrationsResponse{
+	return connect.NewResponse(&octantv1alpha.GetDatadogIntegrationsResponse{
 		Names: names,
 	}), nil
 }
 
-func (dh *DatadogHandler) SaveIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
+func (dh *DatadogHandler) SaveDatadogIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
 	logger := zap.L().With(zap.String("operation", "datadog:SaveIntegration"))
 
 	if err := dh.datadog.SetIntegration(ctx, dh.config.CurrentNamespace, request.Msg.Name, integration.DataDogIntegrationData{

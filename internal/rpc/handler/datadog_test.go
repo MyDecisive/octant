@@ -34,7 +34,7 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
-		actual, err := target.GetIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
+		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 		require.NoError(t, err)
 
 		assert.Contains(t, actual.Msg.Names, expected)
@@ -49,7 +49,7 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
-		actual, err := target.GetIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
+		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 		assert.Error(t, err)
 		assert.Nil(t, actual)
 	})
@@ -62,7 +62,7 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 		CurrentNamespace: faker.Word(),
 	}
 
-	var task *octantv1alpha.SaveIntegrationRequest
+	var task *octantv1alpha.SaveDatadogIntegrationRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
 
 	t.Run("success", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
-		_, err := target.SaveIntegration(t.Context(), connect.NewRequest(task))
+		_, err := target.SaveDatadogIntegration(t.Context(), connect.NewRequest(task))
 		assert.NoError(t, err)
 	})
 
@@ -87,7 +87,7 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
-		_, err := target.SaveIntegration(t.Context(), connect.NewRequest(task))
+		_, err := target.SaveDatadogIntegration(t.Context(), connect.NewRequest(task))
 		assert.Error(t, err)
 	})
 }
