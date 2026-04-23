@@ -41,10 +41,9 @@ func (dh *DatadogHandler) GetIntegrations(ctx context.Context, _ *connect.Reques
 		names = append(names, intName)
 	}
 
-	connect.NewResponse(&octantv1alpha.GetIntegrationsResponse{
+	return connect.NewResponse(&octantv1alpha.GetIntegrationsResponse{
 		Names: names,
-	})
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octant.v1alpha.DatadogService.GetIntegrations is not implemented"))
+	}), nil
 }
 
 func (dh *DatadogHandler) SaveIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
