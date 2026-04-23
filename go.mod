@@ -8,14 +8,16 @@ require (
 	connectrpc.com/grpcreflect v1.3.0
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
-	github.com/MyDecisive/octant-contracts/go v0.1.1-alpha
+	github.com/MyDecisive/octant-contracts/go v0.3.0-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
+	github.com/go-faker/faker/v4 v4.7.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mydecisive/mdai-data-core v0.3.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.66.1
 	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/dig v1.19.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.48.0
 	golang.org/x/sync v0.19.0
