@@ -4,6 +4,8 @@ package rpchandler
 import (
 	"context"
 	"errors"
+	"maps"
+	"slices"
 
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -36,13 +38,8 @@ func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect
 		return nil, connect.NewError(connect.CodeInternal, errors.New("get integration"))
 	}
 
-	names := make([]string, 0, len(ddInt))
-	for intName := range ddInt {
-		names = append(names, intName)
-	}
-
 	return connect.NewResponse(&octantv1alpha.GetDatadogIntegrationsResponse{
-		Names: names,
+		Names: slices.Collect(maps.Keys(ddInt)),
 	}), nil
 }
 
