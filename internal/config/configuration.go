@@ -2,14 +2,18 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"strings"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 // ConfigPathEnvVarName contains the environment variable name
 // of the env var that will contain the config file path.
-const ConfigPathEnvVarName = "OCTANT_CONFIG_PATH"
+const (
+	ConfigPathEnvVarName = "OCTANT_CONFIG_PATH"
+	namespaceFilePath    = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+)
 
 // Environment defines the possible environments octant can be running in.
 //
@@ -24,8 +28,9 @@ const (
 
 // Configuration represents the global configurations for octant.
 type Configuration struct {
-	Env Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	RPC RPC         `yaml:"rpc"`
+	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
+	RPC              RPC         `yaml:"rpc"`
+	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
 }
 
 // RPC contains configuration for RPC related code.
@@ -46,6 +51,12 @@ func Read() (*Configuration, error) {
 	} else {
 		if err := cleanenv.ReadConfig(configPath, &configuration); err != nil {
 			return nil, err
+		}
+	}
+
+	if configuration.CurrentNamespace == "" {
+		if data, err := os.ReadFile(namespaceFilePath); err == nil {
+			configuration.CurrentNamespace = strings.TrimSpace(string(data))
 		}
 	}
 	return &configuration, nil
