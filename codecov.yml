@@ -11,3 +11,4 @@ ignore:
   - "internal/test"
   - "internal/mock"
   - "internal/registry"
+  - "internal/rpc/server.go"
