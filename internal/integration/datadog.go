@@ -32,6 +32,13 @@ type DataDogIntegration struct {
 	K8sClient kubernetes.Interface
 }
 
+// NewDataDogIntegration returns a new instance of DataDogIntegration.
+func NewDataDogIntegration(K8sClient kubernetes.Interface) *DataDogIntegration {
+	return &DataDogIntegration{
+		K8sClient: K8sClient,
+	}
+}
+
 var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "octant-integration" secret.
