@@ -24,8 +24,9 @@ const (
 
 // Configuration represents the global configurations for octant.
 type Configuration struct {
-	Env Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	RPC RPC         `yaml:"rpc"`
+	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
+	RPC              RPC         `yaml:"rpc"`
+	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
 }
 
 // RPC contains configuration for RPC related code.

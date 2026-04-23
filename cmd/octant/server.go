@@ -13,10 +13,9 @@ import (
 const namespaceFilePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 type dependencies struct {
-	logger       *zap.Logger
-	config       *config.Configuration
-	k8sClient    kubernetes.Interface
-	k8sNamespace string
+	logger    *zap.Logger
+	config    *config.Configuration
+	k8sClient kubernetes.Interface
 }
 
 func setup() (dependencies, func()) {
@@ -24,6 +23,8 @@ func setup() (dependencies, func()) {
 	if err != nil {
 		log.Fatalf("reading config: %v\n", err) // nolint:forbidigo // zap not setup yet
 	}
+
+	configuration.CurrentNamespace = getCurrentNamespace()
 
 	// Setup logger
 	var logger *zap.Logger
@@ -47,10 +48,9 @@ func setup() (dependencies, func()) {
 		logger.Fatal("creating kubernetes client: %w", zap.Error(err))
 	}
 	return dependencies{
-			logger:       logger,
-			config:       configuration,
-			k8sClient:    clientset,
-			k8sNamespace: getCurrentNamespace(),
+			logger:    logger,
+			config:    configuration,
+			k8sClient: clientset,
 		}, func() {
 			if err = logger.Sync(); err != nil {
 				logger.Error("syncing logger", zap.Error(err))

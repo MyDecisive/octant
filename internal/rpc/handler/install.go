@@ -6,8 +6,8 @@ import (
 	"fmt"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"time"
@@ -20,12 +20,18 @@ type InstallHandler struct {
 	octantv1alphaconnect.UnimplementedInstallServiceHandler
 
 	config          *config.Configuration
+	argoClient      argocd.APIClient
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
 }
 
-func NewInstallHandler(config *config.Configuration, argoIntegration integration.Integration[integration.ArgoCDIntegrationData]) *InstallHandler {
+func NewInstallHandler(
+	config *config.Configuration,
+	argoClient argocd.APIClient,
+	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
+) *InstallHandler {
 	return &InstallHandler{
 		config:          config,
+		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
 	}
 }
@@ -50,6 +56,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", integration.ArgocdSecretName))
 	}
 
+	// TODO: upsert connection configmap with the install namespace
 	// create the argo app template, and apply the application to the argo cluster
 	return &connect.Response[emptypb.Empty]{}, nil
 }
