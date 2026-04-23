@@ -19,3 +19,6 @@ packages:
   github.com/mydecisive/octant/internal/argocd:
     interfaces:
       APIClient:
+  github.com/mydecisive/octant/internal/wrapper:
+    interfaces:
+      HTTPClient:

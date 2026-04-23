@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/wrapper"
 )
 
 const (
@@ -27,7 +27,7 @@ type VariableAccessor interface {
 
 // MDAIGateway implements VariableAccessor.
 type MDAIGateway struct {
-	client      *http.Client
+	client      wrapper.HTTPClient
 	gatewayName string
 }
 
@@ -35,7 +35,7 @@ type MDAIGateway struct {
 var _ VariableAccessor = &MDAIGateway{}
 
 // NewMDAIGateway returns a new instance of MDAIGateway.
-func NewMDAIGateway(c *config.Configuration, client *http.Client) *MDAIGateway {
+func NewMDAIGateway(c *config.Configuration, client wrapper.HTTPClient) *MDAIGateway {
 	return &MDAIGateway{
 		client:      client,
 		gatewayName: c.Budget.DefaultMDAIGatewayName,
