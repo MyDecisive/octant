@@ -141,13 +141,7 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionNa
 }
 
 func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]ValidationAttributes, error) {
-	attrs := make(map[telemetry.MLT]ValidationAttributes)
-	for _, t := range telemetryTypes {
-		attrs[t] = ValidationAttributes{
-			Parity: make(map[string]bool),
-			Policy: make(map[string]bool),
-		}
-	}
+	attrs := makeEmptyAttributeValidationMap(telemetryTypes)
 
 	for metricName, vType := range attributeParityMetricsToValidationType {
 		query := buildValidationQuery(metricName, connectionName)
@@ -200,19 +194,7 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 }
 
 func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]SignalChecks, error) {
-	signals := make(map[telemetry.MLT]SignalChecks)
-	failsSeen := make(map[telemetry.MLT]SignalChecks)
-
-	for _, t := range telemetryTypes {
-		signals[t] = SignalChecks{
-			ParityValidation: false,
-			PolicyValidation: false,
-		}
-		failsSeen[t] = SignalChecks{
-			ParityValidation: false,
-			PolicyValidation: false,
-		}
-	}
+	signals, failsSeen := makeEmptySignalCheckMaps(telemetryTypes)
 
 	for metricName, vType := range signalParityMetricsToValidationType {
 		query := buildValidationQuery(metricName, connectionName)
@@ -248,6 +230,34 @@ func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionN
 	}
 
 	return signals, nil
+}
+
+func makeEmptyAttributeValidationMap(telemetryTypes []telemetry.MLT) map[telemetry.MLT]ValidationAttributes {
+	attrs := make(map[telemetry.MLT]ValidationAttributes)
+	for _, t := range telemetryTypes {
+		attrs[t] = ValidationAttributes{
+			Parity: make(map[string]bool),
+			Policy: make(map[string]bool),
+		}
+	}
+	return attrs
+}
+
+func makeEmptySignalCheckMaps(telemetryTypes []telemetry.MLT) (map[telemetry.MLT]SignalChecks, map[telemetry.MLT]SignalChecks) {
+	signals := make(map[telemetry.MLT]SignalChecks)
+	failsSeen := make(map[telemetry.MLT]SignalChecks)
+
+	for _, t := range telemetryTypes {
+		signals[t] = SignalChecks{
+			ParityValidation: false,
+			PolicyValidation: false,
+		}
+		failsSeen[t] = SignalChecks{
+			ParityValidation: false,
+			PolicyValidation: false,
+		}
+	}
+	return signals, failsSeen
 }
 
 func (cs *ConnectionStatus) queryVector(ctx context.Context, query string) (model.Vector, error) {
