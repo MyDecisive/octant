@@ -26,6 +26,8 @@ const (
 	ParityValidation ValidationType = "parityValidation"
 )
 
+type SignalChecks map[ValidationType]bool
+
 type collectorMetric string
 
 const (
@@ -90,12 +92,9 @@ func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionNa
 	results := make(map[telemetry.MLT]ValidationResult)
 	for _, t := range telemetryTypes {
 		res := ValidationResult{
-			Parity: signalData[t][string(ParityValidation)],
-			Policy: signalData[t][string(PolicyValidation)],
-			Attributes: ValidationAttributes{
-				Parity: attrData[t][string(ParityValidation)],
-				Policy: attrData[t][string(PolicyValidation)],
-			},
+			Parity:     signalData[t][ParityValidation],
+			Policy:     signalData[t][PolicyValidation],
+			Attributes: attrData[t],
 		}
 
 		if !res.Parity && !res.Policy {
@@ -138,18 +137,18 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionNa
 	return true, nil
 }
 
-func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]map[string]map[string]bool, error) {
-	attrs := make(map[telemetry.MLT]map[string]map[string]bool)
+func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]ValidationAttributes, error) {
+	attrs := make(map[telemetry.MLT]ValidationAttributes)
 	for _, t := range telemetryTypes {
-		attrs[t] = map[string]map[string]bool{
-			string(ParityValidation): make(map[string]bool),
-			string(PolicyValidation): make(map[string]bool),
+		attrs[t] = ValidationAttributes{
+			Parity: make(map[string]bool),
+			Policy: make(map[string]bool),
 		}
 	}
 
-	metrics := map[string]string{
-		metricFidelityAttr:         string(ParityValidation),
-		metricFidelityRequiredAttr: string(PolicyValidation),
+	metrics := map[string]ValidationType{
+		metricFidelityAttr:         ParityValidation,
+		metricFidelityRequiredAttr: PolicyValidation,
 	}
 
 	for metricName, vType := range metrics {
@@ -166,7 +165,8 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 			}
 
 			signal := telemetry.MLT(sample.Metric[fidelityMetricSignal])
-			if _, exists := attrs[signal]; !exists {
+			attrGroup, exists := attrs[signal]
+			if !exists {
 				continue
 			}
 
@@ -177,41 +177,48 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 				continue
 			}
 
+			targetMap := attrGroup.Parity
+			if vType == PolicyValidation {
+				targetMap = attrGroup.Policy
+			}
+
 			// Only a strict "pass" can initialize the attribute as true,
 			// and only if we haven't already marked it as false.
 			if result == fidelityCheckPass {
-				if _, exists := attrs[signal][vType][attrName]; !exists {
-					attrs[signal][vType][attrName] = true
+				if _, exists := targetMap[attrName]; !exists {
+					targetMap[attrName] = true
 				}
 			} else {
 				// "fail", "unknown", or any unexpected value explicitly marks it false.
 				// This will overwrite a previously recorded "true" for this attribute.
-				attrs[signal][vType][attrName] = false
+				targetMap[attrName] = false
 			}
+
+			attrs[signal] = attrGroup
 		}
 	}
 
 	return attrs, nil
 }
 
-func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]map[string]bool, error) {
-	signals := make(map[telemetry.MLT]map[string]bool)
-	failsSeen := make(map[telemetry.MLT]map[string]bool)
+func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (map[telemetry.MLT]SignalChecks, error) {
+	signals := make(map[telemetry.MLT]SignalChecks)
+	failsSeen := make(map[telemetry.MLT]SignalChecks)
 
 	for _, t := range telemetryTypes {
-		signals[t] = map[string]bool{
-			string(ParityValidation): false,
-			string(PolicyValidation): false,
+		signals[t] = SignalChecks{
+			ParityValidation: false,
+			PolicyValidation: false,
 		}
-		failsSeen[t] = map[string]bool{
-			string(ParityValidation): false,
-			string(PolicyValidation): false,
+		failsSeen[t] = SignalChecks{
+			ParityValidation: false,
+			PolicyValidation: false,
 		}
 	}
 
-	metrics := map[string]string{
-		metricFidelitySignal:         string(ParityValidation),
-		metricFidelityRequiredSignal: string(PolicyValidation),
+	metrics := map[string]ValidationType{
+		metricFidelitySignal:         ParityValidation,
+		metricFidelityRequiredSignal: PolicyValidation,
 	}
 
 	for metricName, vType := range metrics {
