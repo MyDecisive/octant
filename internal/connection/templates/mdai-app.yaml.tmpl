@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   sources:
-  - repoURL: oci://ghcr.io/mydecisive/mdai-hub
-    chart: mdai
+  - repoURL: ghcr.io/mydecisive/charts
+    chart: mdai-hub
     targetRevision: {{ .MdaiVersion }}
     helm:
       valueFiles:

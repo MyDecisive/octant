@@ -33,7 +33,6 @@ func NewInstallHandler(
 	config *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	octantConnection connection.Connection[connection.OctantConnectionData],
 ) *InstallHandler {
 	return &InstallHandler{
 		config:          config,
@@ -63,7 +62,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	}
 
 	// 2) render the argo app template
-	manifestBytes, err := connection.RenderMdaiAppManifest("latest", installNamespace)
+	manifestBytes, err := connection.RenderMdaiAppManifest("0.9.3-envoy", installNamespace)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
