@@ -71,7 +71,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		assert.Nil(t, actual)
 	})
 
-	t.Run("err log lock in use", func(t *testing.T) {
+	t.Run("err trace lock in use", func(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)

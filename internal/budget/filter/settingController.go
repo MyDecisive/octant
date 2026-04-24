@@ -193,7 +193,7 @@ func (sc *MDAISettingController) updateFilter(ctx context.Context, input setting
 			if err != nil {
 				return true, err
 			}
-			return deployment.Status.Replicas == deployment.Status.ReadyReplicas, nil
+			return deployment.Status.Replicas == deployment.Status.ReadyReplicas && deployment.Status.Replicas == deployment.Status.UpdatedReplicas, nil
 		}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return ErrTimeout

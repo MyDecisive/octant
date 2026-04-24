@@ -69,11 +69,16 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 // This will return `ErrInvalid` if the operation failed.
 func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varName string, value any) error {
 	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName)
-	jsonValue, _ := json.Marshal(map[string]any{"data": value})
+	jsonValue, err := json.Marshal(map[string]any{"data": value})
+	if err != nil {
+		return "", err
+	}
 	resp, err := mdai.client.Post(url, contentTypeJSON, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close() //nolint:errcheck
+
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
 	}
