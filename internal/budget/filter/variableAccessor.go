@@ -52,6 +52,10 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
@@ -71,7 +75,7 @@ func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varNam
 	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName)
 	jsonValue, err := json.Marshal(map[string]any{"data": value})
 	if err != nil {
-		return "", err
+		return err
 	}
 	resp, err := mdai.client.Post(url, contentTypeJSON, bytes.NewBuffer(jsonValue))
 	if err != nil {

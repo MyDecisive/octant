@@ -67,6 +67,23 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		assert.Empty(t, actual)
 	})
 
+	t.Run("err status", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := wrappermock.NewMockHTTPClient(t)
+		mockClient.EXPECT().Get(url).Return(&http.Response{
+			Body:       io.NopCloser(strings.NewReader("")),
+			StatusCode: http.StatusInternalServerError,
+		}, nil)
+
+		target := NewMDAIGateway(c, mockClient)
+
+		actual, err := target.GetVariable(namespace, hubName, varName)
+		assert.Error(t, err)
+
+		assert.Empty(t, actual)
+	})
+
 	t.Run("err invalid body", func(t *testing.T) {
 		t.Parallel()
 
@@ -104,6 +121,7 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 
 		mockClient := wrappermock.NewMockHTTPClient(t)
 		mockClient.EXPECT().Post(url, contentTypeJSON, mock.Anything).Return(&http.Response{
+			Body:       io.NopCloser(strings.NewReader("")),
 			StatusCode: http.StatusOK,
 		}, nil)
 
@@ -130,6 +148,7 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 
 		mockClient := wrappermock.NewMockHTTPClient(t)
 		mockClient.EXPECT().Post(url, contentTypeJSON, mock.Anything).Return(&http.Response{
+			Body:       io.NopCloser(strings.NewReader("")),
 			StatusCode: http.StatusInternalServerError,
 		}, nil)
 

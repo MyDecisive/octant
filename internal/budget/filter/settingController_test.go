@@ -173,8 +173,9 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
 		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&v1.Deployment{
 			Status: v1.DeploymentStatus{
-				Replicas:      1,
-				ReadyReplicas: 1,
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
 			},
 		}, nil)
 
@@ -205,8 +206,9 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
 		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&v1.Deployment{
 			Status: v1.DeploymentStatus{
-				Replicas:      1,
-				ReadyReplicas: 1,
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
 			},
 		}, nil)
 
