@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"net/http"
 	"slices"
 
@@ -57,7 +58,7 @@ func NewOctantConnection(httpClient *http.Client, k8sClient kubernetes.Interface
 
 var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
 
-func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error) {
+func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error) {
 	var (
 		receivingData bool
 		sendingData   bool
@@ -85,7 +86,7 @@ func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, 
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
 
-	return &Status{
+	return &octantv1alpha.GetConnectionStatusResponse{
 		ReceivingData:     receivingData,
 		SendingData:       sendingData,
 		DataIntegrity:     dataIntegrity,

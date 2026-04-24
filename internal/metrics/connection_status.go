@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"time"
 
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -76,7 +77,7 @@ func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionS
 	}
 }
 
-func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (bool, map[telemetry.MLT]ValidationResult, error) {
+func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (bool, *octantv1alpha.ValidationResultsBySignal, error) {
 	dataIntegrity := true
 
 	attrParity, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributeParityFidelityMetric)
@@ -99,12 +100,12 @@ func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionNa
 		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
 	}
 
-	results := make(map[telemetry.MLT]ValidationResult)
+	results := octantv1alpha.ValidationResultsBySignal{}
 	for _, t := range telemetryTypes {
-		res := ValidationResult{
+		res := octantv1alpha.ValidationResult{
 			Parity: signalParity[t],
 			Policy: signalPolicy[t],
-			Attributes: ValidationAttributes{
+			Attributes: &octantv1alpha.ValidationAttributes{
 				Parity: attrParity[t],
 				Policy: attrPolicy[t],
 			},
@@ -114,10 +115,19 @@ func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionNa
 			dataIntegrity = false
 		}
 
-		results[t] = res
+		switch t {
+		case telemetry.Logs:
+			results.Logs = &res
+		case telemetry.Metrics:
+			results.Metrics = &res
+		case telemetry.Traces:
+			results.Traces = &res
+		default:
+			cs.logger.Warn("exotic telemetry type in VerifyDataFidelity (how did we get here?!)", zap.String("telemetryType", string(t)))
+		}
 	}
 
-	return dataIntegrity, results, nil
+	return dataIntegrity, &results, nil
 }
 
 func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {

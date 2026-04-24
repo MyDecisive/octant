@@ -183,8 +183,8 @@ func TestVerifyDataFidelity(t *testing.T) {
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.NoError(t, err)
 		require.False(t, result)
-		require.False(t, validations[telemetry.Logs].Parity)
-		require.False(t, validations[telemetry.Logs].Policy)
+		require.False(t, (*validations.Logs).Parity)
+		require.False(t, (*validations.Logs).Policy)
 	})
 
 	t.Run("error - invalid prometheus query result", func(t *testing.T) {
@@ -233,8 +233,8 @@ func TestVerifyDataFidelity(t *testing.T) {
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
 		require.NoError(t, err)
 		require.False(t, result)
-		require.False(t, validations[telemetry.Traces].Parity)
-		require.False(t, validations[telemetry.Traces].Policy)
+		require.False(t, (*validations.Traces).Parity)
+		require.False(t, (*validations.Traces).Policy)
 	})
 
 	t.Run("data integrity is true when ONLY ONE signal check fails", func(t *testing.T) {
@@ -284,8 +284,8 @@ func TestVerifyDataFidelity(t *testing.T) {
 
 		require.NoError(t, err)
 		require.True(t, result)
-		require.False(t, validations[telemetry.Traces].Parity)
-		require.True(t, validations[telemetry.Traces].Policy)
+		require.False(t, (*validations.Traces).Parity)
+		require.True(t, (*validations.Traces).Policy)
 	})
 
 	t.Run("data integrity is true when signals pass but attributes fail", func(t *testing.T) {
@@ -331,10 +331,10 @@ func TestVerifyDataFidelity(t *testing.T) {
 
 		require.NoError(t, err)
 		require.True(t, result)
-		require.True(t, validations[telemetry.Traces].Parity)
-		require.True(t, validations[telemetry.Traces].Policy)
+		require.True(t, (*validations.Traces).Parity)
+		require.True(t, (*validations.Traces).Policy)
 
-		val, exists := validations[telemetry.Traces].Attributes.Parity["span_id"]
+		val, exists := (*validations.Traces).Attributes.Parity["span_id"]
 		require.True(t, exists)
 		require.False(t, val)
 	})
@@ -377,10 +377,10 @@ func TestVerifyDataFidelity(t *testing.T) {
 		require.False(t, result)
 
 		// The signal should be false because the fail overrides the pass
-		require.False(t, validations[telemetry.Traces].Parity)
+		require.False(t, (*validations.Traces).Parity)
 
 		// The attribute should be false for the same reason
-		val, exists := validations[telemetry.Traces].Attributes.Parity["span_id"]
+		val, exists := (*validations.Traces).Attributes.Parity["span_id"]
 		require.True(t, exists)
 		require.False(t, val)
 	})
@@ -415,10 +415,10 @@ func TestVerifyDataFidelity(t *testing.T) {
 		require.False(t, result)
 
 		// Signals default to false
-		require.False(t, validations[telemetry.Traces].Parity)
+		require.False(t, (*validations.Traces).Parity)
 
 		// The attribute should not even exist in the map
-		_, exists := validations[telemetry.Traces].Attributes.Parity["ignored_attr"]
+		_, exists := (*validations.Traces).Attributes.Parity["ignored_attr"]
 		require.False(t, exists)
 	})
 
@@ -460,12 +460,11 @@ func TestVerifyDataFidelity(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// Traces should not have been added to the root map
-		_, tracesExist := validations[telemetry.Traces]
-		require.False(t, tracesExist)
+		// Traces should not exist
+		require.Nil(t, validations.Traces)
 
 		// Empty attribute should not be in the logs parity map
-		_, emptyAttrExists := validations[telemetry.Logs].Attributes.Parity[""]
+		_, emptyAttrExists := (*validations.Logs).Attributes.Parity[""]
 		require.False(t, emptyAttrExists)
 	})
 
@@ -498,10 +497,10 @@ func TestVerifyDataFidelity(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, result)
 
-		require.False(t, validations[telemetry.Logs].Parity)
+		require.False(t, validations.Logs.Parity)
 
 		// Unknown string should record the attribute as false
-		val, exists := validations[telemetry.Logs].Attributes.Parity["log_body"]
+		val, exists := (*validations.Logs).Attributes.Parity["log_body"]
 		require.True(t, exists)
 		require.False(t, val)
 	})
