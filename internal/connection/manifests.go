@@ -12,6 +12,9 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+//go:embed manifests/cert-manager.yaml
+var CertManagerAppManifest []byte
+
 //go:embed templates/argo-app.yaml.tmpl
 var argoAppTemplate string
 

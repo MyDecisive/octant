@@ -61,7 +61,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", connectionName))
 	}
 
-	// 2) render the argo app template
+	// 2) render the argo app template(s)
 	manifestBytes, err := connection.RenderMdaiAppManifest("0.9.3-envoy", installNamespace)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -71,6 +71,11 @@ func (ih *InstallHandler) InstallMDAIHub(
 		logger.Error("unmarshalling ArgoCD application manifest", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	var certManagerApp argoapp.Application
+	if err = yaml.Unmarshal(connection.CertManagerAppManifest, &certManagerApp); err != nil {
+		logger.Error("unmarshalling cert manager application manifest", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
 	// 3) apply the application to the argo cluster
 	clientOpts := &apiclient.ClientOptions{
@@ -78,9 +83,15 @@ func (ih *InstallHandler) InstallMDAIHub(
 		AuthToken:  argoIntegration.AccountToken,
 		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
 	}
+	// first, apply the cert manager app manifest
+	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, certManagerApp); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
+	// TODO: install cert manager first?
 
 	return &connect.Response[emptypb.Empty]{}, nil
 }
