@@ -15,6 +15,9 @@ import (
 //go:embed templates/argo-app.yaml.tmpl
 var argoAppTemplate string
 
+//go:embed templates/mdai-app.yaml.tmpl
+var mdaiAppTemplate string
+
 //go:embed templates/collector.yaml.tmpl
 var primaryCollectorTemplate string
 
@@ -113,6 +116,27 @@ func CreateExportableTemplateData(namespace string, name string, connection Octa
 		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
 	}
 	return &templateData, nil
+}
+
+func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
+	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error parsing mdai app template: %w", err)
+	}
+
+	var renderedYaml bytes.Buffer
+	templateData := struct {
+		MdaiVersion string
+		Namespace   string
+	}{
+		MdaiVersion: mdaiVersion,
+		Namespace:   namespace,
+	}
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	return renderedYaml.Bytes(), nil
 }
 
 func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat ManifestOutputFormat) ([]byte, error) {

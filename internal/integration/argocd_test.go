@@ -40,7 +40,7 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: ArgocdSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": validIntBytes,
 				},
@@ -65,7 +65,7 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: ArgocdSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": validIntBytes,
 					"team-b": []byte("invalid-json"),
@@ -103,21 +103,21 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		}
 
 		// Verify the secret doesn't exist yet
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
 
 		err = argocdIntegration.SetIntegration(t.Context(), defaultNamespace, "doesntMatter", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, ArgocdSecretName)
+		require.Contains(t, secret.Data, argocdSecretName)
 
 		var teamData ArgoCDIntegrationData
-		err = json.Unmarshal(secret.Data[ArgocdSecretName], &teamData)
+		err = json.Unmarshal(secret.Data[argocdSecretName], &teamData)
 		require.NoError(t, err)
 
 		assert.Equal(t, newIntegration, teamData)
@@ -128,9 +128,9 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: ArgocdSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
-					ArgocdSecretName: []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
+					argocdSecretName: []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
 				},
 			},
 		}
@@ -140,24 +140,24 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		}
 
 		// Verify the secret DOES exist already
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)
-		require.Contains(t, existingSecret.Data, ArgocdSecretName)
+		require.Contains(t, existingSecret.Data, argocdSecretName)
 
 		err = datadogIntegration.SetIntegration(t.Context(), defaultNamespace, "doesntMatter", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		secret, getErr := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, ArgocdSecretName)
+		require.Contains(t, secret.Data, argocdSecretName)
 
 		var teamData ArgoCDIntegrationData
-		err = json.Unmarshal(secret.Data[ArgocdSecretName], &teamData)
+		err = json.Unmarshal(secret.Data[argocdSecretName], &teamData)
 		require.NoError(t, err)
 
 		assert.Equal(t, newIntegration, teamData)
@@ -176,7 +176,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret doesn't exist before we try to delete
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
 
 		err = datadogIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
@@ -188,7 +188,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: ArgocdSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl":"http://localhost:12345"}`),
 				},
@@ -200,7 +200,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret exists with "team-a" before we try to delete with another integration name
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)
@@ -215,7 +215,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 
 		existingObjects := []runtime.Object{
 			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: ArgocdSecretName, Namespace: defaultNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
 					"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl": "http://localhost:12345"}`),
 					"team-b": []byte(`{"accountToken":"xyz999-token", "apiUrl": "http://localhost:12345"}`),
@@ -228,7 +228,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		}
 
 		// validate secret exists with both integration names before we delete one of them.
-		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		existingSecret, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 2)
@@ -238,7 +238,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		err = argocdIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
 		require.NoError(t, err)
 
-		existingSecret, err = mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), ArgocdSecretName, metav1.GetOptions{})
+		existingSecret, err = mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)

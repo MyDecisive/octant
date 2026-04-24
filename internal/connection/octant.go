@@ -25,11 +25,12 @@ type OctantConnectionDestination struct {
 }
 
 type OctantConnectionData struct {
-	SourceType     string                        `json:"sourceType"`
-	Destinations   []OctantConnectionDestination `json:"destinations"`
-	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
-	Deployment     *Deployment                   `json:"deployment,omitempty"`
-	Status         any                           `json:"status,omitempty"`
+	SourceType           string                        `json:"sourceType"`
+	Destinations         []OctantConnectionDestination `json:"destinations"`
+	TelemetryTypes       []telemetry.MLT               `json:"telemetryTypes"`
+	Deployment           *Deployment                   `json:"deployment,omitempty"`
+	MdaiInstallNamespace string                        `json:"mdaiInstallNamespace,omitempty"`
+	Status               any                           `json:"status,omitempty"`
 }
 
 type OctantConnection struct {
@@ -155,7 +156,7 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 		}
 	}
 
-	// TODO: This should be refactored to a more robust deployment-based task system
+	// TODO: This should be moved up to the service/rpc layer, not the logic layer
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
 		err := oc.pushArgoApp(ctx, namespace, connectionName, connection)
 		if err != nil {

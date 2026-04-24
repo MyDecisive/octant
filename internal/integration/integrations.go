@@ -16,30 +16,30 @@ type Integration[T any] interface {
 	DeleteIntegration(ctx context.Context, namespace, integrationName string) error
 }
 
-func updateSecretWithIntegration(ctx context.Context, k8sClient kubernetes.Interface, namespace string, secret *corev1.Secret, jsonData []byte) error {
+func updateSecretWithIntegration(ctx context.Context, k8sClient kubernetes.Interface, namespace, integrationName string, secret *corev1.Secret, jsonData []byte) error {
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
-	secret.Data[secret.Name] = jsonData
+	secret.Data[integrationName] = jsonData
 
 	_, err := k8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
 }
 
-func createIntegrationSecret(ctx context.Context, k8sClient kubernetes.Interface, namespace, secretName string, jsonData []byte) error {
+func createIntegrationSecret(ctx context.Context, k8sClient kubernetes.Interface, namespace, integrationName string, jsonData []byte) error {
 	newSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
+			Name:      argocdSecretName,
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
-			secretName: jsonData,
+			integrationName: jsonData,
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
 
 	if _, err := k8sClient.CoreV1().Secrets(namespace).Create(ctx, newSecret, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create secret %s: %w", secretName, err)
+		return fmt.Errorf("failed to create secret %s: %w", argocdSecretName, err)
 	}
 	return nil
 }

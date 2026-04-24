@@ -6,11 +6,16 @@ import (
 	"fmt"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"sigs.k8s.io/yaml"
 	"time"
+
+	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
@@ -28,6 +33,7 @@ func NewInstallHandler(
 	config *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	octantConnection connection.Connection[connection.OctantConnectionData],
 ) *InstallHandler {
 	return &InstallHandler{
 		config:          config,
@@ -41,23 +47,42 @@ func (ih *InstallHandler) InstallMDAIHub(
 	req *connect.Request[octantv1alpha.InstallMDAIHubRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	installNamespace := req.Msg.GetNamespace()
+	connectionName := req.Msg.GetConnectionName()
 
 	logger := zap.L().With(zap.String("installNamespace", installNamespace))
 
 	logger.Debug("received install MDAIHub request")
 
-	// get the argo integration details
-	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, integration.ArgocdSecretName)
+	// 1) get the argo integration details
+	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
 	if argoIntegration == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", integration.ArgocdSecretName))
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", connectionName))
 	}
 
-	// TODO: upsert connection configmap with the install namespace
-	// create the argo app template, and apply the application to the argo cluster
+	// 2) render the argo app template
+	manifestBytes, err := connection.RenderMdaiAppManifest("latest", installNamespace)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	var argoApp argoapp.Application
+	if err = yaml.Unmarshal(manifestBytes, &argoApp); err != nil {
+		logger.Error("unmarshalling ArgoCD application manifest", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// 3) apply the application to the argo cluster
+	clientOpts := &apiclient.ClientOptions{
+		ServerAddr: argoIntegration.APIUrl,
+		AuthToken:  argoIntegration.AccountToken,
+		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
+	}
+	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 

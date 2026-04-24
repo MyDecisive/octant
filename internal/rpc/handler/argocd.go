@@ -68,12 +68,13 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 ) (*connect.Response[emptypb.Empty], error) {
 	argoEndpoint := req.Msg.GetArgoEndpoint()
 	accountToken := req.Msg.GetArgoAccountToken()
+	integrationName := req.Msg.GetName()
 
 	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
 
 	logger.Debug("received save connection request")
 
-	if err := ah.argoIntegration.SetIntegration(ctx, ah.config.CurrentNamespace, "mdai", integration.ArgoCDIntegrationData{
+	if err := ah.argoIntegration.SetIntegration(ctx, ah.config.CurrentNamespace, integrationName, integration.ArgoCDIntegrationData{
 		APIUrl:       argoEndpoint,
 		AccountToken: accountToken,
 	}); err != nil {
