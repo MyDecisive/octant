@@ -61,7 +61,6 @@ func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, 
 	var (
 		receivingData bool
 		sendingData   bool
-		dataIntegrity bool
 	)
 	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
 	if err != nil {
@@ -71,27 +70,26 @@ func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, 
 		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
 	}
 
-	// for each telemetry type on the connection, check for increasing metrics on the receiver (receiving data)
 	receivingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Ingress, connection.TelemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
 	}
 
-	// for each telemetry type on the connection, check for increasing metrics on the exporter (sending data)
 	sendingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Egress, connection.TelemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
 	}
 
-	dataIntegrity, err = oc.connectionMetrics.VerifyDataFidelity(ctx, connection.TelemetryTypes)
+	dataIntegrity, validationResults, err := oc.connectionMetrics.VerifyDataFidelity(ctx, connectionName, connection.TelemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
 
 	return &Status{
-		ReceivingData: receivingData,
-		SendingData:   sendingData,
-		DataIntegrity: dataIntegrity,
+		ReceivingData:     receivingData,
+		SendingData:       sendingData,
+		DataIntegrity:     dataIntegrity,
+		ValidationResults: validationResults,
 	}, nil
 }
 
