@@ -1,0 +1,51 @@
+package metrics
+
+import (
+	"fmt"
+	"github.com/prometheus/client_golang/api"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"os"
+	"sync"
+)
+
+type PromClientFactory interface {
+	GetPromClient(namespace string) (v1.API, error)
+}
+
+type promClientFactoryImpl struct {
+	cache       sync.Map
+	serviceName string
+	port        int
+}
+
+func NewPromClientFactory() PromClientFactory {
+	return &promClientFactoryImpl{
+		// TODO: Update this to be configurable
+		serviceName: "prometheus-operated",
+		port:        9090,
+	}
+}
+
+func (f *promClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) {
+	if cachedClient, ok := f.cache.Load(namespace); ok {
+		return cachedClient.(v1.API), nil
+	}
+
+	promURL := os.Getenv("DEV_PROMETHEUS_URL")
+	if promURL == "" {
+		promURL = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", f.serviceName, namespace, f.port)
+	}
+
+	client, err := api.NewClient(api.Config{
+		Address: promURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prometheus client for namespace %s: %w", namespace, err)
+	}
+
+	promAPI := v1.NewAPI(client)
+
+	actualClient, _ := f.cache.LoadOrStore(namespace, promAPI)
+
+	return actualClient.(v1.API), nil
+}

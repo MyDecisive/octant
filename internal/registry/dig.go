@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/metrics"
 	"net/http"
 	"os"
 	"os/signal"
@@ -37,6 +39,9 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(provideHTTPClient); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(metrics.NewPromClientFactory); err != nil {
+		return nil, err
+	}
 
 	// Budget
 	if err := container.Provide(budgetfilter.NewMDAIGateway, dig.As(new(budgetfilter.VariableAccessor))); err != nil {
@@ -57,6 +62,11 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 
+	// Connection
+	if err := container.Provide(connection.NewOctantConnection, dig.As(new(connection.Connection[connection.OctantConnectionData]))); err != nil {
+		return nil, err
+	}
+
 	// RPC Server
 	if err := container.Provide(rpchandler.NewArgoCDHandler); err != nil {
 		return nil, err
@@ -65,6 +75,9 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewDatadogHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewConnectionHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpc.NewServer); err != nil {

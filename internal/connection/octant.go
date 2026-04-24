@@ -7,14 +7,12 @@ import (
 	"errors"
 	"fmt"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"net/http"
+	"github.com/mydecisive/octant/internal/wrapper"
 	"slices"
 
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
-	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -34,35 +32,29 @@ type OctantConnectionData struct {
 }
 
 type OctantConnection struct {
-	httpClient        *http.Client
+	httpClient        wrapper.HTTPClient
 	k8sClient         kubernetes.Interface
 	argoClient        integration.Integration[integration.ArgoCDIntegrationData]
 	datadogClient     integration.Integration[integration.DataDogIntegrationData]
-	PrometheusClient  promv1.API
-	logger            *zap.Logger
+	promClientFactory metrics.PromClientFactory
 	connectionMetrics *metrics.ConnectionStatus
 	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
 	// taskSets      map[DeploymentType]DeploymentTaskSet
 }
 
-func NewOctantConnection(httpClient *http.Client, k8sClient kubernetes.Interface, argoClient integration.Integration[integration.ArgoCDIntegrationData], datadogClient integration.Integration[integration.DataDogIntegrationData], promClient promv1.API, logger *zap.Logger) *OctantConnection {
+func NewOctantConnection(httpClient wrapper.HTTPClient, k8sClient kubernetes.Interface, argoClient integration.Integration[integration.ArgoCDIntegrationData], datadogClient integration.Integration[integration.DataDogIntegrationData], promClientFactory metrics.PromClientFactory) *OctantConnection {
 	return &OctantConnection{
 		httpClient:        httpClient,
 		k8sClient:         k8sClient,
 		argoClient:        argoClient,
 		datadogClient:     datadogClient,
-		logger:            logger,
-		connectionMetrics: metrics.NewConnectionStatus(promClient, logger),
+		connectionMetrics: metrics.NewConnectionStatus(promClientFactory),
 	}
 }
 
 var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
 
 func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error) {
-	var (
-		receivingData bool
-		sendingData   bool
-	)
 	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
 	if err != nil {
 		return nil, fmt.Errorf("getting connection: %w", err)
@@ -71,27 +63,7 @@ func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, 
 		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
 	}
 
-	receivingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Ingress, connection.TelemetryTypes)
-	if err != nil {
-		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
-	}
-
-	sendingData, err = oc.connectionMetrics.IsTelemetryFlowing(ctx, connectionName, metrics.Egress, connection.TelemetryTypes)
-	if err != nil {
-		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
-	}
-
-	dataIntegrity, validationResults, err := oc.connectionMetrics.VerifyDataFidelity(ctx, connectionName, connection.TelemetryTypes)
-	if err != nil {
-		return nil, fmt.Errorf("verifying data integrity: %w", err)
-	}
-
-	return &octantv1alpha.GetConnectionStatusResponse{
-		ReceivingData:     receivingData,
-		SendingData:       sendingData,
-		DataIntegrity:     dataIntegrity,
-		ValidationResults: validationResults,
-	}, nil
+	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes)
 }
 
 func (oc *OctantConnection) GetConnectionByName(ctx context.Context, namespace, name string) (*OctantConnectionData, error) {

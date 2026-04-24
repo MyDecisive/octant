@@ -19,9 +19,11 @@ type ConnectionHandler struct {
 
 func NewConnectionHandler(
 	config *config.Configuration,
+	octantConnection connection.Connection[connection.OctantConnectionData],
 ) *ConnectionHandler {
 	return &ConnectionHandler{
-		config: config,
+		config:           config,
+		octantConnection: octantConnection,
 	}
 }
 

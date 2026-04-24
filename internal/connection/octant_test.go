@@ -10,6 +10,7 @@ import (
 
 	"github.com/mydecisive/octant/internal/integration"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/prometheus/client_golang/api"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -53,10 +54,11 @@ func setupTestServer() *httptest.Server {
 // --- FIXTURE HELPER ---
 
 type octantTestFixture struct {
-	k8sClient   *fake.Clientset
-	argoMock    *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
-	datadogMock *integrationmock.MockIntegration[integration.DataDogIntegrationData]
-	httpClient  *http.Client
+	k8sClient       *fake.Clientset
+	argoMock        *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
+	datadogMock     *integrationmock.MockIntegration[integration.DataDogIntegrationData]
+	promFactoryMock *metricsmock.MockPromClientFactory
+	httpClient      *http.Client
 }
 
 // setupFixture initializes a default set of dependencies for OctantConnection.
@@ -64,10 +66,11 @@ type octantTestFixture struct {
 func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 	t.Helper()
 	return &octantTestFixture{
-		k8sClient:   fake.NewClientset(objects...),
-		argoMock:    integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
-		datadogMock: integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
-		httpClient:  http.DefaultClient, // Default safe client; tests can override with httptest server clients
+		k8sClient:       fake.NewClientset(objects...),
+		argoMock:        integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
+		datadogMock:     integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
+		promFactoryMock: metricsmock.NewMockPromClientFactory(t),
+		httpClient:      http.DefaultClient, // Default safe client; tests can override with httptest server clients
 	}
 }
 
@@ -78,7 +81,7 @@ func (f *octantTestFixture) build() *OctantConnection {
 		f.k8sClient,
 		f.argoMock,
 		f.datadogMock,
-		nil,
+		f.promFactoryMock,
 		zap.NewNop(),
 	)
 }
@@ -548,14 +551,10 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 	require.NoError(t, err)
 	promAPI := promv1.NewAPI(promClient)
 
-	octantConnection := NewOctantConnection(
-		f.httpClient,
-		f.k8sClient,
-		f.argoMock,
-		f.datadogMock,
-		promAPI,
-		zap.NewNop(),
-	)
+	// Set up the PromClientFactory mock to return our test PromAPI
+	f.promFactoryMock.EXPECT().GetPromClient(defaultNamespace).Return(promAPI, nil).Times(1)
+
+	octantConnection := f.build()
 
 	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
 
@@ -592,14 +591,10 @@ func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
 	require.NoError(t, err)
 	promAPI := promv1.NewAPI(promClient)
 
-	octantConnection := NewOctantConnection(
-		f.httpClient,
-		f.k8sClient,
-		f.argoMock,
-		f.datadogMock,
-		promAPI,
-		zap.NewNop(),
-	)
+	// Set up the PromClientFactory mock to return our test PromAPI
+	f.promFactoryMock.EXPECT().GetPromClient(defaultNamespace).Return(promAPI, nil).Times(1)
+
+	octantConnection := f.build()
 
 	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
 
