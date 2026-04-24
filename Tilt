@@ -1,7 +1,0 @@
-load('ext://helm_remote', 'helm_remote')
-load('ext://restart_process', 'docker_build_with_restart')
-load('ext://namespace', 'namespace_create', 'namespace_inject')
-
-allow_k8s_contexts(['local-test', 'kind'])
-namespace_create('local')
-
