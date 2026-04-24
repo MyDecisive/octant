@@ -29,9 +29,11 @@ const (
 // Configuration represents the global configurations for octant.
 type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	RPC              RPC         `yaml:"rpc"`
 	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
-	Budget           Budget      `yaml:"budget"`
+	// DefaultTimeout (in seconds) controls HTTP client timeout.
+	DefaultTimeout int    `yaml:"default_timeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"10"`
+	RPC            RPC    `yaml:"rpc"`
+	Budget         Budget `yaml:"budget"`
 }
 
 // RPC contains configuration for RPC related code.
