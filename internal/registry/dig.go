@@ -1,15 +1,19 @@
 package registry
 
 import (
+	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
+	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"github.com/mydecisive/octant/internal/wrapper"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
@@ -30,6 +34,19 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(provideKubeClient); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(provideHTTPClient); err != nil {
+		return nil, err
+	}
+
+	// Budget
+	if err := container.Provide(budgetfilter.NewMDAIGateway, dig.As(new(budgetfilter.VariableAccessor))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(budgetfilter.NewMDAISettingController, dig.As(new(budgetfilter.SettingController))); err != nil {
+		return nil, err
+	}
+
+	// Integration
 	if err := container.Provide(integration.NewDataDogIntegration, dig.As(new(integration.Integration[integration.DataDogIntegrationData]))); err != nil {
 		return nil, err
 	}
@@ -92,4 +109,10 @@ func initLogger(configuration *config.Configuration) error {
 
 func provideKubeClient() (kubernetes.Interface, error) {
 	return datacorekube.NewK8sClient(zap.L())
+}
+
+func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient {
+	return &http.Client{
+		Timeout: time.Duration(configuration.DefaultTimeout) * time.Second,
+	}
 }

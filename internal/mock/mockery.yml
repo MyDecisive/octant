@@ -5,6 +5,7 @@ log-level: info
 structname: '{{.Mock}}{{.InterfaceName}}'
 pkgname: '{{.SrcPackageName}}mock'
 recursive: false
+include-auto-generated: true
 template: testify
 packages:
   github.com/mydecisive/octant/internal/integration:
@@ -19,3 +20,20 @@ packages:
   github.com/mydecisive/octant/internal/argocd:
     interfaces:
       APIClient:
+  github.com/mydecisive/octant/internal/wrapper:
+    interfaces:
+      HTTPClient:
+  github.com/mydecisive/octant/internal/budget/filter:
+    interfaces:
+      VariableAccessor:
+      SettingController:
+  k8s.io/client-go/kubernetes:
+    interfaces:
+      Interface:
+  k8s.io/client-go/kubernetes/typed/apps/v1:
+    config:
+      dir: 'kubernetes/apps{{.SrcPackageName}}'
+      pkgname: 'kubeapps{{.SrcPackageName}}mock'
+    interfaces:
+      AppsV1Interface:
+      DeploymentInterface:

@@ -29,13 +29,25 @@ const (
 // Configuration represents the global configurations for octant.
 type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	RPC              RPC         `yaml:"rpc"`
 	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
+	// DefaultTimeout (in seconds) controls HTTP client timeout.
+	DefaultTimeout int    `yaml:"default_timeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"10"`
+	RPC            RPC    `yaml:"rpc"`
+	Budget         Budget `yaml:"budget"`
 }
 
 // RPC contains configuration for RPC related code.
 type RPC struct {
 	Port uint16 `yaml:"port" env:"OCTANT_RPC_PORT" env-default:"50051"`
+}
+
+// Budget contains configuration specifically for budget applet.
+type Budget struct {
+	DefaultMDAIGatewayName string `yaml:"default_mdai_gateway" env:"OCTANT_DEFAULT_MDAI_GATEWAY" env-default:"mdai-gateway"`
+	// FilterSettingUpdateTimeout (in seconds) controls how long Octant waits for filter setting update to be applied.
+	FilterSettingUpdateTimeout int `yaml:"filter_setting_update_timeout" env:"OCTANT_FILTER_SETTING_UPDATE_TIMEOUT" env-default:"60"`
+	// FilterSettingUpdateInterval (in seconds) controls how often Octant check if the filter setting update have been applied or not.
+	FilterSettingUpdateInterval int `yaml:"filter_setting_update_interval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"`
 }
 
 // Read will read configuration from file first, if `ConfigPathEnvVarName` is set,
