@@ -8,24 +8,23 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"go.uber.org/zap"
 )
 
-const chunkSize = 1000000 // 1MB
-const manifestContentZip = "application/zip"
+const (
+	chunkSize          = 500000 // 500kB
+	manifestContentZip = "application/zip"
+)
 
 type ConnectionHandler struct {
 	octantv1alphaconnect.UnimplementedConnectionServiceHandler
 
-	config     *config.Configuration
 	compressor connection.ManifestCompressor
 }
 
-func NewConnectionHandler(config *config.Configuration, compressor connection.ManifestCompressor) *ConnectionHandler {
+func NewConnectionHandler(compressor connection.ManifestCompressor) *ConnectionHandler {
 	return &ConnectionHandler{
-		config:     config,
 		compressor: compressor,
 	}
 }

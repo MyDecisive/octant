@@ -19,16 +19,20 @@ type CompressionInput struct {
 	DeploymentType octantv1alpha.DeploymentType
 }
 
+// ManifestCompressor provide functionality to generate a compressed connection manifest.
 type ManifestCompressor interface {
 	// CreateCompressed creates manifest files abse on the given inputs and then compress the files into a zip.
 	CreateCompressed(ctx context.Context, input CompressionInput) (*bytes.Buffer, error)
 }
 
+// ConnectionManifestCompressor implements ManifestCompressor.
 type ConnectionManifestCompressor struct {
 }
 
+// Ensure ConnectionManifestCompressor implements ManifestCompressor.
 var _ ManifestCompressor = &ConnectionManifestCompressor{}
 
+// NewConnectionManifestCompressor returns a new instance of ConnectionManifestCompressor.
 func NewConnectionManifestCompressor() *ConnectionManifestCompressor {
 	return &ConnectionManifestCompressor{}
 }
@@ -67,6 +71,7 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(ctx context.Context, i
 	return buf, nil
 }
 
+// toConnectionData converts the telemetry and deployment type to connection data.
 func (*ConnectionManifestCompressor) toConnectionData(telemetries []octantv1alpha.MLTType, deployment octantv1alpha.DeploymentType) OctantConnectionData {
 	telemetryTypes := make([]telemetry.MLT, len(telemetries))
 	for i, t := range telemetries {
@@ -94,6 +99,7 @@ func (*ConnectionManifestCompressor) toConnectionData(telemetries []octantv1alph
 	}
 }
 
+// toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
 func (*ConnectionManifestCompressor) toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFormat {
 	result := YAMLOutputFormat
 	if format == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
