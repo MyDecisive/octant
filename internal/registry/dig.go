@@ -39,7 +39,7 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(provideHTTPClient); err != nil {
 		return nil, err
 	}
-	if err := container.Provide(metrics.NewPromClientFactory); err != nil {
+	if err := container.Provide(metrics.NewPromClientFactory, dig.As(new(metrics.PromClientFactory))); err != nil {
 		return nil, err
 	}
 

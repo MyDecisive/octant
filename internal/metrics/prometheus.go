@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/api"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/client_golang/api/prometheus/v1" // nolint: goimports
 )
 
 const (
@@ -19,21 +19,21 @@ type PromClientFactory interface {
 	GetPromClient(namespace string) (v1.API, error)
 }
 
-type promClientFactoryImpl struct {
+type PromClientFactoryImpl struct {
 	cache       sync.Map
 	serviceName string
 	port        int
 }
 
-func NewPromClientFactory() PromClientFactory {
-	return &promClientFactoryImpl{
+func NewPromClientFactory() *PromClientFactoryImpl {
+	return &PromClientFactoryImpl{
 		// TODO: Update this to be configurable
 		serviceName: defaultPromHost,
 		port:        defaultPromPort,
 	}
 }
 
-func (f *promClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) {
+func (f *PromClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) { // nolint: ireturn
 	if cachedClient, ok := f.cache.Load(namespace); ok {
 		client, ok := cachedClient.(v1.API)
 		if !ok {
@@ -44,7 +44,7 @@ func (f *promClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) 
 
 	promURL := os.Getenv("DEV_PROMETHEUS_URL")
 	if promURL == "" {
-		promURL = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", f.serviceName, namespace, f.port)
+		promURL = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", f.serviceName, namespace, f.port) //nolint:revive
 	}
 
 	client, err := api.NewClient(api.Config{
