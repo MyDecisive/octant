@@ -37,7 +37,7 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 		require.NoError(t, err)
 
-		assert.Contains(t, actual.Msg.Names, expected)
+		assert.Contains(t, actual.Msg.GetNames(), expected)
 	})
 
 	t.Run("err", func(t *testing.T) {

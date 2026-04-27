@@ -26,8 +26,7 @@ type ManifestCompressor interface {
 }
 
 // ConnectionManifestCompressor implements ManifestCompressor.
-type ConnectionManifestCompressor struct {
-}
+type ConnectionManifestCompressor struct{}
 
 // Ensure ConnectionManifestCompressor implements ManifestCompressor.
 var _ ManifestCompressor = &ConnectionManifestCompressor{}

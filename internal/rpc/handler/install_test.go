@@ -1,14 +1,14 @@
 package rpchandler
 
 import (
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"io"
 	"log"
 	"net/http/httptest"
 	"testing"
 
 	"connectrpc.com/connect"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

@@ -2,14 +2,15 @@ package argocd
 
 import (
 	"context"
+	"net"
+	"testing"
+
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"net"
-	"testing"
 )
 
 type mockAppServerV3 struct {

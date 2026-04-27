@@ -46,9 +46,9 @@ func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect
 func (dh *DatadogHandler) SaveDatadogIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceSaveDatadogIntegrationProcedure))
 
-	if err := dh.datadog.SetIntegration(ctx, dh.config.CurrentNamespace, request.Msg.Name, integration.DataDogIntegrationData{
-		APIKey: request.Msg.ApiKey,
-		DDUrl:  request.Msg.Url,
+	if err := dh.datadog.SetIntegration(ctx, dh.config.CurrentNamespace, request.Msg.GetName(), integration.DataDogIntegrationData{
+		APIKey: request.Msg.GetApiKey(),
+		DDUrl:  request.Msg.GetUrl(),
 	}); err != nil {
 		logger.Error("Failed to save integration", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.New("save integration"))

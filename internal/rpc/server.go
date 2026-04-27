@@ -10,13 +10,11 @@ import (
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/otelconnect"
 	"connectrpc.com/validate"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
+	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-
-	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 )
 
 // Server that will serve internal RPC endpoint handlers.

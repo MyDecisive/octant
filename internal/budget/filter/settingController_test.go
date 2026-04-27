@@ -2,6 +2,7 @@ package budgetfilter
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
@@ -30,8 +31,8 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(fmt.Sprintf("%d", expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(fmt.Sprintf("%t", expectedIncludeErr), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(strconv.FormatBool(expectedIncludeErr), nil).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
@@ -46,8 +47,8 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesRatioNumber).Return(fmt.Sprintf("%d", expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesPersistErrors).Return(fmt.Sprintf("%t", expectedIncludeErr), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesPersistErrors).Return(strconv.FormatBool(expectedIncludeErr), nil).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
@@ -114,7 +115,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(fmt.Sprintf("%d", expectedPct), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
 		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return("", assert.AnError).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
@@ -128,8 +129,8 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(fmt.Sprintf("%d", expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(fmt.Sprintf("%d", expectedPct), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
+		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(strconv.Itoa(expectedPct), nil).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 

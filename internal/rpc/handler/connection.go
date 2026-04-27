@@ -39,7 +39,7 @@ func (ch *ConnectionHandler) GenerateManifests(ctx context.Context, request *con
 		Format:      request.Msg.GetFormat(),
 	})
 	if err != nil {
-		logger.Error("Failed to generate manfiest zip file", zap.Error(err))
+		logger.Error("Failed to generate manifest zip file", zap.Error(err))
 		return connect.NewError(connect.CodeInternal, errors.New("generate zip file"))
 	}
 

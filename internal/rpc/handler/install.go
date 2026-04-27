@@ -3,13 +3,13 @@ package rpchandler
 
 import (
 	"context"
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"time"
 
 	"connectrpc.com/connect"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type InstallHandler struct {

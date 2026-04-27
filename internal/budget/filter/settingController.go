@@ -122,7 +122,7 @@ func (sc *MDAISettingController) UpdateFilter(ctx context.Context, namespace str
 		connection: connection,
 	}
 
-	switch updates.Type {
+	switch updates.GetType() {
 	case budgetv1alpha.FilterType_FILTER_TYPE_LOG:
 		input.ratioVarName = varLogsRatioNumber
 		input.errorVarName = varLogsPersistErrors

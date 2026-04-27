@@ -1,6 +1,9 @@
 package rpchandler
 
 import (
+	"testing"
+
+	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
@@ -8,9 +11,6 @@ import (
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-
-	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
