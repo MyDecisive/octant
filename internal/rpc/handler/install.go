@@ -2,21 +2,20 @@ package rpchandler
 
 import (
 	"context"
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
-	"github.com/mydecisive/octant/internal/argocd"
-	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/connection"
-	"github.com/mydecisive/octant/internal/integration"
-	"sigs.k8s.io/yaml"
 	"time"
-
-	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
+	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/mydecisive/octant/internal/argocd"
+	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/integration"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"sigs.k8s.io/yaml"
 )
 
 type InstallHandler struct {
@@ -28,12 +27,12 @@ type InstallHandler struct {
 }
 
 func NewInstallHandler(
-	config *config.Configuration,
+	theConfig *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
 ) *InstallHandler {
 	return &InstallHandler{
-		config:          config,
+		config:          theConfig,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
 	}

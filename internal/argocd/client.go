@@ -2,6 +2,7 @@ package argocd
 
 import (
 	"context"
+
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
@@ -12,18 +13,30 @@ import (
 )
 
 type APIClient interface {
-	TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error)
-	PushArgoApp(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp argoapp.Application) error
+	TestConnection(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+	) (bool, error)
+	PushArgoApp(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+		argoApp argoapp.Application,
+	) error
 }
 
-type Client struct {
-}
+type Client struct{}
 
 func NewArgoCDClient() *Client {
 	return &Client{}
 }
 
-func (a *Client) TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error) {
+func (*Client) TestConnection(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+) (bool, error) {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
 		logger.Error("creating argo api client", zap.Error(err))
@@ -55,7 +68,12 @@ func (a *Client) TestConnection(ctx context.Context, logger *zap.Logger, clientO
 	return true, nil
 }
 
-func (a *Client) PushArgoApp(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp argoapp.Application) error {
+func (*Client) PushArgoApp(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+	argoApp argoapp.Application,
+) error {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
 		logger.Error("creating argo api client", zap.Error(err))

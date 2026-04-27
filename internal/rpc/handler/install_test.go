@@ -1,14 +1,6 @@
 package rpchandler
 
 import (
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
-	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
-	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/integration"
-	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
-	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"io"
 	"log"
 	"net/http/httptest"
@@ -17,6 +9,14 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
+	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/integration"
+	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
+	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -93,7 +93,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				// cert manager app create
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure == true
+						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
 						return theApp.Name == "cert-manager"
 					})).
@@ -132,7 +132,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				// cert manager app create
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure == true
+						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
 						return theApp.Name == "cert-manager"
 					})).
@@ -141,7 +141,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				// mdai app create
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure == true
+						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
 						return theApp.Name == "mdai"
 					})).
@@ -180,7 +180,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				// cert manager app create
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure == true
+						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
 						return theApp.Name == "cert-manager"
 					})).
@@ -189,7 +189,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				// mdai app create
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure == true
+						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
 						return theApp.Name == "mdai"
 					})).

@@ -1,5 +1,4 @@
 //go:build webapp
-// +build webapp
 
 package registry
 

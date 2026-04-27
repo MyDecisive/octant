@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
-
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"

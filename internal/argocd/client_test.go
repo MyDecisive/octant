@@ -1,6 +1,10 @@
 package argocd
 
 import (
+	"net"
+	"testing"
+	"time"
+
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
@@ -12,8 +16,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net"
-	"testing"
 )
 
 func TestTestConnection(t *testing.T) {
@@ -27,6 +29,7 @@ func TestTestConnection(t *testing.T) {
 		{
 			description: "unknown error listing applications",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().List(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
 					return req.GetName() == "mdai"
@@ -41,6 +44,7 @@ func TestTestConnection(t *testing.T) {
 		{
 			description: "happy path - unauthenticated",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().List(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
 					return req.GetName() == "mdai"
@@ -55,6 +59,7 @@ func TestTestConnection(t *testing.T) {
 		{
 			description: "happy path",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().List(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
 					return req.GetName() == "mdai"
@@ -73,7 +78,10 @@ func TestTestConnection(t *testing.T) {
 		t.Run(testCase.description, func(t *testing.T) {
 			t.Parallel()
 
-			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			lc := &net.ListenConfig{
+				KeepAlive: 5 * time.Second,
+			}
+			lis, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 			require.NoError(t, err)
 
 			s := grpc.NewServer()
@@ -112,9 +120,10 @@ func TestPushArgoApp(t *testing.T) {
 		{
 			description: "unknown error creating application",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Create(mock.Anything, mock.MatchedBy(func(req *application.ApplicationCreateRequest) bool {
-					return req.GetUpsert() == true && req.GetApplication() != nil
+					return req.GetUpsert() && req.GetApplication() != nil
 				})).Return(nil, assert.AnError).Once()
 				return mockAppServer
 			},
@@ -125,9 +134,10 @@ func TestPushArgoApp(t *testing.T) {
 		{
 			description: "happy path",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Create(mock.Anything, mock.MatchedBy(func(req *application.ApplicationCreateRequest) bool {
-					return req.GetUpsert() == true && req.GetApplication() != nil
+					return req.GetUpsert() && req.GetApplication() != nil
 				})).Return(&v1alpha1.Application{}, nil).Once()
 				return mockAppServer
 			},
@@ -142,7 +152,10 @@ func TestPushArgoApp(t *testing.T) {
 		t.Run(testCase.description, func(t *testing.T) {
 			t.Parallel()
 
-			lis, err := net.Listen("tcp", "127.0.0.1:0")
+			lc := &net.ListenConfig{
+				KeepAlive: 5 * time.Second,
+			}
+			lis, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
 			require.NoError(t, err)
 
 			s := grpc.NewServer()
