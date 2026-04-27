@@ -2,8 +2,9 @@
 package rpchandler
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
@@ -23,12 +24,12 @@ type ArgoCDHandler struct {
 }
 
 func NewArgoCDHandler(
-	config *config.Configuration,
+	configuration *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
 ) *ArgoCDHandler {
 	return &ArgoCDHandler{
-		config:          config,
+		config:          configuration,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
 	}

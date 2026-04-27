@@ -31,7 +31,15 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		},
 	}
 
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, c.Budget.DefaultMDAIGatewayName, namespace) + fmt.Sprintf(mdaiGatewayGetVarFormatter, hubName, varName)
+	url := fmt.Sprintf(
+		mdaiGatewayRootURLFormatter,
+		c.Budget.DefaultMDAIGatewayName,
+		namespace,
+	) + fmt.Sprintf(
+		mdaiGatewayGetVarFormatter,
+		hubName,
+		varName,
+	)
 	jsonBody, err := json.Marshal(map[string]string{
 		varName: varData,
 	})
@@ -62,7 +70,7 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		target := NewMDAIGateway(c, mockClient)
 
 		actual, err := target.GetVariable(namespace, hubName, varName)
-		assert.Error(t, err)
+		require.Error(t, err)
 
 		assert.Empty(t, actual)
 	})
@@ -79,7 +87,7 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		target := NewMDAIGateway(c, mockClient)
 
 		actual, err := target.GetVariable(namespace, hubName, varName)
-		assert.Error(t, err)
+		require.Error(t, err)
 
 		assert.Empty(t, actual)
 	})
@@ -95,7 +103,7 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		target := NewMDAIGateway(c, mockClient)
 
 		actual, err := target.GetVariable(namespace, hubName, varName)
-		assert.Error(t, err)
+		require.Error(t, err)
 
 		assert.Empty(t, actual)
 	})
@@ -114,7 +122,15 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 		},
 	}
 
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, c.Budget.DefaultMDAIGatewayName, namespace) + fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName)
+	url := fmt.Sprintf(
+		mdaiGatewayRootURLFormatter,
+		c.Budget.DefaultMDAIGatewayName,
+		namespace,
+	) + fmt.Sprintf(
+		mdaiGatewayPostVarFormatter,
+		hubName,
+		varName,
+	)
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -140,7 +156,7 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 		target := NewMDAIGateway(c, mockClient)
 
 		err := target.UpdateVariable(namespace, hubName, varName, faker.Word())
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("err status", func(t *testing.T) {
@@ -155,6 +171,6 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 		target := NewMDAIGateway(c, mockClient)
 
 		err := target.UpdateVariable(namespace, hubName, varName, faker.Word())
-		assert.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrInvalid)
 	})
 }
