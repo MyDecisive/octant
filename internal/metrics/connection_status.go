@@ -312,7 +312,11 @@ func checkSignalFidelity(
 			zap.L().Info(fmt.Sprintf(
 				"encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s",
 				fidelityMetricResult, parsed.Result, metricName, parsed.Signal,
-			))
+			),
+				zap.String("promLabel", fidelityMetricResult),
+				zap.String("parsedResult", parsed.Result),
+				zap.String("metric", string(metricName)),
+				zap.String("telemetryType", string(parsed.Signal)))
 		}
 	}
 
