@@ -46,8 +46,7 @@ func (a *Client) TestConnection(ctx context.Context, logger *zap.Logger, clientO
 		Name: lo.ToPtr("mdai"),
 	})
 	if err != nil {
-		rpcStatus, isRPCError := status.FromError(err)
-		if isRPCError && rpcStatus.Code() == codes.Unauthenticated {
+		if rpcStatus, isRPCError := status.FromError(err); isRPCError && rpcStatus.Code() == codes.Unauthenticated {
 			return false, nil // not an error, creds didn't auth properly.
 		}
 		logger.Error("getting argo application list", zap.Error(err))
@@ -74,11 +73,10 @@ func (a *Client) PushArgoApp(ctx context.Context, logger *zap.Logger, clientOpts
 		}
 	}()
 
-	_, err = applicationClient.Create(ctx, &application.ApplicationCreateRequest{
+	if _, err = applicationClient.Create(ctx, &application.ApplicationCreateRequest{
 		Application: &argoApp,
 		Upsert:      lo.ToPtr(true),
-	})
-	if err != nil {
+	}); err != nil {
 		logger.Error("creating argo app", zap.Error(err))
 		return err
 	}
