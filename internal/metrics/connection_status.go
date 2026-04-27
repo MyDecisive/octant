@@ -88,17 +88,17 @@ func (cs *ConnectionStatus) GetConnectionStatus(
 		return nil, err
 	}
 
-	receivingData, err := IsTelemetryFlowing(ctx, promClient, connectionName, Ingress, telemetryTypes)
+	receivingData, err := isTelemetryFlowing(ctx, promClient, connectionName, Ingress, telemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
 	}
 
-	sendingData, err := IsTelemetryFlowing(ctx, promClient, connectionName, Egress, telemetryTypes)
+	sendingData, err := isTelemetryFlowing(ctx, promClient, connectionName, Egress, telemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
 	}
 
-	dataIntegrity, validationResults, err := VerifyDataFidelity(ctx, promClient, connectionName, telemetryTypes)
+	dataIntegrity, validationResults, err := verifyDataFidelity(ctx, promClient, connectionName, telemetryTypes)
 	if err != nil {
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
@@ -111,7 +111,7 @@ func (cs *ConnectionStatus) GetConnectionStatus(
 	}, nil
 }
 
-func VerifyDataFidelity(
+func verifyDataFidelity(
 	ctx context.Context,
 	promClient promv1.API,
 	connectionName string,
@@ -171,7 +171,7 @@ func VerifyDataFidelity(
 			results.Traces = &res
 		default:
 			zap.L().Error(
-				"exotic telemetry type in VerifyDataFidelity (how did we get here?!)",
+				"exotic telemetry type in verifyDataFidelity (how did we get here?!)",
 				zap.String("telemetryType", string(t)),
 			)
 		}
@@ -180,7 +180,7 @@ func VerifyDataFidelity(
 	return dataIntegrity, &results, nil
 }
 
-func IsTelemetryFlowing(
+func isTelemetryFlowing(
 	ctx context.Context,
 	promClient promv1.API,
 	connectionName string,

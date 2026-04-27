@@ -20,7 +20,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 
-		actual, err := IsTelemetryFlowing(
+		actual, err := isTelemetryFlowing(
 			t.Context(),
 			mockPromAPI,
 			"foobar",
@@ -44,7 +44,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		actual, err := IsTelemetryFlowing(
+		actual, err := isTelemetryFlowing(
 			t.Context(),
 			mockPromAPI,
 			"foobar",
@@ -68,7 +68,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(queryResults, nil, nil).
 			Times(1)
 
-		actual, err := IsTelemetryFlowing(
+		actual, err := isTelemetryFlowing(
 			t.Context(),
 			mockPromAPI,
 			"foobar",
@@ -108,7 +108,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(tracesResults, nil, nil).
 			Times(1)
 
-		actual, err := IsTelemetryFlowing(
+		actual, err := isTelemetryFlowing(
 			t.Context(),
 			mockPromAPI,
 			"foobar",
@@ -149,7 +149,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(metricsResults, nil, nil).
 			Times(1)
 
-		actual, err := IsTelemetryFlowing(
+		actual, err := isTelemetryFlowing(
 			t.Context(),
 			mockPromAPI,
 			"foobar",
@@ -173,7 +173,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		result, _, err := VerifyDataFidelity(
+		result, _, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -193,7 +193,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, nil).
 			Times(4) // 2 for attributes, 2 for signals
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -216,7 +216,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(invalidResults, nil, nil).
 			Times(1)
 
-		result, _, err := VerifyDataFidelity(
+		result, _, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -245,7 +245,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(failVector, nil, nil).
 			Times(4)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -304,7 +304,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(1)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -357,7 +357,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(2)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -402,7 +402,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(mixedVector, nil, nil).
 			Times(4)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -438,7 +438,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(zeroVector, nil, nil).
 			Times(4)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -481,7 +481,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(weirdVector, nil, nil).
 			Times(4)
 
-		_, validations, err := VerifyDataFidelity(
+		_, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
@@ -515,7 +515,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(unknownVector, nil, nil).
 			Times(4)
 
-		result, validations, err := VerifyDataFidelity(
+		result, validations, err := verifyDataFidelity(
 			t.Context(),
 			mockPromAPI,
 			"test-conn",
