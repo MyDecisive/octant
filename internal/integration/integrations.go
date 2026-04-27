@@ -35,12 +35,12 @@ func updateSecretWithIntegration(
 func createIntegrationSecret(
 	ctx context.Context,
 	k8sClient kubernetes.Interface,
-	namespace, integrationName string,
+	namespace, integrationName, secretName string,
 	jsonData []byte,
 ) error {
 	newSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      argocdSecretName,
+			Name:      secretName,
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
@@ -50,7 +50,7 @@ func createIntegrationSecret(
 	}
 
 	if _, err := k8sClient.CoreV1().Secrets(namespace).Create(ctx, newSecret, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create secret %s: %w", argocdSecretName, err)
+		return fmt.Errorf("failed to create secret %s: %w", secretName, err)
 	}
 	return nil
 }

@@ -110,7 +110,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, jsonData)
+		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, datadogSecretName, jsonData)
 	}
 	// Update the secret if it already exists
 	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, integrationName, secret, jsonData)

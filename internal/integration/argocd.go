@@ -96,7 +96,7 @@ func (aci *ArgoCDIntegration) SetIntegration(
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
-			return createIntegrationSecret(ctx, aci.K8sClient, namespace, integrationName, jsonData)
+			return createIntegrationSecret(ctx, aci.K8sClient, namespace, integrationName, argocdSecretName, jsonData)
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
