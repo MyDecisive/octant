@@ -39,7 +39,7 @@ type OctantConnection struct {
 	k8sClient         kubernetes.Interface
 	argoClient        integration.Integration[integration.ArgoCDIntegrationData]
 	datadogClient     integration.Integration[integration.DataDogIntegrationData]
-	connectionMetrics *metrics.ConnectionStatus
+	connectionMetrics metrics.ConnectionStatus
 	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
 	// taskSets      map[DeploymentType]DeploymentTaskSet
 }
@@ -49,14 +49,14 @@ func NewOctantConnection(
 	k8sClient kubernetes.Interface,
 	argoClient integration.Integration[integration.ArgoCDIntegrationData],
 	datadogClient integration.Integration[integration.DataDogIntegrationData],
-	promClientFactory metrics.PromClientFactory,
+	connectionMetrics metrics.ConnectionStatus,
 ) *OctantConnection {
 	return &OctantConnection{
 		httpClient:        httpClient,
 		k8sClient:         k8sClient,
 		argoClient:        argoClient,
 		datadogClient:     datadogClient,
-		connectionMetrics: metrics.NewConnectionStatus(promClientFactory),
+		connectionMetrics: connectionMetrics,
 	}
 }
 

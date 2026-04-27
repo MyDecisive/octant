@@ -67,18 +67,27 @@ type parsedSample struct {
 	Attribute string
 }
 
-type ConnectionStatus struct {
+type ConnectionStatus interface {
+	GetConnectionStatus(
+		ctx context.Context,
+		namespace string,
+		connectionName string,
+		telemetryTypes []telemetry.MLT,
+	) (*octantv1alpha.GetConnectionStatusResponse, error)
+}
+
+type PrometheusConnectionStatus struct {
 	promClientFactory PromClientFactory
 }
 
-func NewConnectionStatus(promClientFactory PromClientFactory) *ConnectionStatus {
-	return &ConnectionStatus{
+func NewPrometheusConnectionStatus(promClientFactory PromClientFactory) *PrometheusConnectionStatus {
+	return &PrometheusConnectionStatus{
 		promClientFactory: promClientFactory,
 	}
 }
 
 // GetConnectionStatus reads OTEL Collectoor and validator metrics to ensure a MDAI Connection is working.
-func (cs *ConnectionStatus) GetConnectionStatus(
+func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 	ctx context.Context,
 	namespace string,
 	connectionName string,

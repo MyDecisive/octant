@@ -18,6 +18,7 @@ packages:
   github.com/mydecisive/octant/internal/metrics:
     interfaces:
       PromClientFactory:
+      ConnectionStatus:
   github.com/prometheus/client_golang/api/prometheus/v1:
     interfaces:
       API:
