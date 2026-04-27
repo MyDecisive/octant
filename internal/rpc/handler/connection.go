@@ -29,7 +29,11 @@ func NewConnectionHandler(compressor connection.ManifestCompressor) *ConnectionH
 	}
 }
 
-func (ch *ConnectionHandler) GenerateManifests(ctx context.Context, request *connect.Request[octantv1alpha.GenerateManifestsRequest], stream *connect.ServerStream[octantv1alpha.GenerateManifestsResponse]) error {
+func (ch *ConnectionHandler) GenerateManifests(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GenerateManifestsRequest],
+	stream *connect.ServerStream[octantv1alpha.GenerateManifestsResponse],
+) error {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
 
 	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
@@ -63,7 +67,7 @@ func (ch *ConnectionHandler) GenerateManifests(ctx context.Context, request *con
 		}
 		if err := stream.Send(&octantv1alpha.GenerateManifestsResponse{
 			Data:  chunk,
-			Total: uint64(total),
+			Total: uint64(total), // nolint:gosec //total will never be negative
 			Type:  manifestContentZip,
 		}); err != nil {
 			logger.Error("Failed to send data chunk", zap.Error(err))

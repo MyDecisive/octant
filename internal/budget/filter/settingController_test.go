@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 func TestMDAISettingController_GetFilter(t *testing.T) {
@@ -31,8 +31,14 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(strconv.FormatBool(expectedIncludeErr), nil).Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsRatioNumber).
+			Return(strconv.Itoa(expectedPct), nil).
+			Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsPersistErrors).
+			Return(strconv.FormatBool(expectedIncludeErr), nil).
+			Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
@@ -47,8 +53,14 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varTracesPersistErrors).Return(strconv.FormatBool(expectedIncludeErr), nil).Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varTracesRatioNumber).
+			Return(strconv.Itoa(expectedPct), nil).
+			Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varTracesPersistErrors).
+			Return(strconv.FormatBool(expectedIncludeErr), nil).
+			Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
@@ -68,7 +80,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target.log.Lock()
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		require.ErrorIs(t, err, ErrStillUpdating)
 		assert.Nil(t, actual)
 	})
 
@@ -81,7 +93,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target.trace.Lock()
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_TRACE, namespace, connection)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		require.ErrorIs(t, err, ErrStillUpdating)
 		assert.Nil(t, actual)
 	})
 
@@ -94,7 +106,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		assert.ErrorIs(t, err, ErrNotFound)
+		require.ErrorIs(t, err, ErrNotFound)
 		assert.Nil(t, actual)
 	})
 
@@ -107,7 +119,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		assert.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrInvalid)
 		assert.Nil(t, actual)
 	})
 
@@ -115,13 +127,19 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return("", assert.AnError).Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsRatioNumber).
+			Return(strconv.Itoa(expectedPct), nil).
+			Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsPersistErrors).
+			Return("", assert.AnError).
+			Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		assert.ErrorIs(t, err, ErrNotFound)
+		require.ErrorIs(t, err, ErrNotFound)
 		assert.Nil(t, actual)
 	})
 
@@ -129,13 +147,19 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		t.Parallel()
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(strconv.Itoa(expectedPct), nil).Once()
-		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsPersistErrors).Return(strconv.Itoa(expectedPct), nil).Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsRatioNumber).
+			Return(strconv.Itoa(expectedPct), nil).
+			Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsPersistErrors).
+			Return(strconv.Itoa(expectedPct), nil).
+			Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		assert.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrInvalid)
 		assert.Nil(t, actual)
 	})
 }
@@ -172,8 +196,8 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
 		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
 		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
-		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&v1.Deployment{
-			Status: v1.DeploymentStatus{
+		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
 				Replicas:        1,
 				ReadyReplicas:   1,
 				UpdatedReplicas: 1,
@@ -205,8 +229,8 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
 		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
 		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
-		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&v1.Deployment{
-			Status: v1.DeploymentStatus{
+		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
 				Replicas:        1,
 				ReadyReplicas:   1,
 				UpdatedReplicas: 1,
@@ -267,7 +291,10 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		}
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
-		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).Return(assert.AnError).Once()
+		mockAccessor.EXPECT().
+			UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).
+			Return(assert.AnError).
+			Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
@@ -287,7 +314,10 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).Return(nil).Once()
-		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsPersistErrors, mock.Anything).Return(assert.AnError).Once()
+		mockAccessor.EXPECT().
+			UpdateVariable(namespace, connection, varLogsPersistErrors, mock.Anything).
+			Return(assert.AnError).
+			Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
@@ -342,8 +372,8 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
 		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
 		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
-		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&v1.Deployment{
-			Status: v1.DeploymentStatus{
+		mockDeployment.EXPECT().Get(mock.Anything, controllerName, mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
 				Replicas:      2,
 				ReadyReplicas: 1,
 			},

@@ -31,7 +31,10 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
-		mockArgoCDClient.EXPECT().TestConnection(mock.Anything, mock.Anything, mock.Anything).Return(false, assert.AnError).Once()
+		mockArgoCDClient.EXPECT().
+			TestConnection(mock.Anything, mock.Anything, mock.Anything).
+			Return(false, assert.AnError).
+			Once()
 
 		handler := NewArgoCDHandler(testConfig, mockArgoCDClient, nil)
 

@@ -28,9 +28,11 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 		expected := faker.Word()
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
-		mockIntegration.EXPECT().GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).Return(map[string]integration.DataDogIntegrationData{
-			expected: {},
-		}, nil)
+		mockIntegration.EXPECT().
+			GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).
+			Return(map[string]integration.DataDogIntegrationData{
+				expected: {},
+			}, nil)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
@@ -45,12 +47,14 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
-		mockIntegration.EXPECT().GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).Return(nil, assert.AnError)
+		mockIntegration.EXPECT().
+			GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).
+			Return(nil, assert.AnError)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
 		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, actual)
 	})
 }
@@ -70,7 +74,9 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
-		mockIntegration.EXPECT().SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).Return(nil)
+		mockIntegration.EXPECT().
+			SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).
+			Return(nil)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 
@@ -83,7 +89,9 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
-		mockIntegration.EXPECT().SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).Return(assert.AnError)
+		mockIntegration.EXPECT().
+			SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).
+			Return(assert.AnError)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
 

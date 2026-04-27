@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/wrapper"
@@ -12,7 +13,7 @@ import (
 
 const (
 	contentTypeJSON             = "application/json"
-	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local"
+	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local" // nolint:revive // no, http is fine
 	mdaiGatewayGetVarFormatter  = "/variables/values/hub/%s/var/%s"
 	mdaiGatewayPostVarFormatter = "/variables/hub/%s/var/%s"
 )
@@ -45,14 +46,22 @@ func NewMDAIGateway(c *config.Configuration, client wrapper.HTTPClient) *MDAIGat
 
 // GetVariable returns the value of the given variable from MDAI gateway.
 func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName string) (string, error) {
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayGetVarFormatter, hubName, varName)
+	url := fmt.Sprintf(
+		mdaiGatewayRootURLFormatter,
+		mdai.gatewayName,
+		namespace,
+	) + fmt.Sprintf(
+		mdaiGatewayGetVarFormatter,
+		hubName,
+		varName,
+	)
 	resp, err := mdai.client.Get(url)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode >= http.StatusMultipleChoices {
 		return "", fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
 	}
 
@@ -72,7 +81,15 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 // UpdateVariable updates the value of the given variable in MDAI gateway.
 // This will return `ErrInvalid` if the operation failed.
 func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varName string, value any) error {
-	url := fmt.Sprintf(mdaiGatewayRootURLFormatter, mdai.gatewayName, namespace) + fmt.Sprintf(mdaiGatewayPostVarFormatter, hubName, varName)
+	url := fmt.Sprintf(
+		mdaiGatewayRootURLFormatter,
+		mdai.gatewayName,
+		namespace,
+	) + fmt.Sprintf(
+		mdaiGatewayPostVarFormatter,
+		hubName,
+		varName,
+	)
 	jsonValue, err := json.Marshal(map[string]any{"data": value})
 	if err != nil {
 		return err
@@ -83,7 +100,7 @@ func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varNam
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode >= http.StatusMultipleChoices {
 		return fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
 	}
 	return nil

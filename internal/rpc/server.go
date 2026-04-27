@@ -89,10 +89,11 @@ func (Server) getServices() []string {
 }
 
 // getInterceptors returns list of interceptors to be applied to all services as an option.
-func (Server) getInterceptors() (connect.Option, error) {
+func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 	validateInterceptor := validate.NewInterceptor()
+	// https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
 	otelInterceptor, err := otelconnect.NewInterceptor(
-		otelconnect.WithoutServerPeerAttributes(), // https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
+		otelconnect.WithoutServerPeerAttributes(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create otelconnect interceptor: %w", err)

@@ -28,7 +28,13 @@ type Connection[T any] interface {
 	GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error)
 }
 
-func updateConfigMapWithConnection(ctx context.Context, k8sClient kubernetes.Interface, namespace string, cm *corev1.ConfigMap, connectionName, connectionData string) error {
+func updateConfigMapWithConnection(
+	ctx context.Context,
+	k8sClient kubernetes.Interface,
+	namespace string,
+	cm *corev1.ConfigMap,
+	connectionName, connectionData string,
+) error {
 	if cm.Data == nil {
 		cm.Data = make(map[string]string)
 	}
@@ -40,7 +46,11 @@ func updateConfigMapWithConnection(ctx context.Context, k8sClient kubernetes.Int
 	return nil
 }
 
-func createConnectionConfigMap(ctx context.Context, k8sClient kubernetes.Interface, namespace, configmapName, connectionName, connectionData string) error {
+func createConnectionConfigMap(
+	ctx context.Context,
+	k8sClient kubernetes.Interface,
+	namespace, configmapName, connectionName, connectionData string,
+) error {
 	newCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,

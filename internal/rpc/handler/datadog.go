@@ -1,4 +1,3 @@
-// Package rpchandler contains handlers that will handle RPC service calls.
 package rpchandler
 
 import (
@@ -23,14 +22,20 @@ type DatadogHandler struct {
 	datadog integration.Integration[integration.DataDogIntegrationData]
 }
 
-func NewDatadogHandler(config *config.Configuration, datadog integration.Integration[integration.DataDogIntegrationData]) *DatadogHandler {
+func NewDatadogHandler(
+	configuration *config.Configuration,
+	datadog integration.Integration[integration.DataDogIntegrationData],
+) *DatadogHandler {
 	return &DatadogHandler{
-		config:  config,
+		config:  configuration,
 		datadog: datadog,
 	}
 }
 
-func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[octantv1alpha.GetDatadogIntegrationsResponse], error) {
+func (dh *DatadogHandler) GetDatadogIntegrations(
+	ctx context.Context,
+	_ *connect.Request[emptypb.Empty],
+) (*connect.Response[octantv1alpha.GetDatadogIntegrationsResponse], error) {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
 	ddInt, err := dh.datadog.GetIntegrations(ctx, dh.config.CurrentNamespace)
 	if err != nil {
@@ -43,13 +48,19 @@ func (dh *DatadogHandler) GetDatadogIntegrations(ctx context.Context, _ *connect
 	}), nil
 }
 
-func (dh *DatadogHandler) SaveDatadogIntegration(ctx context.Context, request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest]) (*connect.Response[emptypb.Empty], error) {
+func (dh *DatadogHandler) SaveDatadogIntegration(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest],
+) (*connect.Response[emptypb.Empty], error) {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceSaveDatadogIntegrationProcedure))
 
-	if err := dh.datadog.SetIntegration(ctx, dh.config.CurrentNamespace, request.Msg.GetName(), integration.DataDogIntegrationData{
-		APIKey: request.Msg.GetApiKey(),
-		DDUrl:  request.Msg.GetUrl(),
-	}); err != nil {
+	if err := dh.datadog.SetIntegration(
+		ctx, dh.config.CurrentNamespace,
+		request.Msg.GetName(),
+		integration.DataDogIntegrationData{
+			APIKey: request.Msg.GetApiKey(),
+			DDUrl:  request.Msg.GetUrl(),
+		}); err != nil {
 		logger.Error("Failed to save integration", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.New("save integration"))
 	}

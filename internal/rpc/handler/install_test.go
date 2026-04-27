@@ -37,7 +37,10 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 
 	// setup the install handler and test server
 	handler := NewInstallHandler()
-	installServiceMethods := octantv1alpha.File_octant_v1alpha_install_service_proto.Services().ByName("InstallService").Methods()
+	installServiceMethods := octantv1alpha.File_octant_v1alpha_install_service_proto.
+		Services().
+		ByName("InstallService").
+		Methods()
 	installServiceGetInstallStatusHandler := connect.NewServerStreamHandler(
 		octantv1alphaconnect.InstallServiceGetInstallStatusProcedure,
 		handler.GetInstallStatus,

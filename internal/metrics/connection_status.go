@@ -78,7 +78,11 @@ func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionS
 	}
 }
 
-func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT) (bool, map[telemetry.MLT]ValidationResult, error) {
+func (cs *ConnectionStatus) VerifyDataFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+) (bool, map[telemetry.MLT]ValidationResult, error) {
 	dataIntegrity := true
 
 	attrParity, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributeParityFidelityMetric)
@@ -122,7 +126,12 @@ func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, connectionNa
 	return dataIntegrity, results, nil
 }
 
-func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
+func (cs *ConnectionStatus) IsTelemetryFlowing(
+	ctx context.Context,
+	connectionName string,
+	ie IngressEgress,
+	telemetryTypes []telemetry.MLT,
+) (bool, error) {
 	for _, connectionType := range telemetryTypes {
 		var promQuery string
 		switch connectionType {
@@ -152,7 +161,12 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionNa
 	return true, nil
 }
 
-func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]map[string]bool, error) {
+func (cs *ConnectionStatus) checkAttributeFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]map[string]bool, error) {
 	attrs := make(map[telemetry.MLT]map[string]bool)
 	for _, t := range telemetryTypes {
 		attrs[t] = make(map[string]bool)
@@ -191,7 +205,12 @@ func (cs *ConnectionStatus) checkAttributeFidelity(ctx context.Context, connecti
 	return attrs, nil
 }
 
-func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]bool, error) {
+func (cs *ConnectionStatus) checkSignalFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]bool, error) {
 	signals := make(map[telemetry.MLT]bool)
 	failsSeen := make(map[telemetry.MLT]bool)
 
@@ -225,7 +244,10 @@ func (cs *ConnectionStatus) checkSignalFidelity(ctx context.Context, connectionN
 				signals[parsed.Signal] = true
 			}
 		default:
-			cs.logger.Info(fmt.Sprintf("encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s", fidelityMetricResult, parsed.Result, metricName, parsed.Signal))
+			cs.logger.Info("encountered unexpected fidelity check metric label",
+				zap.String(fidelityMetricResult, parsed.Result),
+				zap.String("name", string(metricName)),
+				zap.String("signal", string(parsed.Signal)))
 		}
 	}
 

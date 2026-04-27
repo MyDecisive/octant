@@ -18,7 +18,7 @@ const (
 // Environment defines the possible environments octant can be running in.
 //
 //go:generate enumer -type=Environment -text
-type Environment int
+type Environment int // nolint: recvcheck // the methods are generated
 
 const (
 	Dev Environment = iota
@@ -29,9 +29,9 @@ const (
 // Configuration represents the global configurations for octant.
 type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	CurrentNamespace string      `yaml:"current_namespace" env:"POD_NAMESPACE"`
+	CurrentNamespace string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
-	DefaultTimeout int    `yaml:"default_timeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"10"`
+	DefaultTimeout int    `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"10"`
 	RPC            RPC    `yaml:"rpc"`
 	Budget         Budget `yaml:"budget"`
 }
@@ -43,11 +43,13 @@ type RPC struct {
 
 // Budget contains configuration specifically for budget applet.
 type Budget struct {
-	DefaultMDAIGatewayName string `yaml:"default_mdai_gateway" env:"OCTANT_DEFAULT_MDAI_GATEWAY" env-default:"mdai-gateway"`
-	// FilterSettingUpdateTimeout (in seconds) controls how long Octant waits for filter setting update to be applied.
-	FilterSettingUpdateTimeout int `yaml:"filter_setting_update_timeout" env:"OCTANT_FILTER_SETTING_UPDATE_TIMEOUT" env-default:"60"`
-	// FilterSettingUpdateInterval (in seconds) controls how often Octant check if the filter setting update have been applied or not.
-	FilterSettingUpdateInterval int `yaml:"filter_setting_update_interval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"`
+	DefaultMDAIGatewayName string `yaml:"defaultMdaiGateway" env:"OCTANT_DEFAULT_MDAI_GATEWAY" env-default:"mdai-gateway"`
+	// FilterSettingUpdateTimeout (in seconds) controls how long
+	// Octant waits for filter setting update to be applied.
+	FilterSettingUpdateTimeout int `yaml:"filterSettingUpdateTimeout" env:"OCTANT_FILTER_SETTING_UPDATE_TIMEOUT" env-default:"60"` // nolint:lll
+	// FilterSettingUpdateInterval (in seconds) controls how often
+	//  Octant check if the filter setting update have been applied or not.
+	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
 }
 
 // Read will read configuration from file first, if `ConfigPathEnvVarName` is set,

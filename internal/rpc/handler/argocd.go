@@ -24,12 +24,12 @@ type ArgoCDHandler struct {
 }
 
 func NewArgoCDHandler(
-	config *config.Configuration,
+	configuration *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
 ) *ArgoCDHandler {
 	return &ArgoCDHandler{
-		config:          config,
+		config:          configuration,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
 	}
