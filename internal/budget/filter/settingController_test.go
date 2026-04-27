@@ -1,6 +1,7 @@
 package budgetfilter
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -482,7 +483,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		actual := make(chan UpdateFilterResult)
 		go func() {
-			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+			target.UpdateFilter(context.TODO(), namespace, connection, &input, actual)
 		}()
 
 		count := 0
