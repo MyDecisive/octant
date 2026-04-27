@@ -9,6 +9,7 @@ import (
 )
 
 func TestNewPromClientFactory(t *testing.T) {
+	t.Parallel()
 	factory := NewPromClientFactory()
 
 	if factory.serviceName != defaultPromHost {
@@ -37,7 +38,7 @@ func TestGetPromClient_ReturnsValidClient(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if client == nil {
-		t.Fatalf("expected client to not be nil")
+		t.Fatal("expected client to not be nil")
 	}
 }
 
@@ -61,11 +62,12 @@ func TestGetPromClient_CachingWorks(t *testing.T) {
 
 	// Because it returns an interface, we verify they point to the same underlying implementation instance
 	if client1 != client2 {
-		t.Errorf("expected cached client to be the exact same instance, but got different ones")
+		t.Error("expected cached client to be the exact same instance, but got different ones")
 	}
 }
 
 func TestGetPromClient_InvalidCacheType(t *testing.T) {
+	t.Parallel()
 	factory := NewPromClientFactory()
 	namespace := "invalid-cache-ns"
 
@@ -92,7 +94,7 @@ func TestGetPromClient_UsesEnvVar(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		// Return a valid empty Prometheus JSON response so the client parser doesn't error
-		w.Write([]byte(`{"status":"success","data":{"resultType":"vector","result":[]}}`))
+		w.Write([]byte(`{"status":"success","data":{"resultType":"vector","result":[]}}`)) // nolint: errcheck
 	}))
 	defer mockServer.Close()
 
@@ -107,7 +109,7 @@ func TestGetPromClient_UsesEnvVar(t *testing.T) {
 		t.Fatalf("unexpected error creating client: %v", err)
 	}
 	if client == nil {
-		t.Fatalf("expected client to not be nil")
+		t.Fatal("expected client to not be nil")
 	}
 
 	// Execute a lightweight query to force the client to make a network request
@@ -118,7 +120,7 @@ func TestGetPromClient_UsesEnvVar(t *testing.T) {
 
 	// Verify the mock server received the request
 	if !serverHit {
-		t.Errorf("The DEV_PROMETHEUS_URL environment variable was not used; mock server was never hit")
+		t.Error("The DEV_PROMETHEUS_URL environment variable was not used; mock server was never hit")
 	}
 }
 
