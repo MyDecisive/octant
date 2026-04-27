@@ -6,33 +6,30 @@ linters:
   disable:
     - depguard
     - err113
+    - exhaustruct
     - godox
-    - lll
     - nlreturn
     - noinlineerr
     - nolintlint
-    - paralleltest
     - prealloc
     - testpackage
-    - unqueryvet
     - varnamelen
     - wrapcheck
     - wsl
     - wsl_v5
+    - tagalign # Annoying and wrong
 
   settings:
     cyclop:
       max-complexity: 15
-    funlen:
-      lines: 85
     gocritic:
       enable-all: true
       disabled-checks:
         - hugeParam
         - paramTypeCombine
         - rangeValCopy
-        - unnamedResult
         - whyNoLint
+        - unnamedResult
     govet:
       enable-all: true
       disable:
@@ -71,6 +68,10 @@ linters:
           disabled: true
         - name: unused-parameter
           disabled: true
+        - name: package-directory-mismatch
+          disabled: true
+        - name: unhandled-error
+          disabled: true
     tagliatelle:
       case:
         rules:
@@ -83,8 +84,9 @@ linters:
           mapstructure: kebab
           env: upperSnake
           envconfig: upperSnake
-    unparam:
-      check-exported: true
+    gosec:
+      excludes:
+        - G104 # Handled by errcheck
     unused:
       exported-fields-are-used: false
     forbidigo:
@@ -99,6 +101,8 @@ linters:
           msg: use zap instead
         - pattern: ^os.Exit$
           msg: return errors and exit from main()
+        - pattern: zap.Any
+          msg: define a MarshalLogObject
     depguard:
       rules:
         main:
@@ -113,7 +117,6 @@ linters:
             - pkg: "io/ioutil"
               desc: deprecated
   exclusions:
-    generated: lax
     rules:
       - path: _test\.go
         linters:
@@ -131,18 +134,16 @@ linters:
           - forcetypeassert
           - mnd
           - gocritic
-      - path: internal/server/*
-        linters:
-          - dupl  # this code is not duplicate, it uses generics
       - path: internal/connection/*
         linters:
           - tagliatelle
       - path: internal/integration/*
         linters:
           - tagliatelle
-      - linters:
-          - lll
-        path: internal/*
+issues:
+    max-issues-per-linter: 0
+    max-same-issues: 0
+
 formatters:
   enable:
     - gci
