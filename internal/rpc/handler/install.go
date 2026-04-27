@@ -2,7 +2,6 @@ package rpchandler
 
 import (
 	"context"
-	"fmt"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
@@ -57,7 +56,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if argoIntegration == nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no ArgoCD integration found with name '%s'", connectionName))
+		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
 	// 2) render the argo app template(s)
@@ -65,6 +64,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	var argoApp argoapp.Application
 	if err = yaml.Unmarshal(manifestBytes, &argoApp); err != nil {
 		logger.Error("unmarshalling ArgoCD application manifest", zap.Error(err))
