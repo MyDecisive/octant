@@ -31,7 +31,7 @@ type OctantConnectionData struct {
 	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
 	Deployment     *Deployment                   `json:"deployment,omitempty"`
 	Status         any                           `json:"status,omitempty"`
-	LastEdited     time.Time                     `json:"lastEdited"`
+	Created        time.Time                     `json:"created"`
 }
 
 type OctantConnection struct {
@@ -134,11 +134,6 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 	if !slices.Contains([]DeploymentType{ArgoManifestsDeploymentType, ArgoSideloadDeploymentType}, connection.Deployment.Type) {
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
-	connection.LastEdited = time.Now()
-	jsonData, err := json.Marshal(connection)
-	if err != nil {
-		return fmt.Errorf("failed to marshal connection data: %w", err)
-	}
 
 	cm, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
@@ -146,11 +141,20 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 		}
 		// Create the confmap if it does not exist
+		connection.Created = time.Now()
+		jsonData, err := json.Marshal(connection)
+		if err != nil {
+			return fmt.Errorf("failed to marshal connection data: %w", err)
+		}
 		if createErr := createConnectionConfigMap(ctx, oc.k8sClient, namespace, connectionsConfigmapName, connectionName, string(jsonData)); createErr != nil {
 			return createErr
 		}
 	} else {
 		// Update the confmap if it already exists
+		jsonData, err := json.Marshal(connection)
+		if err != nil {
+			return fmt.Errorf("failed to marshal connection data: %w", err)
+		}
 		if updateErr := updateConfigMapWithConnection(ctx, oc.k8sClient, namespace, cm, connectionName, string(jsonData)); updateErr != nil {
 			return updateErr
 		}
