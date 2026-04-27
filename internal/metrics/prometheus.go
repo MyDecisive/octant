@@ -3,16 +3,11 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/prometheus/client_golang/api"
-	"github.com/prometheus/client_golang/api/prometheus/v1" // nolint: goimports
-)
-
-const (
-	defaultPromPort = 9090
-	defaultPromHost = "prometheus-operated"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1" // nolint: goimports
 )
 
 type PromClientFactory interface {
@@ -20,16 +15,13 @@ type PromClientFactory interface {
 }
 
 type PromClientFactoryImpl struct {
-	cache       sync.Map
-	serviceName string
-	port        int
+	cache         sync.Map
+	configuration *config.Configuration
 }
 
-func NewPromClientFactory() *PromClientFactoryImpl {
+func NewPromClientFactory(configuration *config.Configuration) *PromClientFactoryImpl {
 	return &PromClientFactoryImpl{
-		// TODO: Update this to be configurable
-		serviceName: defaultPromHost,
-		port:        defaultPromPort,
+		configuration: configuration,
 	}
 }
 
@@ -42,9 +34,17 @@ func (f *PromClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) 
 		return client, nil
 	}
 
-	promURL := os.Getenv("DEV_PROMETHEUS_URL")
+	promURL := f.configuration.Metrics.PrometheusURLOverride
 	if promURL == "" {
-		promURL = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", f.serviceName, namespace, f.port) //nolint:revive
+		if f.configuration.Metrics.PrometheusServiceName == "" || f.configuration.Metrics.PrometheusPort == 0 {
+			return nil, errors.New("prometheus service name and prometheus service name must be defined")
+		}
+		promURL = fmt.Sprintf(
+			"http://%s.%s.svc.cluster.local:%d", //nolint:revive
+			f.configuration.Metrics.PrometheusServiceName,
+			namespace,
+			f.configuration.Metrics.PrometheusPort,
+		)
 	}
 
 	client, err := api.NewClient(api.Config{

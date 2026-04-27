@@ -6,19 +6,16 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/mydecisive/octant/internal/config"
 )
 
 func TestNewPromClientFactory(t *testing.T) {
 	t.Parallel()
-	factory := NewPromClientFactory()
-
-	if factory.serviceName != defaultPromHost {
-		t.Errorf("expected serviceName to be %s, got %s", defaultPromHost, factory.serviceName)
+	configuration := config.Configuration{
+		Metrics: config.Metrics{},
 	}
-
-	if factory.port != defaultPromPort {
-		t.Errorf("expected port to be %d, got %d", defaultPromPort, factory.port)
-	}
+	factory := NewPromClientFactory(&configuration)
 
 	// Verify map is initialized (sync.Map is usable zero-value)
 	if factory == nil {
@@ -27,10 +24,14 @@ func TestNewPromClientFactory(t *testing.T) {
 }
 
 func TestGetPromClient_ReturnsValidClient(t *testing.T) {
-	// Ensure no env var is interfering
-	t.Setenv("DEV_PROMETHEUS_URL", "")
-
-	factory := NewPromClientFactory()
+	t.Parallel()
+	configuration := config.Configuration{
+		Metrics: config.Metrics{
+			PrometheusServiceName: "foo",
+			PrometheusPort:        1234,
+		},
+	}
+	factory := NewPromClientFactory(&configuration)
 	namespace := "default"
 
 	client, err := factory.GetPromClient(namespace)
@@ -43,9 +44,14 @@ func TestGetPromClient_ReturnsValidClient(t *testing.T) {
 }
 
 func TestGetPromClient_CachingWorks(t *testing.T) {
-	t.Setenv("DEV_PROMETHEUS_URL", "")
-
-	factory := NewPromClientFactory()
+	t.Parallel()
+	configuration := config.Configuration{
+		Metrics: config.Metrics{
+			PrometheusServiceName: "foo",
+			PrometheusPort:        1234,
+		},
+	}
+	factory := NewPromClientFactory(&configuration)
 	namespace := "monitoring"
 
 	// First call to populate the cache
@@ -68,7 +74,10 @@ func TestGetPromClient_CachingWorks(t *testing.T) {
 
 func TestGetPromClient_InvalidCacheType(t *testing.T) {
 	t.Parallel()
-	factory := NewPromClientFactory()
+	configuration := config.Configuration{
+		Metrics: config.Metrics{},
+	}
+	factory := NewPromClientFactory(&configuration)
 	namespace := "invalid-cache-ns"
 
 	// Manually inject a bad type into the cache
@@ -87,6 +96,7 @@ func TestGetPromClient_InvalidCacheType(t *testing.T) {
 }
 
 func TestGetPromClient_UsesEnvVar(t *testing.T) {
+	t.Parallel()
 	// Set up a mock HTTP server to intercept the API call
 	serverHit := false
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -98,10 +108,12 @@ func TestGetPromClient_UsesEnvVar(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	// Point the environment variable to our mock server
-	t.Setenv("DEV_PROMETHEUS_URL", mockServer.URL)
-
-	factory := NewPromClientFactory()
+	configuration := config.Configuration{
+		Metrics: config.Metrics{
+			PrometheusURLOverride: mockServer.URL,
+		},
+	}
+	factory := NewPromClientFactory(&configuration)
 	namespace := "test-env"
 
 	client, err := factory.GetPromClient(namespace)
@@ -125,11 +137,15 @@ func TestGetPromClient_UsesEnvVar(t *testing.T) {
 }
 
 func TestGetPromClient_ApiNewClientError(t *testing.T) {
+	t.Parallel()
 	// Set a fundamentally invalid URL scheme to trigger api.NewClient error
 	// The prometheus client uses url.Parse under the hood
-	t.Setenv("DEV_PROMETHEUS_URL", "://bad-url")
-
-	factory := NewPromClientFactory()
+	configuration := config.Configuration{
+		Metrics: config.Metrics{
+			PrometheusURLOverride: "://bad-url",
+		},
+	}
+	factory := NewPromClientFactory(&configuration)
 	namespace := "bad-url-ns"
 
 	client, err := factory.GetPromClient(namespace)
