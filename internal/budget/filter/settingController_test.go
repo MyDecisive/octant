@@ -119,7 +119,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		require.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrFormat)
 		assert.Nil(t, actual)
 	})
 
@@ -159,7 +159,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		require.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrFormat)
 		assert.Nil(t, actual)
 	})
 }
@@ -206,8 +206,24 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.NoError(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+			case 2:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
+			}
+			assert.NoError(t, result.Err)
+			count++
+		}
 	})
 
 	t.Run("success trace", func(t *testing.T) {
@@ -239,8 +255,24 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.NoError(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+			case 2:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
+			}
+			assert.NoError(t, result.Err)
+			count++
+		}
 	})
 
 	t.Run("err log lock in use", func(t *testing.T) {
@@ -258,8 +290,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 		target.log.Lock()
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrStillUpdating)
 	})
 
 	t.Run("err trace lock in use", func(t *testing.T) {
@@ -277,8 +315,39 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 		target.trace.Lock()
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrStillUpdating)
+	})
+
+	t.Run("err invalid type", func(t *testing.T) {
+		t.Parallel()
+
+		input := budgetv1alpha.Filter{
+			Type:       budgetv1alpha.FilterType_FILTER_TYPE_UNSPECIFIED,
+			PctSampled: 10,
+			IncludeErr: true,
+		}
+
+		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockKube := kubernetesmock.NewMockInterface(t)
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+		target.trace.Lock()
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrInvalid)
 	})
 
 	t.Run("err update ratio num", func(t *testing.T) {
@@ -299,8 +368,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrUpdateValue)
 	})
 
 	t.Run("err update include err", func(t *testing.T) {
@@ -322,8 +397,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrUpdateValue)
 	})
 
 	t.Run("err get deployment", func(t *testing.T) {
@@ -349,8 +430,26 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+			case 2:
+				assert.Empty(t, result.Status)
+				assert.ErrorIs(t, result.Err, ErrUpdateCollector)
+			}
+			count++
+		}
 	})
 
 	t.Run("err timeout", func(t *testing.T) {
@@ -381,7 +480,25 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrTimeout)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+			case 3:
+				assert.Empty(t, result.Status)
+				assert.ErrorIs(t, result.Err, ErrTimeout)
+			}
+			count++
+		}
 	})
 }
