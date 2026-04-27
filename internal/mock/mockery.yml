@@ -14,6 +14,7 @@ packages:
   github.com/mydecisive/octant/internal/connection:
     interfaces:
       Connection:
+      ManifestCompressor:
   github.com/mydecisive/octant/internal/metrics:
     interfaces:
       PromClientFactory:

@@ -33,16 +33,19 @@ type DataDogIntegration struct {
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
-func NewDataDogIntegration(K8sClient kubernetes.Interface) *DataDogIntegration {
+func NewDataDogIntegration(k8sClient kubernetes.Interface) *DataDogIntegration {
 	return &DataDogIntegration{
-		K8sClient: K8sClient,
+		K8sClient: k8sClient,
 	}
 }
 
 var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 
 // GetIntegrations retrieves any existing integrations in the provided namespace for the "octant-integration" secret.
-func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]DataDogIntegrationData, error) {
+func (ddi *DataDogIntegration) GetIntegrations(
+	ctx context.Context,
+	namespace string,
+) (map[string]DataDogIntegrationData, error) {
 	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -63,8 +66,12 @@ func (ddi *DataDogIntegration) GetIntegrations(ctx context.Context, namespace st
 	return integrations, nil
 }
 
-// GetIntegrationByName retrieves the existing integration in the provided namespace for the "octant-integration" secret, if it exists.
-func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespace, name string) (*DataDogIntegrationData, error) {
+// GetIntegrationByName retrieves the existing integration
+// in the provided namespace for the "octant-integration" secret, if it exists.
+func (ddi *DataDogIntegration) GetIntegrationByName(
+	ctx context.Context,
+	namespace, name string,
+) (*DataDogIntegrationData, error) {
 	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(ctx, datadogSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -85,8 +92,13 @@ func (ddi *DataDogIntegration) GetIntegrationByName(ctx context.Context, namespa
 }
 
 // SetIntegration adds or updates the "octant-integration" secret for the provided namespace.
-func (ddi *DataDogIntegration) SetIntegration(ctx context.Context, namespace, _ string, integrationData DataDogIntegrationData) error {
-	jsonData, err := json.Marshal(integrationData)
+func (ddi *DataDogIntegration) SetIntegration(
+	ctx context.Context,
+	namespace,
+	_ string,
+	integrationData DataDogIntegrationData,
+) error {
+	jsonData, err := json.Marshal(integrationData) // nolint: gosec // what secrets...
 	if err != nil {
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}

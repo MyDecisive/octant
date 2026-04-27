@@ -113,10 +113,12 @@ func TestGetConnectionByName(t *testing.T) {
 		},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl:       ts.URL,
-		AccountToken: "fake-token",
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl:       ts.URL,
+			AccountToken: "fake-token",
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -216,9 +218,11 @@ func TestGetConnectionByName_Error_ArgoStatusFailed(t *testing.T) {
 		},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -249,17 +253,23 @@ func TestSaveConnection(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
-	f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Destinations[0].IntegrationName).Return(&integration.DataDogIntegrationData{}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
+	f.datadogMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Destinations[0].IntegrationName).
+		Return(&integration.DataDogIntegrationData{}, nil)
 
 	octantConnection := f.build()
 
 	err := octantConnection.SaveConnection(context.Background(), newConnection, defaultNamespace, "team-a")
 	require.NoError(t, err)
 
-	cm, err := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := f.k8sClient.CoreV1().
+		ConfigMaps(defaultNamespace).
+		Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
 	require.NoError(t, err)
 	require.Contains(t, cm.Data, "team-a")
 }
@@ -273,7 +283,9 @@ func TestSaveConnection_UpdateExistingConfigMap(t *testing.T) {
 	f := setupFixture(t, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
 		Data: map[string]string{
-			"existing-team": `{"sourceType": "datadog", "telemetryTypes": ["logs", "traces"], "deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
+			"existing-team": `{"sourceType": "datadog", 
+			"telemetryTypes": ["logs", "traces"], 
+			"deployment": {"type": "argocd", "fields": {"branch": "tv/coolBranch"}}}`,
 		},
 	})
 	f.httpClient = ts.Client()
@@ -289,7 +301,9 @@ func TestSaveConnection_UpdateExistingConfigMap(t *testing.T) {
 	err := octantConnection.SaveConnection(context.Background(), newConnection, defaultNamespace, "team-a")
 	require.NoError(t, err)
 
-	cm, err := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := f.k8sClient.CoreV1().
+		ConfigMaps(defaultNamespace).
+		Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
 	require.NoError(t, err)
 	require.Contains(t, cm.Data, "team-a")
 	require.Contains(t, cm.Data, "existing-team")
@@ -356,10 +370,14 @@ func TestSaveConnection_Error_ArgoPushFailed(t *testing.T) {
 		Data:       map[string]string{},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
-	f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Destinations[0].IntegrationName).Return(&integration.DataDogIntegrationData{}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
+	f.datadogMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, connection.Destinations[0].IntegrationName).
+		Return(&integration.DataDogIntegrationData{}, nil)
 
 	octantConnection := f.build()
 
@@ -390,16 +408,20 @@ func TestDeleteConnection(t *testing.T) {
 		},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, existingConnection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, existingConnection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
 	deleteErr := octantConnection.DeleteConnection(context.Background(), defaultNamespace, "team-a")
 	require.NoError(t, deleteErr)
 
-	cm, getCMErr := f.k8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := f.k8sClient.CoreV1().
+		ConfigMaps(defaultNamespace).
+		Get(context.Background(), connectionsConfigmapName, metav1.GetOptions{})
 	require.NoError(t, getCMErr)
 	require.NotContains(t, cm.Data, "team-a")
 }
@@ -483,9 +505,14 @@ func TestDeleteConnection_Error_ArgoDeleteFailed(t *testing.T) {
 		},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(
+			mock.Anything,
+			defaultNamespace,
+			connection.Deployment.IntegrationName).
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -537,7 +564,8 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 	})
 
 	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		responseString := `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"signal":"logs","result":"pass"},"value":[1712419691,"5"]}]}}`
+		responseString := `{"status":"success",
+		"data":{"resultType":"vector","result":[{"metric":{"signal":"logs","result":"pass"},"value":[1712419691,"5"]}]}}`
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

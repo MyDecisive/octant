@@ -43,7 +43,12 @@ const (
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
 
-func (oc *OctantConnection) createTemplateData(ctx context.Context, namespace string, name string, connection OctantConnectionData) (*ArgoTemplateData, error) {
+func (oc *OctantConnection) createTemplateData(
+	ctx context.Context,
+	namespace string,
+	name string,
+	connection OctantConnectionData,
+) (*ArgoTemplateData, error) {
 	if len(connection.Destinations) != 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
@@ -74,7 +79,12 @@ func (oc *OctantConnection) createTemplateData(ctx context.Context, namespace st
 	return &templateData, nil
 }
 
-func CreateExportableArgoManifests(namespace string, name string, connection OctantConnectionData, format ManifestOutputFormat) (map[string][]byte, error) {
+func CreateExportableArgoManifests(
+	namespace string,
+	name string,
+	connection OctantConnectionData,
+	format ManifestOutputFormat,
+) (map[string][]byte, error) {
 	templateData, err := CreateExportableTemplateData(namespace, name, connection)
 	if err != nil {
 		return nil, err
@@ -93,12 +103,16 @@ func CreateExportableArgoManifests(namespace string, name string, connection Oct
 
 // CreateExportableTemplateData TODO: Combine these template data methods instead of copypasta
 // CreateExportableTemplateData is like the other function but doesn't inject secrets.
-func CreateExportableTemplateData(namespace string, name string, connection OctantConnectionData) (*ArgoTemplateData, error) {
+func CreateExportableTemplateData(
+	namespace string,
+	name string,
+	connection OctantConnectionData,
+) (*ArgoTemplateData, error) {
 	if len(connection.Destinations) != 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
 	}
-	datadogIntegration := integration.DataDogIntegrationData{
+	datadogIntegration := integration.DataDogIntegrationData{ // nolint:gosec // no, these are not secrets lol
 		APIKey: "<YOUR_API_KEY>",
 		DDUrl:  "<YOUR_DD_URL>",
 	}
@@ -143,7 +157,10 @@ func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat Manifest
 	return renderedYaml.Bytes(), nil
 }
 
-func renderCollectorDeploymentManifests(templateData *ArgoTemplateData, outputFormat ManifestOutputFormat) (map[string][]byte, error) {
+func renderCollectorDeploymentManifests(
+	templateData *ArgoTemplateData,
+	outputFormat ManifestOutputFormat,
+) (map[string][]byte, error) {
 	if outputFormat == "" {
 		return nil, errors.New("no output format specified")
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/mydecisive/octant/internal/argocd"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
@@ -23,7 +24,7 @@ import (
 )
 
 // Initialize adds all the dependencies to DI.
-func Initialize() (*dig.Container, error) {
+func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we will have a lot if statements in here...
 	container := dig.New(dig.DeferAcyclicVerification())
 	if err := container.Provide(config.Read); err != nil {
 		return nil, err
@@ -44,21 +45,36 @@ func Initialize() (*dig.Container, error) {
 	}
 
 	// Budget
-	if err := container.Provide(budgetfilter.NewMDAIGateway, dig.As(new(budgetfilter.VariableAccessor))); err != nil {
+	if err := container.Provide(
+		budgetfilter.NewMDAIGateway,
+		dig.As(new(budgetfilter.VariableAccessor))); err != nil {
 		return nil, err
 	}
-	if err := container.Provide(budgetfilter.NewMDAISettingController, dig.As(new(budgetfilter.SettingController))); err != nil {
+	if err := container.Provide(
+		budgetfilter.NewMDAISettingController,
+		dig.As(new(budgetfilter.SettingController))); err != nil {
 		return nil, err
 	}
 
 	// Integration
-	if err := container.Provide(integration.NewDataDogIntegration, dig.As(new(integration.Integration[integration.DataDogIntegrationData]))); err != nil {
+	if err := container.Provide(
+		integration.NewDataDogIntegration,
+		dig.As(new(integration.Integration[integration.DataDogIntegrationData]))); err != nil {
 		return nil, err
 	}
-	if err := container.Provide(integration.NewArgoCDIntegration, dig.As(new(integration.Integration[integration.ArgoCDIntegrationData]))); err != nil {
+	if err := container.Provide(
+		integration.NewArgoCDIntegration,
+		dig.As(new(integration.Integration[integration.ArgoCDIntegrationData]))); err != nil {
 		return nil, err
 	}
-	if err := container.Provide(argocd.NewArgoCDClient, dig.As(new(argocd.APIClient))); err != nil {
+	if err := container.Provide(
+		argocd.NewArgoCDClient,
+		dig.As(new(argocd.APIClient))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		connection.NewConnectionManifestCompressor,
+		dig.As(new(connection.ManifestCompressor))); err != nil {
 		return nil, err
 	}
 
@@ -120,11 +136,11 @@ func initLogger(configuration *config.Configuration) error {
 	return nil
 }
 
-func provideKubeClient() (kubernetes.Interface, error) {
+func provideKubeClient() (kubernetes.Interface, error) { // nolint: ireturn
 	return datacorekube.NewK8sClient(zap.L())
 }
 
-func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient {
+func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient { // nolint: ireturn
 	return &http.Client{
 		Timeout: time.Duration(configuration.DefaultTimeout) * time.Second,
 	}

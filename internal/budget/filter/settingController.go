@@ -10,7 +10,7 @@ import (
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/mydecisive/octant/internal/config"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
@@ -73,7 +73,11 @@ type MDAISettingController struct {
 var _ SettingController = &MDAISettingController{}
 
 // NewMDAISettingController returns a new instance of MDAISettingController.
-func NewMDAISettingController(configuration *config.Configuration, accessor VariableAccessor, kube kubernetes.Interface) *MDAISettingController {
+func NewMDAISettingController(
+	configuration *config.Configuration,
+	accessor VariableAccessor,
+	kube kubernetes.Interface,
+) *MDAISettingController {
 	return &MDAISettingController{
 		log:           new(sync.RWMutex),
 		trace:         new(sync.RWMutex),
@@ -85,7 +89,11 @@ func NewMDAISettingController(configuration *config.Configuration, accessor Vari
 
 // GetFilter returns filter setting of the given type.
 // If an update is in progress for the given type, this will return `ErrStillUpdating`.
-func (sc *MDAISettingController) GetFilter(filterType budgetv1alpha.FilterType, namespace string, connection string) (*budgetv1alpha.Filter, error) {
+func (sc *MDAISettingController) GetFilter(
+	filterType budgetv1alpha.FilterType,
+	namespace string,
+	connection string,
+) (*budgetv1alpha.Filter, error) {
 	input := settingInput{
 		namespace:  namespace,
 		connection: connection,
@@ -109,20 +117,25 @@ func (sc *MDAISettingController) GetFilter(filterType budgetv1alpha.FilterType, 
 	default:
 		return nil, ErrInvalid
 	}
-	return sc.getFilter(input)
+	return sc.get(input)
 }
 
 // UpdateFilter updates the filter setting of the given type with the provided values.
 // If an update is already in progress for the given type, this will return `ErrStillUpdating`.
 // If the update takes longer than the timeout, this will return `ErrTimeout`.
-func (sc *MDAISettingController) UpdateFilter(ctx context.Context, namespace string, connection string, updates *budgetv1alpha.Filter) error {
+func (sc *MDAISettingController) UpdateFilter(
+	ctx context.Context,
+	namespace string,
+	connection string,
+	updates *budgetv1alpha.Filter,
+) error {
 	var collectorFormatter string
 	input := settingInput{
 		namespace:  namespace,
 		connection: connection,
 	}
 
-	switch updates.Type {
+	switch updates.GetType() {
 	case budgetv1alpha.FilterType_FILTER_TYPE_LOG:
 		input.ratioVarName = varLogsRatioNumber
 		input.errorVarName = varLogsPersistErrors
@@ -145,11 +158,11 @@ func (sc *MDAISettingController) UpdateFilter(ctx context.Context, namespace str
 		return ErrInvalid
 	}
 
-	return sc.updateFilter(ctx, input, collectorFormatter, updates)
+	return sc.update(ctx, input, collectorFormatter, updates)
 }
 
 // getFilter retrieves the filter settings from MDAI gateway and parse them into `budgetv1alpha.Filter`.
-func (sc *MDAISettingController) getFilter(input settingInput) (*budgetv1alpha.Filter, error) {
+func (sc *MDAISettingController) get(input settingInput) (*budgetv1alpha.Filter, error) {
 	filter := &budgetv1alpha.Filter{}
 
 	numStr, err := sc.accessor.GetVariable(input.namespace, input.connection, input.ratioVarName)
@@ -175,12 +188,28 @@ func (sc *MDAISettingController) getFilter(input settingInput) (*budgetv1alpha.F
 	return filter, nil
 }
 
-// updateFilter updates the filter settings in MDAI gateway and then wait for the changes to propagate to the collector pod(s).
-func (sc *MDAISettingController) updateFilter(ctx context.Context, input settingInput, collectorNameFormatter string, updates *budgetv1alpha.Filter) error {
-	if err := sc.accessor.UpdateVariable(input.namespace, input.connection, input.ratioVarName, strconv.FormatUint(uint64(updates.GetPctSampled()), 10)); err != nil {
+// update updates the filter settings in MDAI gateway
+// and then wait for the changes to propagate to the collector pod(s).
+func (sc *MDAISettingController) update(
+	ctx context.Context,
+	input settingInput,
+	collectorNameFormatter string,
+	updates *budgetv1alpha.Filter,
+) error {
+	if err := sc.accessor.UpdateVariable(
+		input.namespace,
+		input.connection,
+		input.ratioVarName,
+		strconv.FormatUint(uint64(updates.GetPctSampled()), 10),
+	); err != nil {
 		return err
 	}
-	if err := sc.accessor.UpdateVariable(input.namespace, input.connection, input.errorVarName, updates.GetIncludeErr()); err != nil {
+	if err := sc.accessor.UpdateVariable(
+		input.namespace,
+		input.connection,
+		input.errorVarName,
+		updates.GetIncludeErr(),
+	); err != nil {
 		return err
 	}
 
@@ -188,12 +217,16 @@ func (sc *MDAISettingController) updateFilter(ctx context.Context, input setting
 		time.Duration(sc.configuration.Budget.FilterSettingUpdateInterval)*time.Second,
 		time.Duration(sc.configuration.Budget.FilterSettingUpdateTimeout)*time.Second,
 		true,
-		func(ctx context.Context) (done bool, err error) {
-			deployment, err := sc.kube.AppsV1().Deployments(input.namespace).Get(ctx, fmt.Sprintf(collectorNameFormatter, input.connection), v1.GetOptions{})
+		func(ctx context.Context) (bool, error) {
+			deployment, err := sc.kube.AppsV1().
+				Deployments(input.namespace).
+				Get(ctx, fmt.Sprintf(collectorNameFormatter, input.connection), metav1.GetOptions{})
 			if err != nil {
 				return true, err
 			}
-			return deployment.Status.Replicas == deployment.Status.ReadyReplicas && deployment.Status.Replicas == deployment.Status.UpdatedReplicas, nil
+			// nolint: gocritic // no this cond is not sus
+			return deployment.Status.Replicas == deployment.Status.ReadyReplicas &&
+				deployment.Status.Replicas == deployment.Status.UpdatedReplicas, nil
 		}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return ErrTimeout

@@ -29,8 +29,10 @@ const (
 	fidelityMetricAttribute = "attribute"
 )
 
-type collectorMetric string
-type fidelityMetric string
+type (
+	collectorMetric string
+	fidelityMetric  string
+)
 
 const (
 	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
@@ -57,7 +59,7 @@ type ValidationAttributes struct {
 	Policy map[string]bool `json:"policy"`
 }
 
-// parsedSample holds strictly typed data extracted from a model.Sample
+// parsedSample holds strictly typed data extracted from a model.Sample.
 type parsedSample struct {
 	Value     float64
 	Signal    telemetry.MLT
