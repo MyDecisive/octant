@@ -1,0 +1,142 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ .AppName }}
+  labels:
+    app: {{ .AppName }}
+    app.kubernetes.io/instance: {{ .AppName }}
+    hub.mydecisive.ai/role: connection-collector
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-lb
+  {{- end }}
+spec:
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
+  config:
+    receivers:
+      datadog:
+        endpoint: 0.0.0.0:8126
+        read_timeout: 60s
+    processors:
+      deltatocumulative: {}
+      transform/add_dd_fields:
+        error_mode: ignore
+        trace_statements:
+          - context: resource
+            statements:
+              - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
+              - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
+        metric_statements:
+          - context: resource
+            statements:
+              - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
+              - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
+        log_statements:
+          - context: resource
+            statements:
+              - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
+              - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
+              - set(attributes["traceID"], attributes["service.name"]) where attributes["service.name"] != nil
+              - set(attributes["traceID"], attributes["servicename"]) where attributes["servicename"] != nil
+          - context: log
+            statements:
+              - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{.*\\}\\s*$")
+              - set(body, attributes["message"]) where IsString(attributes["message"])
+              - delete_key(attributes, "message")
+    exporters:
+      loadbalancing/traces:
+        routing_key: traceID
+        protocol:
+          otlp:
+            tls:
+              insecure: true
+            timeout: 5s
+            retry_on_failure:
+              enabled: true
+              initial_interval: 1s
+              max_interval: 10s
+            sending_queue:
+              enabled: true
+              num_consumers: 4
+              queue_size: 1000
+        resolver:
+          dns:
+            hostname: {{ .AppName }}-trace-sampling.mdai.svc.cluster.local
+            port: 4317
+            interval: 10s
+            timeout: 5s
+      loadbalancing/logs:
+        routing_key: traceID
+        protocol:
+          otlp:
+            tls:
+              insecure: true
+            timeout: 5s
+            retry_on_failure:
+              enabled: true
+              initial_interval: 1s
+              max_interval: 10s
+            sending_queue:
+              enabled: true
+              num_consumers: 4
+              queue_size: 1000
+        resolver:
+          dns:
+            hostname: {{ .AppName }}-log-sampling.mdai.svc.cluster.local
+            port: 4317
+            interval: 10s
+            timeout: 5s
+      prometheus:
+        endpoint: "0.0.0.0:8899"
+        metric_expiration: 180m
+        resource_to_telemetry_conversion:
+          enabled: true
+    connectors:
+      count/spans_by_facet:
+        spans:
+          trace.span.service.total:
+            description: Total span count by service (all spans).
+          trace.span.service.root:
+            description: Root span count by service.
+            conditions:
+              - 'IsRootSpan()'
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      zpages:
+        endpoint: 0.0.0.0:55679
+    service:
+      extensions: [health_check, zpages]
+      pipelines:
+        {{- range .ConnectionData.TelemetryTypes }}
+          {{ if eq . "logs" }}
+          logs:
+            receivers: [datadog]
+            processors: [transform/add_dd_fields]
+            exporters: [loadbalancing/logs]
+          {{ else if eq . "traces" }}
+          traces:
+            receivers: [datadog]
+            processors: [transform/add_dd_fields]
+            exporters: [loadbalancing/traces, count/spans_by_facet]
+          metrics:
+            receivers: [count/spans_by_facet]
+            processors: [deltatocumulative]
+            exporters: [prometheus]
+          {{ end }}
+        {{- end }}
+      telemetry:
+        resource:
+          mdai_connection: "{{ .AppName }}"
+          service.name: "{{ .AppName }}-lb-collector"
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: "0.0.0.0"
+                    port: 8888
+                    with_resource_constant_labels:
+                      included:
+                        - mdai_connection
+                        - service.name
