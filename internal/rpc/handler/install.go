@@ -1,15 +1,14 @@
-// Package rpchandler contains handlers that will handle RPC service calls.
 package rpchandler
 
 import (
 	"context"
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"time"
 
 	"connectrpc.com/connect"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type InstallHandler struct {
@@ -20,7 +19,7 @@ func NewInstallHandler() *InstallHandler {
 	return &InstallHandler{}
 }
 
-func (ih *InstallHandler) InstallMDAIHub(
+func (*InstallHandler) InstallMDAIHub(
 	_ context.Context,
 	req *connect.Request[octantv1alpha.InstallMDAIHubRequest],
 ) (*connect.Response[emptypb.Empty], error) {
@@ -32,7 +31,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 
-func (ih *InstallHandler) GetInstallStatus(
+func (*InstallHandler) GetInstallStatus(
 	_ context.Context,
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
@@ -53,7 +52,7 @@ func (ih *InstallHandler) GetInstallStatus(
 	}
 
 	// for now, emulating install time passing...
-	time.Sleep(3 * time.Second)
+	time.Sleep(3 * time.Second) // nolint: mnd
 
 	err = response.Send(&octantv1alpha.GetInstallStatusResponse{
 		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,

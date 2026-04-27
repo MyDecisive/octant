@@ -44,7 +44,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, stream)
 		require.True(t, stream.Receive())
-		assert.Equal(t, []byte(expected), bytes.Trim(stream.Msg().Data, "\x00"))
+		assert.Equal(t, []byte(expected), bytes.Trim(stream.Msg().GetData(), "\x00"))
 	})
 
 	t.Run("err", func(t *testing.T) {

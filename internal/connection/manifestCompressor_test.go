@@ -29,7 +29,7 @@ func TestConnectionManifestCompressor_CreateCompressed(t *testing.T) {
 func TestConnectionManifestCompressor_ToConnectionData(t *testing.T) {
 	t.Parallel()
 
-	var tests = []struct {
+	tests := []struct {
 		des      string
 		in       octantv1alpha.DeploymentType
 		expected DeploymentType
@@ -53,14 +53,14 @@ func TestConnectionManifestCompressor_ToConnectionData(t *testing.T) {
 			assert.Contains(t, actual.TelemetryTypes, telemetry.Logs)
 			assert.Contains(t, actual.TelemetryTypes, telemetry.Traces)
 			assert.Len(t, actual.Destinations, 1)
-			assert.Equal(t, actual.Deployment.Type, tt.expected)
+			assert.Equal(t, tt.expected, actual.Deployment.Type)
 		})
 	}
 }
 
 func TestConnectionManifestCompressor_ToConnectionFormat(t *testing.T) {
 	t.Parallel()
-	var tests = []struct {
+	tests := []struct {
 		des      string
 		in       octantv1alpha.ManifestOutFormat
 		expected ManifestOutputFormat

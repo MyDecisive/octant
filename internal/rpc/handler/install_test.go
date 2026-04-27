@@ -1,14 +1,14 @@
 package rpchandler
 
 import (
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"io"
 	"log"
 	"net/http/httptest"
 	"testing"
 
 	"connectrpc.com/connect"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -37,7 +37,10 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 
 	// setup the install handler and test server
 	handler := NewInstallHandler()
-	installServiceMethods := octantv1alpha.File_octant_v1alpha_install_service_proto.Services().ByName("InstallService").Methods()
+	installServiceMethods := octantv1alpha.File_octant_v1alpha_install_service_proto.
+		Services().
+		ByName("InstallService").
+		Methods()
 	installServiceGetInstallStatusHandler := connect.NewServerStreamHandler(
 		octantv1alphaconnect.InstallServiceGetInstallStatusProcedure,
 		handler.GetInstallStatus,

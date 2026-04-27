@@ -2,6 +2,7 @@ package argocd
 
 import (
 	"context"
+
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	"github.com/samber/lo"
@@ -14,14 +15,17 @@ type APIClient interface {
 	TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error)
 }
 
-type ArgoCDClient struct {
-}
+type ArgoCDClient struct{}
 
 func NewArgoCDClient() *ArgoCDClient {
 	return &ArgoCDClient{}
 }
 
-func (a *ArgoCDClient) TestConnection(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (bool, error) {
+func (*ArgoCDClient) TestConnection(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+) (bool, error) {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
 		logger.Error("creating argo api client", zap.Error(err))

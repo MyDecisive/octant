@@ -40,6 +40,7 @@ func getNestedField(m map[string]any, keys ...string) (any, bool) {
 // --- Format Validation Tests ---
 
 func TestRenderManifestFormats(t *testing.T) {
+	t.Parallel()
 	templateData := ArgoTemplateData{
 		AppName:   "format-test-app",
 		Namespace: "default",
@@ -56,6 +57,7 @@ func TestRenderManifestFormats(t *testing.T) {
 
 	for _, format := range formats {
 		t.Run(string(format), func(t *testing.T) {
+			t.Parallel()
 			manifests, err := renderCollectorDeploymentManifests(&templateData, format)
 			require.NoError(t, err)
 
@@ -87,7 +89,9 @@ func TestRenderManifestFormats(t *testing.T) {
 // --- Individual Template Tests ---
 
 func TestRenderArgoAppManifest(t *testing.T) {
+	t.Parallel()
 	t.Run("Valid Argo App Configuration", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:   "test-app",
 			Namespace: "team-a-namespace",
@@ -112,7 +116,9 @@ func TestRenderArgoAppManifest(t *testing.T) {
 }
 
 func TestRenderSecretManifest(t *testing.T) {
+	t.Parallel()
 	t.Run("With Sideload and Datadog Integration", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:        "test-app",
 			IsArgoSideload: true,
@@ -143,6 +149,7 @@ func TestRenderSecretManifest(t *testing.T) {
 	})
 
 	t.Run("Without Sideload or Datadog", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:                "test-app",
 			IsArgoSideload:         false,
@@ -170,7 +177,9 @@ func TestRenderSecretManifest(t *testing.T) {
 }
 
 func TestRenderCollectorManifest(t *testing.T) {
+	t.Parallel()
 	t.Run("Full Configuration with Pipelines", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:        "test-app",
 			IsArgoSideload: true,
@@ -220,7 +229,14 @@ func TestRenderCollectorManifest(t *testing.T) {
 		assert.True(t, hasMetricsReaders, "Metrics reader should be configured")
 		metricsReadersSlice := metricsReaders.([]any)
 		assert.Len(t, metricsReadersSlice, 1)
-		includedLabels, hasIncludedLabels := getNestedField(metricsReadersSlice[0].(map[string]any), "pull", "exporter", "prometheus", "with_resource_constant_labels", "included")
+		includedLabels, hasIncludedLabels := getNestedField(
+			metricsReadersSlice[0].(map[string]any),
+			"pull",
+			"exporter",
+			"prometheus",
+			"with_resource_constant_labels",
+			"included",
+		)
 		assert.True(t, hasIncludedLabels, "Prometheus pull exporter included labels should be configured")
 		assert.Contains(t, includedLabels, "mdai_connection")
 		assert.Contains(t, includedLabels, "service.name")
@@ -234,6 +250,7 @@ func TestRenderCollectorManifest(t *testing.T) {
 	})
 
 	t.Run("Minimal Configuration without Pipelines", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:        "minimal-app",
 			IsArgoSideload: false,
@@ -275,7 +292,9 @@ func TestRenderCollectorManifest(t *testing.T) {
 }
 
 func TestRenderValidatorManifest(t *testing.T) {
+	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
@@ -300,7 +319,9 @@ func TestRenderValidatorManifest(t *testing.T) {
 }
 
 func TestRenderHubManifest(t *testing.T) {
+	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
+		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
