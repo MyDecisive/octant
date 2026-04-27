@@ -10,6 +10,7 @@ import (
 	"github.com/mydecisive/octant/internal/argocd"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
@@ -56,6 +57,9 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(argocd.NewArgoCDClient, dig.As(new(argocd.APIClient))); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(connection.NewConnectionManifestCompressor, dig.As(new(connection.ManifestCompressor))); err != nil {
+		return nil, err
+	}
 
 	// RPC Server
 	if err := container.Provide(rpchandler.NewArgoCDHandler); err != nil {
@@ -65,6 +69,9 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewDatadogHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewConnectionHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpc.NewServer); err != nil {

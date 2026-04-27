@@ -23,9 +23,10 @@ import (
 type Server struct {
 	configuration *config.Configuration
 
-	argocdHandler  *rpchandler.ArgoCDHandler
-	installHandler *rpchandler.InstallHandler
-	datadogHander  *rpchandler.DatadogHandler
+	argocdHandler     *rpchandler.ArgoCDHandler
+	installHandler    *rpchandler.InstallHandler
+	datadogHandler    *rpchandler.DatadogHandler
+	connectionHandler *rpchandler.ConnectionHandler
 }
 
 // NewServer create a new Server.
@@ -33,13 +34,15 @@ func NewServer(
 	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
-	datadogHander *rpchandler.DatadogHandler,
+	datadogHandler *rpchandler.DatadogHandler,
+	connectionHandler *rpchandler.ConnectionHandler,
 ) *Server {
 	return &Server{
-		configuration:  configuration,
-		argocdHandler:  argocdHandler,
-		installHandler: installHandler,
-		datadogHander:  datadogHander,
+		configuration:     configuration,
+		argocdHandler:     argocdHandler,
+		installHandler:    installHandler,
+		datadogHandler:    datadogHandler,
+		connectionHandler: connectionHandler,
 	}
 }
 
@@ -65,7 +68,8 @@ func (s Server) Start() error {
 	// Service Handlers
 	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
-	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHander, interceptors))
+	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -82,6 +86,7 @@ func (Server) getServices() []string {
 		octantv1alphaconnect.ArgoCDServiceName,
 		octantv1alphaconnect.InstallServiceName,
 		octantv1alphaconnect.DatadogServiceName,
+		octantv1alphaconnect.ConnectionServiceName,
 	}
 }
 
