@@ -23,7 +23,7 @@ type Server struct {
 
 	argocdHandler     *rpchandler.ArgoCDHandler
 	installHandler    *rpchandler.InstallHandler
-	datadogHander     *rpchandler.DatadogHandler
+	datadogHandler    *rpchandler.DatadogHandler
 	connectionHandler *rpchandler.ConnectionHandler
 }
 
@@ -32,14 +32,14 @@ func NewServer(
 	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
-	datadogHander *rpchandler.DatadogHandler,
+	datadogHandler *rpchandler.DatadogHandler,
 	connectionHandler *rpchandler.ConnectionHandler,
 ) *Server {
 	return &Server{
 		configuration:     configuration,
 		argocdHandler:     argocdHandler,
 		installHandler:    installHandler,
-		datadogHander:     datadogHander,
+		datadogHandler:    datadogHandler,
 		connectionHandler: connectionHandler,
 	}
 }
@@ -66,7 +66,7 @@ func (s Server) Start() error {
 	// Service Handlers
 	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
-	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHander, interceptors))
+	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
