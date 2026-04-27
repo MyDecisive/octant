@@ -7,7 +7,7 @@ import (
 
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/prometheus/client_golang/api"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1" // nolint: goimports
+	"github.com/prometheus/client_golang/api/prometheus/v1" // nolint: goimports, revive
 )
 
 type PromClientFactory interface {
