@@ -2,7 +2,6 @@
 package rpchandler
 
 import (
-	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"io"
@@ -25,7 +24,7 @@ type ConnectionHandler struct {
 
 	config           *config.Configuration
 	octantConnection connection.Connection[connection.OctantConnectionData]
-	compressor connection.ManifestCompressor
+	compressor       connection.ManifestCompressor
 }
 
 func NewConnectionHandler(
@@ -36,7 +35,7 @@ func NewConnectionHandler(
 	return &ConnectionHandler{
 		config:           config,
 		octantConnection: octantConnection,
-		compressor: compressor,
+		compressor:       compressor,
 	}
 }
 
@@ -48,7 +47,6 @@ func (ch ConnectionHandler) GetConnectionStatus(ctx context.Context, request *co
 
 	return connect.NewResponse(connectionStatus), nil
 }
-
 
 func (ch *ConnectionHandler) GenerateManifests(
 	ctx context.Context,

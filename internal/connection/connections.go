@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mydecisive/octant/internal/metrics"
-	"github.com/mydecisive/octant/internal/telemetry"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

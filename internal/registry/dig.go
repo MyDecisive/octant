@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/metrics"
 	"net/http"
 	"os"
