@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestIsTelemetryFlowing(t *testing.T) {
@@ -20,9 +19,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		t.Parallel()
 
 		mockPromAPI := v1mock.NewMockAPI(t)
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
@@ -38,9 +35,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
@@ -57,9 +52,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(queryResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
@@ -89,9 +82,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(tracesResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
@@ -130,9 +121,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(metricsResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
 		require.True(t, actual)
@@ -152,9 +141,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, _, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 
 		require.ErrorContains(t, err, "checking attribute parity fidelity")
@@ -170,9 +157,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, nil).
 			Times(4) // 2 for attributes, 2 for signals
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.NoError(t, err)
 		require.False(t, result)
@@ -191,9 +176,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(invalidResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, _, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.ErrorContains(t, err, "failed to convert result to model.Vector")
 		require.False(t, result)
@@ -218,9 +201,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(failVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 		require.NoError(t, err)
 		require.False(t, result)
@@ -267,9 +248,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
@@ -313,9 +292,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(2)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
@@ -356,9 +333,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(mixedVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
@@ -393,9 +368,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(zeroVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
@@ -437,9 +410,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(weirdVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 
 		// We explicitly only ask for Logs
 		_, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
@@ -474,9 +445,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(unknownVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{
-			logger: zaptest.NewLogger(t),
-		}
+		theThing := &ConnectionStatus{}
 		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 
 		require.NoError(t, err)
