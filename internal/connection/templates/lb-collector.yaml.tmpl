@@ -2,6 +2,7 @@ apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
   name: {{ .AppName }}
+  namespace: {{ .Namespace }}
   labels:
     app: {{ .AppName }}
     app.kubernetes.io/instance: {{ .AppName }}
