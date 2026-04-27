@@ -51,10 +51,12 @@ func TestGetArgoAppStatus(t *testing.T) {
 
 			f := setupFixture(t)
 			f.httpClient = ts.Client()
-			f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-				APIUrl:       ts.URL,
-				AccountToken: "fake-token",
-			}, nil)
+			f.argoMock.EXPECT().
+				GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+				Return(&integration.ArgoCDIntegrationData{
+					APIUrl:       ts.URL,
+					AccountToken: "fake-token",
+				}, nil)
 
 			octantConnection := f.build()
 
@@ -85,9 +87,11 @@ func TestDeleteArgoApp(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -137,20 +141,28 @@ func TestPushArgoApp(t *testing.T) { // nolint:gocognit
 
 			if tc.expectArgoCall {
 				if tc.argoClientErr != nil {
-					f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(nil, tc.argoClientErr)
+					f.argoMock.EXPECT().
+						GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+						Return(nil, tc.argoClientErr)
 				} else {
-					f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-						APIUrl:       ts.URL,
-						AccountToken: "fake-token",
-					}, nil)
+					f.argoMock.EXPECT().
+						GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+						Return(&integration.ArgoCDIntegrationData{
+							APIUrl:       ts.URL,
+							AccountToken: "fake-token",
+						}, nil)
 				}
 			}
 
 			if tc.expectDatadogCall {
 				if tc.ddClientErr != nil {
-					f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").Return(nil, tc.ddClientErr)
+					f.datadogMock.EXPECT().
+						GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").
+						Return(nil, tc.ddClientErr)
 				} else {
-					f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").Return(&integration.DataDogIntegrationData{}, nil)
+					f.datadogMock.EXPECT().
+						GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").
+						Return(&integration.DataDogIntegrationData{}, nil)
 				}
 			}
 
@@ -178,7 +190,9 @@ func TestGetArgoAppStatus_Error_IntegrationFetchFailed(t *testing.T) {
 	t.Parallel()
 
 	f := setupFixture(t)
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(nil, errors.New("injected argo integration error"))
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(nil, errors.New("injected argo integration error"))
 
 	octantConnection := f.build()
 
@@ -194,9 +208,11 @@ func TestGetArgoAppStatus_Error_RequestCreation(t *testing.T) {
 	t.Parallel()
 
 	f := setupFixture(t)
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: "://invalid-url",
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: "://invalid-url",
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -215,9 +231,11 @@ func TestGetArgoAppStatus_Error_HTTPDoFailed(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -239,9 +257,11 @@ func TestGetArgoAppStatus_Error_InvalidJSON(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -256,7 +276,9 @@ func TestDeleteArgoApp_Error_IntegrationFetchFailed(t *testing.T) {
 	t.Parallel()
 
 	f := setupFixture(t)
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(nil, errors.New("injected argo integration error"))
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(nil, errors.New("injected argo integration error"))
 
 	octantConnection := f.build()
 
@@ -272,9 +294,11 @@ func TestDeleteArgoApp_Error_RequestCreation(t *testing.T) {
 	t.Parallel()
 
 	f := setupFixture(t)
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: "://invalid-url",
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: "://invalid-url",
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -293,9 +317,11 @@ func TestDeleteArgoApp_Error_HTTPDoFailed(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -311,15 +337,20 @@ func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "invalid session: token signature is invalid: signature is invalid","code": 16,"message": "invalid session: token signature is invalid: signature is invalid"}`)) // nolint: errcheck,gosec,revive
+		_, err := w.Write([]byte(`{"error": "invalid session: token signature is invalid: signature is invalid",
+		"code": 16,
+		"message": "invalid session: token signature is invalid: signature is invalid"}`))
+		assert.NoError(t, err)
 	}))
 	defer ts.Close()
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -328,9 +359,8 @@ func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "got 401 forbidden response from ArgoCD API")
-	assert.Contains(t, err.Error(), "Account token in ArgoCD integration 'argo-test' may be incorrect or expired.")
-	assert.Contains(t, err.Error(), "Response body: \n{\n  \"error\":")
+	assert.Contains(t, err.Error(), "'argo-test' token invalid:")
+	assert.Contains(t, err.Error(), "\n{\n  \"error\":")
 }
 
 func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
@@ -344,9 +374,11 @@ func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
 
 	octantConnection := f.build()
 
@@ -368,10 +400,14 @@ func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").Return(&integration.ArgoCDIntegrationData{
-		APIUrl: ts.URL,
-	}, nil)
-	f.datadogMock.EXPECT().GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").Return(&integration.DataDogIntegrationData{}, nil)
+	f.argoMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "argo-test").
+		Return(&integration.ArgoCDIntegrationData{
+			APIUrl: ts.URL,
+		}, nil)
+	f.datadogMock.EXPECT().
+		GetIntegrationByName(mock.Anything, defaultNamespace, "dd-1").
+		Return(&integration.DataDogIntegrationData{}, nil)
 
 	octantConnection := f.build()
 

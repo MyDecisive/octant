@@ -26,8 +26,7 @@ type ManifestCompressor interface {
 }
 
 // ConnectionManifestCompressor implements ManifestCompressor.
-type ConnectionManifestCompressor struct {
-}
+type ConnectionManifestCompressor struct{}
 
 // Ensure ConnectionManifestCompressor implements ManifestCompressor.
 var _ ManifestCompressor = &ConnectionManifestCompressor{}
@@ -38,7 +37,10 @@ func NewConnectionManifestCompressor() *ConnectionManifestCompressor {
 }
 
 // CreateCompressed creates manifest files abse on the given inputs and then compress the files into a zip.
-func (cmc *ConnectionManifestCompressor) CreateCompressed(ctx context.Context, input CompressionInput) (*bytes.Buffer, error) {
+func (cmc *ConnectionManifestCompressor) CreateCompressed(
+	ctx context.Context,
+	input CompressionInput,
+) (*bytes.Buffer, error) {
 	manifestsMap, err := CreateExportableArgoManifests(
 		input.Namespace,
 		input.Connection,
@@ -72,7 +74,10 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(ctx context.Context, i
 }
 
 // toConnectionData converts the telemetry and deployment type to connection data.
-func (*ConnectionManifestCompressor) toConnectionData(telemetries []octantv1alpha.MLTType, deployment octantv1alpha.DeploymentType) OctantConnectionData {
+func (*ConnectionManifestCompressor) toConnectionData(
+	telemetries []octantv1alpha.MLTType,
+	deployment octantv1alpha.DeploymentType,
+) OctantConnectionData {
 	telemetryTypes := make([]telemetry.MLT, len(telemetries))
 	for i, t := range telemetries {
 		switch t {
