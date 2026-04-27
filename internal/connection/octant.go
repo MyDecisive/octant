@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
@@ -30,6 +31,7 @@ type OctantConnectionData struct {
 	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
 	Deployment     *Deployment                   `json:"deployment,omitempty"`
 	Status         any                           `json:"status,omitempty"`
+	LastEdited     time.Time                     `json:"lastEdited"`
 }
 
 type OctantConnection struct {
@@ -132,6 +134,7 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 	if !slices.Contains([]DeploymentType{ArgoManifestsDeploymentType, ArgoSideloadDeploymentType}, connection.Deployment.Type) {
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
+	connection.LastEdited = time.Now()
 	jsonData, err := json.Marshal(connection)
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection data: %w", err)
