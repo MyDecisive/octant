@@ -19,7 +19,7 @@ const (
 //
 // e.g., if this returns `Timeframe_TIMEFRAME_UNSPECIFIED`, then that means no timeframe have data.
 func ValidTimeframe(creationTime time.Time) budgetv1alpha.Timeframe {
-	delta := time.Until(creationTime)
+	delta := time.Since(creationTime)
 	if delta < dayInHR {
 		return budgetv1alpha.Timeframe_TIMEFRAME_UNSPECIFIED
 	}

@@ -23,17 +23,17 @@ func TestValidTimeframe(t *testing.T) {
 		},
 		{
 			"24h",
-			time.Now().Add(dayInHR + time.Hour),
+			time.Now().Add(-dayInHR),
 			budgetv1alpha.Timeframe_TIMEFRAME_24HR,
 		},
 		{
 			"month to date",
-			time.Now().Add(monthInHR + time.Hour),
+			time.Now().Add(-monthInHR),
 			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{
 			"last month",
-			time.Now().Add(2*monthInHR + time.Hour),
+			time.Now().Add(-(2 * monthInHR)),
 			budgetv1alpha.Timeframe_TIMEFRAME_LM,
 		},
 	}
