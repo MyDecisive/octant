@@ -23,8 +23,8 @@ linters:
   settings:
     cyclop:
       max-complexity: 15
-      funlen:
-        lines: 85
+    funlen:
+      lines: 85
     gocritic:
       enable-all: true
       disabled-checks:
