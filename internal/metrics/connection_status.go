@@ -77,6 +77,7 @@ func NewConnectionStatus(promClientFactory PromClientFactory) *ConnectionStatus 
 	}
 }
 
+// GetConnectionStatus reads OTEL Collectoor and validator metrics to ensure a MDAI Connection is working.
 func (cs *ConnectionStatus) GetConnectionStatus(
 	ctx context.Context,
 	namespace string,
@@ -111,6 +112,8 @@ func (cs *ConnectionStatus) GetConnectionStatus(
 	}, nil
 }
 
+// verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar to data going
+// out of the connection.
 func verifyDataFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -180,6 +183,8 @@ func verifyDataFidelity(
 	return dataIntegrity, &results, nil
 }
 
+// isTelemetryFlowing reads OTEL Collector metrics to ensure that the connection collector is receiving/sending
+// telemetry.
 func isTelemetryFlowing(
 	ctx context.Context,
 	promClient promv1.API,
@@ -216,6 +221,8 @@ func isTelemetryFlowing(
 	return true, nil
 }
 
+// checkAttributeFidelity inspects attribute fidelity metric results and assigns a true/false for pass/fail per
+// attribute.
 func checkAttributeFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -261,6 +268,7 @@ func checkAttributeFidelity(
 	return attrs, nil
 }
 
+// checkSignalFidelity inspects signal fidelity metric results and assigns a true/false for pass/fail per MLT.
 func checkSignalFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -328,6 +336,7 @@ func parseFidelitySample(sample *model.Sample) (parsedSample, bool) {
 	}, true
 }
 
+// queryVector wraps a Prometheus query call to extract a well-typed vector model from the response.
 func queryVector(ctx context.Context, promClient promv1.API, query string) (model.Vector, error) {
 	results, _, err := promClient.Query(ctx, query, time.Now())
 	if err != nil {
