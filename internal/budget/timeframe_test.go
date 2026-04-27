@@ -11,7 +11,7 @@ import (
 func TestValidTimeframe(t *testing.T) {
 	t.Parallel()
 
-	var cases = []struct {
+	cases := []struct {
 		des      string
 		in       time.Time
 		expected budgetv1alpha.Timeframe
@@ -39,6 +39,7 @@ func TestValidTimeframe(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.des, func(t *testing.T) {
+			t.Parallel()
 			actual := ValidTimeframe(tt.in)
 			assert.Equal(t, tt.expected, actual)
 		})
