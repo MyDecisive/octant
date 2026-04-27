@@ -15,7 +15,7 @@ import (
 	"github.com/mydecisive/octant/internal/telemetry"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -247,7 +247,7 @@ func (oc *OctantConnection) createConnection(
 // updateConnection updates the existing connection configmap with the new data.
 func (oc *OctantConnection) updateConnection(
 	ctx context.Context,
-	cm *v1.ConfigMap,
+	cm *corev1.ConfigMap,
 	connection OctantConnectionData,
 	namespace, connectionName string,
 ) error {
