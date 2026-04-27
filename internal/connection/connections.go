@@ -16,7 +16,14 @@ type Connection[T any] interface {
 	GetConnectionByName(ctx context.Context, namespace, name string) (*T, error)
 	SaveConnection(ctx context.Context, connection T, namespace, connectionName string) error
 	DeleteConnection(ctx context.Context, namespace, connectionName string) error
-	GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error)
+	GetConnectionStatus(
+		ctx context.Context,
+		namespace string,
+		connectionName string,
+	) (
+		*octantv1alpha.GetConnectionStatusResponse,
+		error,
+	)
 }
 
 func updateConfigMapWithConnection(

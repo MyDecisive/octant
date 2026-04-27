@@ -41,7 +41,13 @@ type OctantConnection struct {
 	// taskSets      map[DeploymentType]DeploymentTaskSet
 }
 
-func NewOctantConnection(httpClient wrapper.HTTPClient, k8sClient kubernetes.Interface, argoClient integration.Integration[integration.ArgoCDIntegrationData], datadogClient integration.Integration[integration.DataDogIntegrationData], promClientFactory metrics.PromClientFactory) *OctantConnection {
+func NewOctantConnection(
+	httpClient wrapper.HTTPClient,
+	k8sClient kubernetes.Interface,
+	argoClient integration.Integration[integration.ArgoCDIntegrationData],
+	datadogClient integration.Integration[integration.DataDogIntegrationData],
+	promClientFactory metrics.PromClientFactory,
+) *OctantConnection {
 	return &OctantConnection{
 		httpClient:        httpClient,
 		k8sClient:         k8sClient,
@@ -53,7 +59,14 @@ func NewOctantConnection(httpClient wrapper.HTTPClient, k8sClient kubernetes.Int
 
 var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
 
-func (oc *OctantConnection) GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error) {
+func (oc *OctantConnection) GetConnectionStatus(
+	ctx context.Context,
+	namespace string,
+	connectionName string,
+) (
+	*octantv1alpha.GetConnectionStatusResponse,
+	error,
+) {
 	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
 	if err != nil {
 		return nil, fmt.Errorf("getting connection: %w", err)

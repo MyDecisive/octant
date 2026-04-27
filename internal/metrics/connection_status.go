@@ -77,7 +77,12 @@ func NewConnectionStatus(promClientFactory PromClientFactory) *ConnectionStatus 
 	}
 }
 
-func (cs *ConnectionStatus) GetConnectionStatus(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT) (*octantv1alpha.GetConnectionStatusResponse, error) {
+func (cs *ConnectionStatus) GetConnectionStatus(
+	ctx context.Context,
+	namespace string,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+) (*octantv1alpha.GetConnectionStatusResponse, error) {
 	promClient, err := cs.promClientFactory.GetPromClient(namespace)
 	if err != nil {
 		return nil, err
@@ -106,25 +111,38 @@ func (cs *ConnectionStatus) GetConnectionStatus(ctx context.Context, namespace s
 	}, nil
 }
 
-func VerifyDataFidelity(ctx context.Context, promClient promv1.API, connectionName string, telemetryTypes []telemetry.MLT) (bool, *octantv1alpha.ValidationResultsBySignal, error) {
+func VerifyDataFidelity(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+) (bool, *octantv1alpha.ValidationResultsBySignal, error) {
 	dataIntegrity := true
 
-	attrParity, err := checkAttributeFidelity(ctx, promClient, connectionName, telemetryTypes, attributeParityFidelityMetric)
+	attrParity, err := checkAttributeFidelity(
+		ctx, promClient, connectionName, telemetryTypes, attributeParityFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute parity fidelity: %w", err)
 	}
 
-	attrPolicy, err := checkAttributeFidelity(ctx, promClient, connectionName, telemetryTypes, attributePolicyFidelityMetric)
+	attrPolicy, err := checkAttributeFidelity(
+		ctx, promClient, connectionName, telemetryTypes, attributePolicyFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute policy fidelity: %w", err)
 	}
 
-	signalParity, err := checkSignalFidelity(ctx, promClient, connectionName, telemetryTypes, signalParityFidelityMetric)
+	signalParity, err := checkSignalFidelity(
+		ctx, promClient, connectionName, telemetryTypes, signalParityFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal parity fidelity: %w", err)
 	}
 
-	signalPolicy, err := checkSignalFidelity(ctx, promClient, connectionName, telemetryTypes, signalPolicyFidelityMetric)
+	signalPolicy, err := checkSignalFidelity(
+		ctx, promClient, connectionName, telemetryTypes, signalPolicyFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
 	}
@@ -152,14 +170,23 @@ func VerifyDataFidelity(ctx context.Context, promClient promv1.API, connectionNa
 		case telemetry.Traces:
 			results.Traces = &res
 		default:
-			zap.L().Error("exotic telemetry type in VerifyDataFidelity (how did we get here?!)", zap.String("telemetryType", string(t)))
+			zap.L().Error(
+				"exotic telemetry type in VerifyDataFidelity (how did we get here?!)",
+				zap.String("telemetryType", string(t)),
+			)
 		}
 	}
 
 	return dataIntegrity, &results, nil
 }
 
-func IsTelemetryFlowing(ctx context.Context, promClient promv1.API, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
+func IsTelemetryFlowing(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+	ie IngressEgress,
+	telemetryTypes []telemetry.MLT,
+) (bool, error) {
 	for _, connectionType := range telemetryTypes {
 		var promQuery string
 		switch connectionType {
@@ -189,7 +216,13 @@ func IsTelemetryFlowing(ctx context.Context, promClient promv1.API, connectionNa
 	return true, nil
 }
 
-func checkAttributeFidelity(ctx context.Context, promClient promv1.API, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]map[string]bool, error) {
+func checkAttributeFidelity(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]map[string]bool, error) {
 	attrs := make(map[telemetry.MLT]map[string]bool)
 	for _, t := range telemetryTypes {
 		attrs[t] = make(map[string]bool)
@@ -228,7 +261,13 @@ func checkAttributeFidelity(ctx context.Context, promClient promv1.API, connecti
 	return attrs, nil
 }
 
-func checkSignalFidelity(ctx context.Context, promClient promv1.API, connectionName string, telemetryTypes []telemetry.MLT, metricName fidelityMetric) (map[telemetry.MLT]bool, error) {
+func checkSignalFidelity(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]bool, error) {
 	signals := make(map[telemetry.MLT]bool)
 	failsSeen := make(map[telemetry.MLT]bool)
 
@@ -262,7 +301,10 @@ func checkSignalFidelity(ctx context.Context, promClient promv1.API, connectionN
 				signals[parsed.Signal] = true
 			}
 		default:
-			zap.L().Info(fmt.Sprintf("encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s", fidelityMetricResult, parsed.Result, metricName, parsed.Signal))
+			zap.L().Info(fmt.Sprintf(
+				"encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s",
+				fidelityMetricResult, parsed.Result, metricName, parsed.Signal,
+			))
 		}
 	}
 
@@ -314,7 +356,11 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 }
 
 func buildValidationQuery(metricName fidelityMetric, connectionName string) string {
-	return fmt.Sprintf(`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`, metricName, connectionName)
+	return fmt.Sprintf(
+		`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`,
+		metricName,
+		connectionName,
+	)
 }
 
 func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {

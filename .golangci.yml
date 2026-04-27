@@ -19,6 +19,7 @@ linters:
     - wsl
     - wsl_v5
     - tagalign # Annoying and wrong
+    - gomoddirectives # incompatible with our argo import
 
   settings:
     cyclop:

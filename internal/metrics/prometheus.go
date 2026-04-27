@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -34,7 +35,11 @@ func NewPromClientFactory() PromClientFactory {
 
 func (f *promClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) {
 	if cachedClient, ok := f.cache.Load(namespace); ok {
-		return cachedClient.(v1.API), nil
+		client, ok := cachedClient.(v1.API)
+		if !ok {
+			return nil, errors.New("cannot use cached client")
+		}
+		return client, nil
 	}
 
 	promURL := os.Getenv("DEV_PROMETHEUS_URL")
@@ -52,6 +57,9 @@ func (f *promClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) 
 	promAPI := v1.NewAPI(client)
 
 	actualClient, _ := f.cache.LoadOrStore(namespace, promAPI)
-
-	return actualClient.(v1.API), nil
+	newClient, ok := actualClient.(v1.API)
+	if !ok {
+		return nil, errors.New("cannot use cached client")
+	}
+	return newClient, nil
 }

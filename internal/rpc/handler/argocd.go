@@ -1,4 +1,3 @@
-// Package rpchandler contains handlers that will handle RPC service calls.
 package rpchandler
 
 import (

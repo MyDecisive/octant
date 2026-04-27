@@ -1,4 +1,3 @@
-// Package rpchandler contains handlers that will handle RPC service calls.
 package rpchandler
 
 import (
@@ -46,12 +45,11 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	*connect.Response[octantv1alpha.GetConnectionStatusResponse],
 	error,
 ) {
-	connectionStatus, err :=
-		ch.octantConnection.GetConnectionStatus(
-			ctx,
-			request.Msg.GetNamespace(),
-			request.Msg.GetConnectionName(),
-		)
+	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
+		ctx,
+		request.Msg.GetNamespace(),
+		request.Msg.GetConnectionName(),
+	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

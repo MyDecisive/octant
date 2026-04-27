@@ -78,7 +78,14 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	}
 
 	// Connection
-	if err := container.Provide(connection.NewOctantConnection, dig.As(new(connection.Connection[connection.OctantConnectionData]))); err != nil {
+	if err := container.Provide(
+		connection.NewOctantConnection,
+		dig.As(
+			new(
+				connection.Connection[connection.OctantConnectionData],
+			),
+		),
+	); err != nil {
 		return nil, err
 	}
 
