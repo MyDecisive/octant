@@ -81,10 +81,10 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 				return connect.NewError(connect.CodeUnavailable, budgetfilter.ErrStillUpdating)
 			}
 			if errors.Is(result.Err, budgetfilter.ErrUpdateValue) {
-				return connect.NewError(connect.CodeUnavailable, budgetfilter.ErrUpdateValue)
+				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateValue)
 			}
 			if errors.Is(result.Err, budgetfilter.ErrUpdateCollector) {
-				return connect.NewError(connect.CodeUnavailable, budgetfilter.ErrUpdateCollector)
+				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateCollector)
 			}
 			return connect.NewError(connect.CodeUnknown, result.Err)
 		}
