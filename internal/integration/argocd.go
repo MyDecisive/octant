@@ -23,8 +23,19 @@ type ArgoCDIntegration struct {
 
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
-// GetIntegrations retrieves any existing integrations in the provided namespace for the "mdai-argocd-integration" secret.
-func (aci *ArgoCDIntegration) GetIntegrations(ctx context.Context, namespace string) (map[string]ArgoCDIntegrationData, error) {
+// NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
+func NewArgoCDIntegration(k8sClient kubernetes.Interface) *ArgoCDIntegration {
+	return &ArgoCDIntegration{
+		K8sClient: k8sClient,
+	}
+}
+
+// GetIntegrations retrieves any existing integrations
+// in the provided namespace for the "mdai-argocd-integration" secret.
+func (aci *ArgoCDIntegration) GetIntegrations(
+	ctx context.Context,
+	namespace string,
+) (map[string]ArgoCDIntegrationData, error) {
 	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -45,8 +56,12 @@ func (aci *ArgoCDIntegration) GetIntegrations(ctx context.Context, namespace str
 	return integrations, nil
 }
 
-// GetIntegrationByName retrieves the existing integration in the provided namespace for the "mdai-argocd-integration" secret, if it exists.
-func (aci *ArgoCDIntegration) GetIntegrationByName(ctx context.Context, namespace, name string) (*ArgoCDIntegrationData, error) {
+// GetIntegrationByName retrieves the existing
+// integration in the provided namespace for the "mdai-argocd-integration" secret, if it exists.
+func (aci *ArgoCDIntegration) GetIntegrationByName(
+	ctx context.Context,
+	namespace, name string,
+) (*ArgoCDIntegrationData, error) {
 	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -67,7 +82,11 @@ func (aci *ArgoCDIntegration) GetIntegrationByName(ctx context.Context, namespac
 }
 
 // SetIntegration adds or updates the "mdai-argocd-integration" secret for the provided namespace.
-func (aci *ArgoCDIntegration) SetIntegration(ctx context.Context, namespace, integrationName string, integrationData ArgoCDIntegrationData) error {
+func (aci *ArgoCDIntegration) SetIntegration(
+	ctx context.Context,
+	namespace, integrationName string,
+	integrationData ArgoCDIntegrationData,
+) error {
 	jsonData, err := json.Marshal(integrationData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal integration data: %w", err)

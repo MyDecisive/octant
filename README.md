@@ -1,3 +1,7 @@
+[![Chores](https://github.com/mydecisive/octant/actions/workflows/chores.yml/badge.svg)](https://github.com/mydecisive/octant/actions/workflows/chores.yml)
+[![codecov](https://codecov.io/gh/MyDecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/MyDecisive/octant)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/octant)](https://artifacthub.io/packages/search?repo=octant)
+
 # MDAI Octant
 
 Check out the [octant](https://docs.mydecisive.ai/) docs.

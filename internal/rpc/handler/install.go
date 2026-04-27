@@ -1,24 +1,23 @@
-// Package rpchandler contains handlers that will handle RPC service calls.
 package rpchandler
 
 import (
 	"context"
 	"fmt"
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"sigs.k8s.io/yaml"
 	"time"
 
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 
 	"connectrpc.com/connect"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type InstallHandler struct {
@@ -84,19 +83,20 @@ func (ih *InstallHandler) InstallMDAIHub(
 		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
 	}
 	// first, apply the cert manager app manifest
+	logger.Debug("pushing cert-manager app install")
 	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, certManagerApp); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
+	logger.Debug("pushing mdai app install")
 	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// TODO: install cert manager first?
-
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 
-func (ih *InstallHandler) GetInstallStatus(
+func (*InstallHandler) GetInstallStatus(
 	_ context.Context,
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
@@ -117,7 +117,7 @@ func (ih *InstallHandler) GetInstallStatus(
 	}
 
 	// for now, emulating install time passing...
-	time.Sleep(3 * time.Second)
+	time.Sleep(3 * time.Second) // nolint: mnd
 
 	err = response.Send(&octantv1alpha.GetInstallStatusResponse{
 		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,

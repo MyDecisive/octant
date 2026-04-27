@@ -2,40 +2,45 @@
 package rpc
 
 import (
+	"fmt"
+	"net/http"
+
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/otelconnect"
 	"connectrpc.com/validate"
-	"fmt"
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
+	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"net/http"
-
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-
-	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 )
 
 // Server that will serve internal RPC endpoint handlers.
 type Server struct {
-	configuration config.Configuration
+	configuration *config.Configuration
 
-	argocdHandler  *rpchandler.ArgoCDHandler
-	installHandler *rpchandler.InstallHandler
+	argocdHandler     *rpchandler.ArgoCDHandler
+	installHandler    *rpchandler.InstallHandler
+	datadogHandler    *rpchandler.DatadogHandler
+	connectionHandler *rpchandler.ConnectionHandler
 }
 
 // NewServer create a new Server.
 func NewServer(
-	configuration config.Configuration,
+	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
+	datadogHandler *rpchandler.DatadogHandler,
+	connectionHandler *rpchandler.ConnectionHandler,
 ) *Server {
 	return &Server{
-		configuration:  configuration,
-		argocdHandler:  argocdHandler,
-		installHandler: installHandler,
+		configuration:     configuration,
+		argocdHandler:     argocdHandler,
+		installHandler:    installHandler,
+		datadogHandler:    datadogHandler,
+		connectionHandler: connectionHandler,
 	}
 }
 
@@ -61,6 +66,8 @@ func (s Server) Start() error {
 	// Service Handlers
 	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -76,14 +83,17 @@ func (Server) getServices() []string {
 	return []string{
 		octantv1alphaconnect.ArgoCDServiceName,
 		octantv1alphaconnect.InstallServiceName,
+		octantv1alphaconnect.DatadogServiceName,
+		octantv1alphaconnect.ConnectionServiceName,
 	}
 }
 
 // getInterceptors returns list of interceptors to be applied to all services as an option.
-func (Server) getInterceptors() (connect.Option, error) {
+func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 	validateInterceptor := validate.NewInterceptor()
+	// https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
 	otelInterceptor, err := otelconnect.NewInterceptor(
-		otelconnect.WithoutServerPeerAttributes(), // https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
+		otelconnect.WithoutServerPeerAttributes(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create otelconnect interceptor: %w", err)

@@ -5,6 +5,7 @@ log-level: info
 structname: '{{.Mock}}{{.InterfaceName}}'
 pkgname: '{{.SrcPackageName}}mock'
 recursive: false
+include-auto-generated: true
 template: testify
 packages:
   github.com/mydecisive/octant/internal/integration:
@@ -13,6 +14,7 @@ packages:
   github.com/mydecisive/octant/internal/connection:
     interfaces:
       Connection:
+      ManifestCompressor:
   github.com/prometheus/client_golang/api/prometheus/v1:
     interfaces:
       API:
@@ -22,3 +24,20 @@ packages:
   github.com/argoproj/argo-cd/v3/pkg/apiclient/application:
     interfaces:
       ApplicationServiceServer:
+  github.com/mydecisive/octant/internal/wrapper:
+    interfaces:
+      HTTPClient:
+  github.com/mydecisive/octant/internal/budget/filter:
+    interfaces:
+      VariableAccessor:
+      SettingController:
+  k8s.io/client-go/kubernetes:
+    interfaces:
+      Interface:
+  k8s.io/client-go/kubernetes/typed/apps/v1:
+    config:
+      dir: 'kubernetes/apps{{.SrcPackageName}}'
+      pkgname: 'kubeapps{{.SrcPackageName}}mock'
+    interfaces:
+      AppsV1Interface:
+      DeploymentInterface:

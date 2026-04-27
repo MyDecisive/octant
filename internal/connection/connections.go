@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mydecisive/octant/internal/metrics"
+	"github.com/mydecisive/octant/internal/telemetry"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -12,10 +14,11 @@ import (
 const connectionsConfigmapName = "mdai-octant-connections"
 
 type Status struct {
-	ReceivingData bool   `json:"receivingData"`
-	SendingData   bool   `json:"sendingData"`
-	DataIntegrity bool   `json:"dataIntegrity"`
-	Details       string `json:"details"`
+	ReceivingData     bool                                       `json:"receivingData"`
+	SendingData       bool                                       `json:"sendingData"`
+	DataIntegrity     bool                                       `json:"dataIntegrity"`
+	Details           string                                     `json:"details"`
+	ValidationResults map[telemetry.MLT]metrics.ValidationResult `json:"validationResults"`
 }
 
 type Connection[T any] interface {
@@ -25,7 +28,13 @@ type Connection[T any] interface {
 	GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error)
 }
 
-func updateConfigMapWithConnection(ctx context.Context, k8sClient kubernetes.Interface, namespace string, cm *corev1.ConfigMap, connectionName, connectionData string) error {
+func updateConfigMapWithConnection(
+	ctx context.Context,
+	k8sClient kubernetes.Interface,
+	namespace string,
+	cm *corev1.ConfigMap,
+	connectionName, connectionData string,
+) error {
 	if cm.Data == nil {
 		cm.Data = make(map[string]string)
 	}
@@ -37,7 +46,11 @@ func updateConfigMapWithConnection(ctx context.Context, k8sClient kubernetes.Int
 	return nil
 }
 
-func createConnectionConfigMap(ctx context.Context, k8sClient kubernetes.Interface, namespace, configmapName, connectionName, connectionData string) error {
+func createConnectionConfigMap(
+	ctx context.Context,
+	k8sClient kubernetes.Interface,
+	namespace, configmapName, connectionName, connectionData string,
+) error {
 	newCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,

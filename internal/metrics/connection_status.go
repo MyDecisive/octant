@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/mydecisive/octant/internal/telemetry"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +19,19 @@ const (
 	Egress
 )
 
-type collectorMetric string
+const (
+	fidelityCheckFail = "fail"
+	fidelityCheckPass = "pass"
+
+	fidelityMetricResult    = "result"
+	fidelityMetricSignal    = "signal"
+	fidelityMetricAttribute = "attribute"
+)
+
+type (
+	collectorMetric string
+	fidelityMetric  string
+)
 
 const (
 	logsAcceptedMetric    collectorMetric = "otelcol_receiver_accepted_log_records_total"
@@ -30,10 +40,269 @@ const (
 	metricsSentMetric     collectorMetric = "otelcol_exporter_sent_metric_points_total"
 	spansAcceptedMetric   collectorMetric = "otelcol_receiver_accepted_spans_total"
 	spansSentMetric       collectorMetric = "otelcol_exporter_sent_spans_total"
+
+	signalParityFidelityMetric    fidelityMetric = "mdai_fidelity_signal_checks_total"
+	signalPolicyFidelityMetric    fidelityMetric = "mdai_fidelity_required_signal_checks_total"
+	attributeParityFidelityMetric fidelityMetric = "mdai_fidelity_attribute_checks_total"
+	attributePolicyFidelityMetric fidelityMetric = "mdai_fidelity_required_attribute_checks_total"
 )
 
+type ValidationResult struct {
+	Parity     bool                 `json:"parity"`
+	Policy     bool                 `json:"policy"`
+	Attributes ValidationAttributes `json:"attributes"`
+}
+
+type ValidationAttributes struct {
+	Parity map[string]bool `json:"parity"`
+	Policy map[string]bool `json:"policy"`
+}
+
+// parsedSample holds strictly typed data extracted from a model.Sample.
+type parsedSample struct {
+	Value     float64
+	Signal    telemetry.MLT
+	Result    string
+	Attribute string
+}
+
+type ConnectionStatus struct {
+	promClient promv1.API
+	logger     *zap.Logger
+}
+
+func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionStatus {
+	return &ConnectionStatus{
+		promClient: promClient,
+		logger:     logger,
+	}
+}
+
+func (cs *ConnectionStatus) VerifyDataFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+) (bool, map[telemetry.MLT]ValidationResult, error) {
+	dataIntegrity := true
+
+	attrParity, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributeParityFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking attribute parity fidelity: %w", err)
+	}
+
+	attrPolicy, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributePolicyFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking attribute policy fidelity: %w", err)
+	}
+
+	signalParity, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalParityFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking signal parity fidelity: %w", err)
+	}
+
+	signalPolicy, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalPolicyFidelityMetric)
+	if err != nil {
+		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
+	}
+
+	results := make(map[telemetry.MLT]ValidationResult)
+	for _, t := range telemetryTypes {
+		res := ValidationResult{
+			Parity: signalParity[t],
+			Policy: signalPolicy[t],
+			Attributes: ValidationAttributes{
+				Parity: attrParity[t],
+				Policy: attrPolicy[t],
+			},
+		}
+
+		if !res.Parity && !res.Policy {
+			dataIntegrity = false
+		}
+
+		results[t] = res
+	}
+
+	return dataIntegrity, results, nil
+}
+
+func (cs *ConnectionStatus) IsTelemetryFlowing(
+	ctx context.Context,
+	connectionName string,
+	ie IngressEgress,
+	telemetryTypes []telemetry.MLT,
+) (bool, error) {
+	for _, connectionType := range telemetryTypes {
+		var promQuery string
+		switch connectionType {
+		case telemetry.Logs:
+			promQuery = buildFlowQuery(connectionName, ie, telemetry.Logs)
+		case telemetry.Traces:
+			promQuery = buildFlowQuery(connectionName, ie, telemetry.Traces)
+		case telemetry.Metrics:
+			promQuery = buildFlowQuery(connectionName, ie, telemetry.Metrics)
+		default:
+			return false, fmt.Errorf("unknown telemetry type: %s", connectionType)
+		}
+
+		resultVector, err := cs.queryVector(ctx, promQuery)
+		if err != nil {
+			return false, fmt.Errorf("failed to query prometheus: %w", err)
+		}
+
+		if len(resultVector) == 0 {
+			return false, nil
+		}
+
+		if float64(resultVector[0].Value) <= 0 {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (cs *ConnectionStatus) checkAttributeFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]map[string]bool, error) {
+	attrs := make(map[telemetry.MLT]map[string]bool)
+	for _, t := range telemetryTypes {
+		attrs[t] = make(map[string]bool)
+	}
+
+	query := buildValidationQuery(metricName, connectionName)
+	vector, err := cs.queryVector(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sample := range vector {
+		parsed, ok := parseFidelitySample(sample)
+		if !ok || parsed.Attribute == "" {
+			continue
+		}
+
+		targetMap, exists := attrs[parsed.Signal]
+		if !exists {
+			continue
+		}
+
+		// Only a strict "pass" can initialize the attribute as true,
+		// and only if we haven't already marked it as false.
+		if parsed.Result == fidelityCheckPass {
+			if _, exists := targetMap[parsed.Attribute]; !exists {
+				targetMap[parsed.Attribute] = true
+			}
+		} else {
+			// "fail", "unknown", or any unexpected value explicitly marks it false.
+			// This will overwrite a previously recorded "true" for this attribute.
+			targetMap[parsed.Attribute] = false
+		}
+	}
+
+	return attrs, nil
+}
+
+func (cs *ConnectionStatus) checkSignalFidelity(
+	ctx context.Context,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+	metricName fidelityMetric,
+) (map[telemetry.MLT]bool, error) {
+	signals := make(map[telemetry.MLT]bool)
+	failsSeen := make(map[telemetry.MLT]bool)
+
+	for _, t := range telemetryTypes {
+		signals[t] = false
+		failsSeen[t] = false
+	}
+
+	query := buildValidationQuery(metricName, connectionName)
+	vector, err := cs.queryVector(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sample := range vector {
+		parsed, ok := parseFidelitySample(sample)
+		if !ok {
+			continue
+		}
+
+		if _, exists := signals[parsed.Signal]; !exists {
+			continue
+		}
+
+		switch parsed.Result {
+		case fidelityCheckFail:
+			signals[parsed.Signal] = false
+			failsSeen[parsed.Signal] = true
+		case fidelityCheckPass:
+			if !failsSeen[parsed.Signal] {
+				signals[parsed.Signal] = true
+			}
+		default:
+			cs.logger.Info("encountered unexpected fidelity check metric label",
+				zap.String(fidelityMetricResult, parsed.Result),
+				zap.String("name", string(metricName)),
+				zap.String("signal", string(parsed.Signal)))
+		}
+	}
+
+	return signals, nil
+}
+
+// parseFidelitySample extracts strongly typed data from a PromQL sample.
+// It returns false if the sample is mathematically insignificant (<= 0)
+// or should otherwise be skipped.
+func parseFidelitySample(sample *model.Sample) (parsedSample, bool) {
+	val := float64(sample.Value)
+	if val <= 0 {
+		return parsedSample{}, false
+	}
+
+	return parsedSample{
+		Value:     val,
+		Signal:    telemetry.MLT(sample.Metric[fidelityMetricSignal]),
+		Result:    string(sample.Metric[fidelityMetricResult]),
+		Attribute: string(sample.Metric[fidelityMetricAttribute]),
+	}, true
+}
+
+func (cs *ConnectionStatus) queryVector(ctx context.Context, query string) (model.Vector, error) {
+	results, _, err := cs.promClient.Query(ctx, query, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	resultVector, ok := results.(model.Vector)
+	if !ok {
+		if results == nil {
+			return nil, nil
+		}
+		return nil, errors.New("failed to convert result to model.Vector")
+	}
+
+	return resultVector, nil
+}
+
+func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetryType telemetry.MLT) string {
+	return fmt.Sprintf(
+		"increase(%s{%s=%q, mdai_connection=%q, service_name=%q}[10m])",
+		ingressEgress.getCollectorMLTMetric(telemetryType),
+		ingressEgress.getComponentType(),
+		"datadog", connectionName,
+		connectionName+"-collector",
+	)
+}
+
+func buildValidationQuery(metricName fidelityMetric, connectionName string) string {
+	return fmt.Sprintf(`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`, metricName, connectionName)
+}
+
 func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {
-	// this is fugly, but gochecknoglobals decreed that my map was no good 🙃
 	switch telemetryType {
 	case telemetry.Logs:
 		if ie == Ingress {
@@ -60,151 +329,4 @@ func (ie IngressEgress) getComponentType() string {
 		return "receiver"
 	}
 	return "exporter"
-}
-
-const (
-	fidelityCheckFail = "fail"
-	fidelityCheckPass = "pass"
-
-	fidelityMetricResult = "result"
-	fidelityMetricSignal = "signal"
-
-	tenMinutes = 10 * time.Minute //nolint: revive
-)
-
-type ConnectionStatus struct {
-	promClient promv1.API
-	logger     *zap.Logger
-}
-
-func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionStatus {
-	return &ConnectionStatus{
-		promClient: promClient,
-		logger:     logger,
-	}
-}
-
-func (cs *ConnectionStatus) VerifyDataFidelity(ctx context.Context, telemetryTypes []telemetry.MLT) (bool, error) {
-	// compare now to 10 minutes ago
-	// cutting down on # of queries by getting all labels and filtering here.
-	results, _, err := cs.promClient.QueryRange(ctx, "mdai_fidelity_required_signal_checks_total", promv1.Range{
-		Start: time.Now().Add(-tenMinutes),
-		End:   time.Now(),
-		Step:  tenMinutes,
-	})
-	if err != nil {
-		return false, fmt.Errorf("failed to query prometheus: %w", err)
-	}
-	if results == nil {
-		return false, nil
-	}
-
-	resultMatrix, ok := results.(model.Matrix)
-	if !ok {
-		return false, errors.New("failed to convert result to model.Matrix")
-	}
-
-	for _, telemetryType := range telemetryTypes {
-		if !dataFidelityCheck(cs.logger, resultMatrix, telemetryType) {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func dataFidelityCheck(logger *zap.Logger, resultMatrix model.Matrix, telemetryType telemetry.MLT) bool {
-	failed := lo.Filter(resultMatrix, func(item *model.SampleStream, _ int) bool {
-		return item.Metric[fidelityMetricResult] == fidelityCheckFail &&
-			string(item.Metric[fidelityMetricSignal]) == string(telemetryType)
-	})
-	passed := lo.Filter(resultMatrix, func(item *model.SampleStream, _ int) bool {
-		return item.Metric[fidelityMetricResult] == fidelityCheckPass &&
-			string(item.Metric[fidelityMetricSignal]) == string(telemetryType)
-	})
-
-	// sanity check... this shouldn't happen.
-	if len(failed) != 1 || len(passed) != 1 {
-		logger.Warn("unable to perform data fidelity check, expected 1 set of failed and passed fidelity metric values")
-		return false
-	}
-
-	// if the fidelity check failures are increasing OR the passed fidelity checks are NOT increasing, fail fast
-	if areSeriesValuesIncreasing(failed[0]) || !areSeriesValuesIncreasing(passed[0]) {
-		return false
-	}
-	return true
-}
-
-func buildQuery(connectionName string, ingressEgress IngressEgress, telemetryType telemetry.MLT) string {
-	return fmt.Sprintf(
-		"increase(%s{%s=%q, mdai_connection=%q, service_name=%q}[10m])",
-		ingressEgress.getCollectorMLTMetric(telemetryType),
-		ingressEgress.getComponentType(),
-		"datadog", connectionName,
-		connectionName+"-collector",
-	)
-}
-
-func (cs *ConnectionStatus) IsTelemetryFlowing(ctx context.Context, connectionName string, ie IngressEgress, telemetryTypes []telemetry.MLT) (bool, error) {
-	for _, connectionType := range telemetryTypes {
-		var promQuery string
-		switch connectionType {
-		case telemetry.Logs:
-			promQuery = buildQuery(connectionName, ie, telemetry.Logs)
-		case telemetry.Traces:
-			promQuery = buildQuery(connectionName, ie, telemetry.Traces)
-		case telemetry.Metrics:
-			promQuery = buildQuery(connectionName, ie, telemetry.Metrics)
-		default:
-			return false, fmt.Errorf("unknown telemetry type: %s", connectionType)
-		}
-
-		// compare the last minute of results
-		results, _, err := cs.promClient.Query(ctx, promQuery, time.Now())
-		if err != nil {
-			return false, fmt.Errorf("failed to query prometheus: %w", err)
-		}
-
-		resultVector, ok := results.(model.Vector)
-		if !ok || len(resultVector) == 0 {
-			return false, nil
-		}
-		metricsIncreasing := float64(resultVector[0].Value) > 0
-
-		// return immediately if one of the telemetry types isn't increasing, we don't need to keep checking
-		if !metricsIncreasing {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func areMatrixValuesIncreasing(results model.Value) (bool, error) {
-	if results == nil {
-		return false, nil
-	}
-	resultMatrix, ok := results.(model.Matrix)
-	if !ok {
-		return false, errors.New("failed to convert input result to expected type")
-	}
-
-	if slices.ContainsFunc(resultMatrix, areSeriesValuesIncreasing) {
-		return true, nil
-	}
-	return false, nil
-}
-
-func areSeriesValuesIncreasing(series *model.SampleStream) bool {
-	for i := 1; i < len(series.Values); i++ {
-		prev := series.Values[i-1]
-		curr := series.Values[i]
-
-		diff := float64(curr.Value) - float64(prev.Value)
-
-		if diff > 0 {
-			// we can return immediately if the values went up in our time range, no need to keep going.
-			return true
-		}
-	}
-	return false
 }

@@ -1,236 +1,17 @@
 package metrics
 
 import (
+	"strings"
 	"testing"
 
 	v1mock "github.com/mydecisive/octant/internal/mock/v1"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/mydecisive/octant/internal/test"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 )
-
-var (
-	failingFidelityResults = model.Matrix{
-		{
-			// failures ARE increasing
-			Metric: model.Metric{
-				fidelityMetricResult: fidelityCheckFail,
-				fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-			},
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.0),
-				},
-				{
-					Value: model.SampleValue(2.0),
-				},
-			},
-		},
-		{
-			Metric: model.Metric{
-				fidelityMetricResult: fidelityCheckPass,
-				fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-			},
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.0),
-				},
-				{
-					Value: model.SampleValue(2.0),
-				},
-			},
-		},
-	}
-
-	passingFidelityResults = model.Matrix{
-		{
-			// failures are NOT increasing
-			Metric: model.Metric{
-				fidelityMetricResult: fidelityCheckFail,
-				fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-			},
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.0),
-				},
-				{
-					Value: model.SampleValue(1.0),
-				},
-			},
-		},
-		{
-			// passes ARE increasing
-			Metric: model.Metric{
-				fidelityMetricResult: fidelityCheckPass,
-				fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-			},
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.0),
-				},
-				{
-					Value: model.SampleValue(2.0),
-				},
-			},
-		},
-	}
-)
-
-func TestAreSeriesValuesIncreasing(t *testing.T) {
-	t.Parallel()
-
-	t.Run("all decreasing", func(t *testing.T) {
-		t.Parallel()
-
-		areIncreasing := areSeriesValuesIncreasing(&model.SampleStream{
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.23),
-				},
-				{
-					Value: model.SampleValue(1.22),
-				},
-				{
-					Value: model.SampleValue(1.21),
-				},
-			},
-		})
-		assert.False(t, areIncreasing)
-	})
-
-	t.Run("has increasing", func(t *testing.T) {
-		t.Parallel()
-
-		areIncreasing := areSeriesValuesIncreasing(&model.SampleStream{
-			Values: []model.SamplePair{
-				{
-					Value: model.SampleValue(1.23),
-				},
-				{
-					Value: model.SampleValue(1.22),
-				},
-				{
-					Value: model.SampleValue(1.23),
-				},
-				{
-					Value: model.SampleValue(0.23),
-				},
-			},
-		})
-		assert.True(t, areIncreasing)
-	})
-}
-
-func TestAreMatrixValuesIncreasing(t *testing.T) {
-	t.Parallel()
-
-	type checkResults func(t *testing.T, actual bool, err error)
-
-	testCases := []struct {
-		description  string
-		inputResults model.Value
-		check        checkResults
-	}{
-		{
-			description:  "nil results",
-			inputResults: nil,
-			check: func(t *testing.T, actual bool, err error) { // nolint: thelper
-				require.False(t, actual)
-				require.NoError(t, err)
-			},
-		},
-		{
-			description: "invalid result type",
-			inputResults: model.Vector{
-				{
-					Value: model.SampleValue(1.23),
-				},
-				{
-					Value: model.SampleValue(23.45),
-				},
-			},
-			check: func(t *testing.T, actual bool, err error) { // nolint: thelper
-				require.False(t, actual)
-				require.ErrorContains(t, err, "failed to convert input result to expected type")
-			},
-		},
-		{
-			description: "not increasing",
-			inputResults: model.Matrix{
-				{
-					Values: []model.SamplePair{
-						{
-							Value: model.SampleValue(1.23),
-						},
-						{
-							Value: model.SampleValue(0.23),
-						},
-					},
-				},
-				{
-					Values: []model.SamplePair{
-						{
-							Value: model.SampleValue(1.23),
-						},
-						{
-							Value: model.SampleValue(1.22),
-						},
-					},
-				},
-			},
-			check: func(t *testing.T, actual bool, err error) { // nolint: thelper
-				require.False(t, actual)
-				require.NoError(t, err)
-			},
-		},
-		{
-			description: "eventually increasing",
-			inputResults: model.Matrix{
-				{
-					Values: []model.SamplePair{
-						{
-							Value: model.SampleValue(1.23),
-						},
-						{
-							Value: model.SampleValue(0.23),
-						},
-					},
-				},
-				{
-					Values: []model.SamplePair{
-						{
-							Value: model.SampleValue(1.23),
-						},
-						{
-							Value: model.SampleValue(1.24),
-						},
-						{
-							Value: model.SampleValue(1.21),
-						},
-					},
-				},
-			},
-			check: func(t *testing.T, actual bool, err error) { // nolint: thelper
-				require.True(t, actual)
-				require.NoError(t, err)
-			},
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			t.Parallel()
-
-			actual, err := areMatrixValuesIncreasing(testCase.inputResults)
-			testCase.check(t, actual, err)
-		})
-	}
-}
 
 func TestIsTelemetryFlowing(t *testing.T) {
 	t.Parallel()
@@ -244,7 +25,12 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(
+			t.Context(),
+			"foobar",
+			Ingress,
+			[]telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces},
+		)
 		require.False(t, actual)
 		require.ErrorContains(t, err, "unknown telemetry type: invalid")
 	})
@@ -254,7 +40,10 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(
+				mock.Anything,
+				`increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, //nolint:lll
+				mock.Anything).
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
@@ -263,7 +52,12 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(
+			t.Context(),
+			"foobar",
+			Ingress,
+			[]telemetry.MLT{telemetry.Logs, telemetry.Traces},
+		)
 		require.False(t, actual)
 		require.ErrorContains(t, err, "failed to query prometheus")
 	})
@@ -274,7 +68,9 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		queryResults := model.Vector{}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, //nolint:lll
+				mock.Anything).
 			Return(queryResults, nil, nil).
 			Times(1)
 
@@ -283,7 +79,12 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(
+			t.Context(),
+			"foobar",
+			Ingress,
+			[]telemetry.MLT{telemetry.Logs, telemetry.Traces},
+		)
 		require.False(t, actual)
 		require.NoError(t, err)
 	})
@@ -303,11 +104,15 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, //nolint:lll
+				mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, //nolint:lll
+				mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 
@@ -316,7 +121,12 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := theThing.IsTelemetryFlowing(
+			t.Context(),
+			"foobar",
+			Ingress,
+			[]telemetry.MLT{telemetry.Logs, telemetry.Traces},
+		)
 		require.False(t, actual)
 		require.NoError(t, err)
 	})
@@ -326,30 +136,36 @@ func TestIsTelemetryFlowing(t *testing.T) {
 
 		logsResults := model.Vector{
 			{
-				Value: model.SampleValue(1.23), // > 0
+				Value: model.SampleValue(1.23),
 			},
 		}
 		tracesResults := model.Vector{
 			{
-				Value: model.SampleValue(1.23), // > 0
+				Value: model.SampleValue(1.23),
 			},
 		}
 		metricsResults := model.Vector{
 			{
-				Value: model.SampleValue(1.23), // > 0
+				Value: model.SampleValue(1.23),
 			},
 		}
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, // nolint:lll
+				mock.Anything).
 			Return(logsResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_spans_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, // nolint:lll
+				mock.Anything).
 			Return(tracesResults, nil, nil).
 			Times(1)
 		mockPromAPI.EXPECT().
-			Query(mock.Anything, `increase(otelcol_receiver_accepted_metric_points_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, mock.Anything).
+			Query(mock.Anything,
+				`increase(otelcol_receiver_accepted_metric_points_total{receiver="datadog", mdai_connection="foobar", service_name="foobar-collector"}[10m])`, // nolint:lll
+				mock.Anything).
 			Return(metricsResults, nil, nil).
 			Times(1)
 
@@ -358,92 +174,25 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			promClient: mockPromAPI,
 		}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
+		actual, err := theThing.IsTelemetryFlowing(
+			t.Context(),
+			"foobar",
+			Ingress,
+			[]telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
 		require.True(t, actual)
 		require.NoError(t, err)
-	})
-}
-
-func TestDataFidelityCheck(t *testing.T) {
-	t.Parallel()
-
-	t.Run("error - multiple failed metrics", func(t *testing.T) {
-		t.Parallel()
-
-		fidelityResults := model.Matrix{
-			{
-				// failures are NOT increasing
-				Metric: model.Metric{
-					fidelityMetricResult: fidelityCheckFail,
-					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-					"someLabel":          "abc123",
-				},
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.0),
-					},
-					{
-						Value: model.SampleValue(1.0),
-					},
-				},
-			},
-			{
-				// passes ARE increasing
-				Metric: model.Metric{
-					fidelityMetricResult: fidelityCheckFail,
-					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
-					"someLabel":          "xyz999",
-				},
-				Values: []model.SamplePair{
-					{
-						Value: model.SampleValue(1.0),
-					},
-					{
-						Value: model.SampleValue(2.0),
-					},
-				},
-			},
-		}
-
-		testLogger, logOutput := test.NewTestLogger(t, zapcore.InfoLevel)
-		passedCheck := dataFidelityCheck(testLogger, fidelityResults, telemetry.Traces)
-		require.False(t, passedCheck)
-
-		// validate log output
-		test.ValidateOutput(t, logOutput, []test.LogOutput{
-			{
-				Level:   zapcore.WarnLevel,
-				Message: "unable to perform data fidelity check, expected 1 set of failed and passed fidelity metric values",
-			},
-		})
-	})
-
-	t.Run("happy path - data fidelity is NOT good", func(t *testing.T) {
-		t.Parallel()
-
-		testLogger, _ := test.NewTestLogger(t, zapcore.InfoLevel)
-		passedCheck := dataFidelityCheck(testLogger, failingFidelityResults, telemetry.Traces)
-		require.False(t, passedCheck)
-	})
-
-	t.Run("happy path - data fidelity is good", func(t *testing.T) {
-		t.Parallel()
-
-		testLogger, _ := test.NewTestLogger(t, zapcore.InfoLevel)
-		passedCheck := dataFidelityCheck(testLogger, passingFidelityResults, telemetry.Traces)
-		require.True(t, passedCheck)
 	})
 }
 
 func TestVerifyDataFidelity(t *testing.T) {
 	t.Parallel()
 
-	t.Run("error - unexpected query error", func(t *testing.T) {
+	t.Run("error - unexpected while querying prometheus", func(t *testing.T) {
 		t.Parallel()
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "mdai_fidelity_required_signal_checks_total", mock.Anything).
+			Query(mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
@@ -451,37 +200,40 @@ func TestVerifyDataFidelity(t *testing.T) {
 			logger:     zaptest.NewLogger(t),
 			promClient: mockPromAPI,
 		}
-		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Logs})
-		require.ErrorContains(t, err, "failed to query prometheus")
+		result, _, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.ErrorContains(t, err, "checking attribute parity fidelity")
 		require.False(t, result)
 	})
 
-	t.Run("nil query results", func(t *testing.T) {
+	t.Run("nil query results (no data) evaluates to false", func(t *testing.T) {
 		t.Parallel()
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "mdai_fidelity_required_signal_checks_total", mock.Anything).
+			Query(mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, nil, nil).
-			Times(1)
+			Times(4) // 2 for attributes, 2 for signals
 
 		theThing := &ConnectionStatus{
 			logger:     zaptest.NewLogger(t),
 			promClient: mockPromAPI,
 		}
-		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Logs})
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.NoError(t, err)
 		require.False(t, result)
+		require.False(t, validations[telemetry.Logs].Parity)
+		require.False(t, validations[telemetry.Logs].Policy)
 	})
 
 	t.Run("error - invalid prometheus query result", func(t *testing.T) {
 		t.Parallel()
 
-		invalidResults := model.Vector{}
+		invalidResults := model.Matrix{}
 
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "mdai_fidelity_required_signal_checks_total", mock.Anything).
+			Query(mock.Anything, mock.Anything, mock.Anything).
 			Return(invalidResults, nil, nil).
 			Times(1)
 
@@ -489,44 +241,319 @@ func TestVerifyDataFidelity(t *testing.T) {
 			logger:     zaptest.NewLogger(t),
 			promClient: mockPromAPI,
 		}
-		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Logs})
-		require.ErrorContains(t, err, "failed to convert result to model.Matrix")
+		result, _, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+		require.ErrorContains(t, err, "failed to convert result to model.Vector")
 		require.False(t, result)
 	})
 
-	t.Run("happy path - data fidelity is NOT good", func(t *testing.T) {
+	t.Run("data integrity is false when BOTH signal parity and policy fail", func(t *testing.T) {
 		t.Parallel()
+
+		failVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult: fidelityCheckFail,
+					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
+				},
+				Value: 5.0,
+			},
+		}
+
 		mockPromAPI := v1mock.NewMockAPI(t)
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "mdai_fidelity_required_signal_checks_total", mock.Anything).
-			Return(failingFidelityResults, nil, nil).
-			Times(1)
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(failVector, nil, nil).
+			Times(4)
 
 		theThing := &ConnectionStatus{
 			logger:     zaptest.NewLogger(t),
 			promClient: mockPromAPI,
 		}
-		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Traces})
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
 		require.NoError(t, err)
 		require.False(t, result)
+		require.False(t, validations[telemetry.Traces].Parity)
+		require.False(t, validations[telemetry.Traces].Policy)
 	})
 
-	t.Run("happy path - data fidelity is good", func(t *testing.T) {
+	t.Run("data integrity is true when ONLY ONE signal check fails", func(t *testing.T) {
 		t.Parallel()
 
+		passVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult: fidelityCheckPass,
+					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
+				},
+				Value: 5.0,
+			},
+		}
+		failVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult: fidelityCheckFail,
+					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
+				},
+				Value: 5.0,
+			},
+		}
+
 		mockPromAPI := v1mock.NewMockAPI(t)
+
 		mockPromAPI.EXPECT().
-			QueryRange(mock.Anything, "mdai_fidelity_required_signal_checks_total", mock.Anything).
-			Return(passingFidelityResults, nil, nil).
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "attribute")
+			}), mock.Anything).
+			Return(passVector, nil, nil).
+			Times(2)
+
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(
+				func(q string) bool {
+					return strings.Contains(q, "mdai_fidelity_signal_checks_total")
+				}), mock.Anything).
+			Return(failVector, nil, nil).
+			Times(1)
+
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(
+				func(q string) bool {
+					return strings.Contains(q, "mdai_fidelity_required_signal_checks_total")
+				}), mock.Anything).
+			Return(passVector, nil, nil).
 			Times(1)
 
 		theThing := &ConnectionStatus{
 			logger:     zaptest.NewLogger(t),
 			promClient: mockPromAPI,
 		}
-		result, err := theThing.VerifyDataFidelity(t.Context(), []telemetry.MLT{telemetry.Traces})
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
 		require.NoError(t, err)
 		require.True(t, result)
+		require.False(t, validations[telemetry.Traces].Parity)
+		require.True(t, validations[telemetry.Traces].Policy)
+	})
+
+	t.Run("data integrity is true when signals pass but attributes fail", func(t *testing.T) {
+		t.Parallel()
+
+		passVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult: fidelityCheckPass,
+					fidelityMetricSignal: model.LabelValue(telemetry.Traces),
+				},
+				Value: 5.0,
+			},
+		}
+		failAttrVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckFail,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 5.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool { return strings.Contains(q, "attribute") }), mock.Anything).
+			Return(failAttrVector, nil, nil).
+			Times(2)
+
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(
+				func(q string) bool {
+					return strings.Contains(q, "signal") && !strings.Contains(q, "attribute")
+				}), mock.Anything).
+			Return(passVector, nil, nil).
+			Times(2)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
+		require.NoError(t, err)
+		require.True(t, result)
+		require.True(t, validations[telemetry.Traces].Parity)
+		require.True(t, validations[telemetry.Traces].Policy)
+
+		val, exists := validations[telemetry.Traces].Attributes.Parity["span_id"]
+		require.True(t, exists)
+		require.False(t, val)
+	})
+
+	t.Run("fails override passes in the same time window", func(t *testing.T) {
+		t.Parallel()
+
+		mixedVector := model.Vector{
+			{ // Pass sample
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 5.0,
+			},
+			{ // Fail sample
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckFail,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 2.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(mixedVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		// The signal should be false because the fail overrides the pass
+		require.False(t, validations[telemetry.Traces].Parity)
+
+		// The attribute should be false for the same reason
+		val, exists := validations[telemetry.Traces].Attributes.Parity["span_id"]
+		require.True(t, exists)
+		require.False(t, val)
+	})
+
+	t.Run("samples with zero or negative values are completely ignored", func(t *testing.T) {
+		t.Parallel()
+
+		zeroVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "ignored_attr",
+				},
+				Value: 0.0, // Should be skipped!
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(zeroVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Traces})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		// Signals default to false
+		require.False(t, validations[telemetry.Traces].Parity)
+
+		// The attribute should not even exist in the map
+		_, exists := validations[telemetry.Traces].Attributes.Parity["ignored_attr"]
+		require.False(t, exists)
+	})
+
+	t.Run("unrequested telemetry types and empty attributes are ignored", func(t *testing.T) {
+		t.Parallel()
+
+		weirdVector := model.Vector{
+			{ // We only requested Logs, so Traces should be ignored
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Traces),
+					fidelityMetricAttribute: "span_id",
+				},
+				Value: 5.0,
+			},
+			{ // Empty attribute name should be ignored
+				Metric: model.Metric{
+					fidelityMetricResult:    fidelityCheckPass,
+					fidelityMetricSignal:    model.LabelValue(telemetry.Logs),
+					fidelityMetricAttribute: "",
+				},
+				Value: 5.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(weirdVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+
+		// We explicitly only ask for Logs
+		_, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.NoError(t, err)
+
+		// Traces should not have been added to the root map
+		_, tracesExist := validations[telemetry.Traces]
+		require.False(t, tracesExist)
+
+		// Empty attribute should not be in the logs parity map
+		_, emptyAttrExists := validations[telemetry.Logs].Attributes.Parity[""]
+		require.False(t, emptyAttrExists)
+	})
+
+	t.Run("unknown result labels default to fail", func(t *testing.T) {
+		t.Parallel()
+
+		unknownVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult:    "some_weird_string",
+					fidelityMetricSignal:    model.LabelValue(telemetry.Logs),
+					fidelityMetricAttribute: "log_body",
+				},
+				Value: 5.0,
+			},
+		}
+
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(unknownVector, nil, nil).
+			Times(4)
+
+		theThing := &ConnectionStatus{
+			logger:     zaptest.NewLogger(t),
+			promClient: mockPromAPI,
+		}
+		result, validations, err := theThing.VerifyDataFidelity(t.Context(), "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.NoError(t, err)
+		require.False(t, result)
+
+		require.False(t, validations[telemetry.Logs].Parity)
+
+		// Unknown string should record the attribute as false
+		val, exists := validations[telemetry.Logs].Attributes.Parity["log_body"]
+		require.True(t, exists)
+		require.False(t, val)
 	})
 }
 
@@ -576,15 +603,15 @@ func TestBuildQuery(t *testing.T) {
 
 	t.Run("Logs Ingress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])`
-		actual := buildQuery("my-conn", Ingress, telemetry.Logs)
+		expected := `increase(otelcol_receiver_accepted_log_records_total{receiver="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])` //nolint:lll
+		actual := buildFlowQuery("my-conn", Ingress, telemetry.Logs)
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Traces Egress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_exporter_sent_spans_total{exporter="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])`
-		actual := buildQuery("my-conn", Egress, telemetry.Traces)
+		expected := `increase(otelcol_exporter_sent_spans_total{exporter="datadog", mdai_connection="my-conn", service_name="my-conn-collector"}[10m])` //nolint:lll
+		actual := buildFlowQuery("my-conn", Egress, telemetry.Traces)
 		assert.Equal(t, expected, actual)
 	})
 }

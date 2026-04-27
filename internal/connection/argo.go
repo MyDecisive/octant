@@ -47,8 +47,17 @@ type argoSyncApply struct {
 	Force bool `json:"force"`
 }
 
-func (oc *OctantConnection) getArgoAppStatus(ctx context.Context, name string, namespace string, connection OctantConnectionData) (*argoApp, error) {
-	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(ctx, namespace, connection.Deployment.IntegrationName)
+func (oc *OctantConnection) getArgoAppStatus(
+	ctx context.Context,
+	name string,
+	namespace string,
+	connection OctantConnectionData,
+) (*argoApp, error) {
+	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
+		ctx,
+		namespace,
+		connection.Deployment.IntegrationName,
+	)
 	if getArgoIntErr != nil {
 		return nil, getArgoIntErr
 	}
@@ -78,13 +87,21 @@ func (oc *OctantConnection) getArgoAppStatus(ctx context.Context, name string, n
 	return &app, nil
 }
 
-func (oc *OctantConnection) pushArgoApp(ctx context.Context, namespace, name string, connection OctantConnectionData) error {
+func (oc *OctantConnection) pushArgoApp(
+	ctx context.Context,
+	namespace, name string,
+	connection OctantConnectionData,
+) error {
 	templateData, err := oc.createTemplateData(ctx, namespace, name, connection)
 	if err != nil {
 		return err
 	}
 
-	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(ctx, namespace, connection.Deployment.IntegrationName)
+	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
+		ctx,
+		namespace,
+		connection.Deployment.IntegrationName,
+	)
 	if getArgoIntErr != nil {
 		return getArgoIntErr
 	}
@@ -99,7 +116,13 @@ func (oc *OctantConnection) pushArgoApp(ctx context.Context, namespace, name str
 	return oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name)
 }
 
-func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *ArgoTemplateData, connection OctantConnectionData, argoIntegration *integration.ArgoCDIntegrationData, name string) error {
+func (oc *OctantConnection) doArgoAppSync(
+	ctx context.Context,
+	templateData *ArgoTemplateData,
+	connection OctantConnectionData,
+	argoIntegration *integration.ArgoCDIntegrationData,
+	name string,
+) error {
 	manifests, err := renderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -147,7 +170,12 @@ func (oc *OctantConnection) doArgoAppSync(ctx context.Context, templateData *Arg
 	return nil
 }
 
-func (oc *OctantConnection) doArgoAppCreation(ctx context.Context, templateData *ArgoTemplateData, connection OctantConnectionData, argoIntegration *integration.ArgoCDIntegrationData) error {
+func (oc *OctantConnection) doArgoAppCreation(
+	ctx context.Context,
+	templateData *ArgoTemplateData,
+	connection OctantConnectionData,
+	argoIntegration *integration.ArgoCDIntegrationData,
+) error {
 	appJSON, err := renderArgoAppManifest(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -173,8 +201,17 @@ func (oc *OctantConnection) doArgoAppCreation(ctx context.Context, templateData 
 	return nil
 }
 
-func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, namespace string, connection OctantConnectionData) error {
-	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(ctx, namespace, connection.Deployment.IntegrationName)
+func (oc *OctantConnection) deleteArgoApp(
+	ctx context.Context,
+	name string,
+	namespace string,
+	connection OctantConnectionData,
+) error {
+	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
+		ctx,
+		namespace,
+		connection.Deployment.IntegrationName,
+	)
 	if getArgoIntErr != nil {
 		return getArgoIntErr
 	}
@@ -218,7 +255,7 @@ func handleArgoErrorResponse(resp *http.Response, connection OctantConnectionDat
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
 		return fmt.Errorf(
-			"got 401 forbidden response from ArgoCD API. Account token in ArgoCD integration '%s' may be incorrect or expired. Response body: %v",
+			"'%s' token invalid: %v",
 			connection.Deployment.IntegrationName,
 			bodyStr,
 		)
