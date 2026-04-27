@@ -256,7 +256,7 @@ func (sc *MDAISettingController) update(
 		true,
 		func(ctx context.Context) (bool, error) {
 			out <- UpdateFilterResult{
-				Status: budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION,
+				Status: budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION,
 			}
 			deployment, err := sc.kube.AppsV1().
 				Deployments(input.namespace).

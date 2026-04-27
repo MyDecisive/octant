@@ -217,7 +217,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			case 0:
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
 			case 1:
-				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
 			case 2:
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
 			}
@@ -266,7 +266,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			case 0:
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
 			case 1:
-				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
 			case 2:
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
 			}
@@ -443,7 +443,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
 			case 1:
 				require.NoError(t, result.Err)
-				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
 			case 2:
 				assert.Empty(t, result.Status)
 				assert.ErrorIs(t, result.Err, ErrUpdateCollector)
@@ -493,7 +493,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
 			case 1:
 				require.NoError(t, result.Err)
-				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPGATION, result.Status)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
 			case 3:
 				assert.Empty(t, result.Status)
 				assert.ErrorIs(t, result.Err, ErrTimeout)
