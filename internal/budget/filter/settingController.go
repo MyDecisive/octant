@@ -9,6 +9,7 @@ import (
 	"time"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
+	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	"github.com/mydecisive/octant/internal/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -79,7 +80,7 @@ type settingInput struct {
 type MDAISettingController struct {
 	log           *sync.RWMutex
 	trace         *sync.RWMutex
-	accessor      VariableAccessor
+	accessor      budgetdata.VariableAccessor
 	kube          kubernetes.Interface
 	configuration *config.Configuration
 }
@@ -90,7 +91,7 @@ var _ SettingController = &MDAISettingController{}
 // NewMDAISettingController returns a new instance of MDAISettingController.
 func NewMDAISettingController(
 	configuration *config.Configuration,
-	accessor VariableAccessor,
+	accessor budgetdata.VariableAccessor,
 	kube kubernetes.Interface,
 ) *MDAISettingController {
 	return &MDAISettingController{
