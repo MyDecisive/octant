@@ -28,19 +28,30 @@ type ConnectionHandler struct {
 }
 
 func NewConnectionHandler(
-	config *config.Configuration,
+	octantConfig *config.Configuration,
 	octantConnection connection.Connection[connection.OctantConnectionData],
 	compressor connection.ManifestCompressor,
 ) *ConnectionHandler {
 	return &ConnectionHandler{
-		config:           config,
+		config:           octantConfig,
 		octantConnection: octantConnection,
 		compressor:       compressor,
 	}
 }
 
-func (ch ConnectionHandler) GetConnectionStatus(ctx context.Context, request *connect.Request[octantv1alpha.GetConnectionStatusRequest]) (*connect.Response[octantv1alpha.GetConnectionStatusResponse], error) {
-	connectionStatus, err := ch.octantConnection.GetConnectionStatus(ctx, request.Msg.Namespace, request.Msg.ConnectionName)
+func (ch *ConnectionHandler) GetConnectionStatus(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GetConnectionStatusRequest],
+) (
+	*connect.Response[octantv1alpha.GetConnectionStatusResponse],
+	error,
+) {
+	connectionStatus, err :=
+		ch.octantConnection.GetConnectionStatus(
+			ctx,
+			request.Msg.GetNamespace(),
+			request.Msg.GetConnectionName(),
+		)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

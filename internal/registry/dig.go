@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"github.com/mydecisive/octant/internal/metrics"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +12,7 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
+	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"github.com/mydecisive/octant/internal/wrapper"

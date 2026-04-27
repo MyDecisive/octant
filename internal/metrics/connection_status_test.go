@@ -19,9 +19,8 @@ func TestIsTelemetryFlowing(t *testing.T) {
 		t.Parallel()
 
 		mockPromAPI := v1mock.NewMockAPI(t)
-		theThing := &ConnectionStatus{}
 
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
+		actual, err := IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{"invalid", telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.ErrorContains(t, err, "unknown telemetry type: invalid")
 	})
@@ -38,9 +37,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.ErrorContains(t, err, "failed to query prometheus")
 	})
@@ -57,9 +54,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(queryResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.NoError(t, err)
 	})
@@ -91,9 +86,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(tracesResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
+		actual, err := IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces})
 		require.False(t, actual)
 		require.NoError(t, err)
 	})
@@ -136,9 +129,7 @@ func TestIsTelemetryFlowing(t *testing.T) {
 			Return(metricsResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-
-		actual, err := theThing.IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
+		actual, err := IsTelemetryFlowing(t.Context(), mockPromAPI, "foobar", Ingress, []telemetry.MLT{telemetry.Logs, telemetry.Traces, telemetry.Metrics})
 		require.True(t, actual)
 		require.NoError(t, err)
 	})
@@ -156,8 +147,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, assert.AnError).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-		result, _, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
+		result, _, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 
 		require.ErrorContains(t, err, "checking attribute parity fidelity")
 		require.False(t, result)
@@ -172,12 +162,11 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(nil, nil, nil).
 			Times(4) // 2 for attributes, 2 for signals
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.NoError(t, err)
 		require.False(t, result)
-		require.False(t, (*validations.Logs).Parity)
-		require.False(t, (*validations.Logs).Policy)
+		require.False(t, (*validations.GetLogs()).GetParity())
+		require.False(t, (*validations.GetLogs()).GetPolicy())
 	})
 
 	t.Run("error - invalid prometheus query result", func(t *testing.T) {
@@ -191,8 +180,7 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(invalidResults, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-		result, _, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
+		result, _, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 		require.ErrorContains(t, err, "failed to convert result to model.Vector")
 		require.False(t, result)
 	})
@@ -216,12 +204,11 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(failVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 		require.NoError(t, err)
 		require.False(t, result)
-		require.False(t, (*validations.Traces).Parity)
-		require.False(t, (*validations.Traces).Policy)
+		require.False(t, (*validations.GetTraces()).GetParity())
+		require.False(t, (*validations.GetTraces()).GetPolicy())
 	})
 
 	t.Run("data integrity is true when ONLY ONE signal check fails", func(t *testing.T) {
@@ -271,13 +258,12 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(1)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
 		require.True(t, result)
-		require.False(t, (*validations.Traces).Parity)
-		require.True(t, (*validations.Traces).Policy)
+		require.False(t, (*validations.GetTraces()).GetParity())
+		require.True(t, (*validations.GetTraces()).GetPolicy())
 	})
 
 	t.Run("data integrity is true when signals pass but attributes fail", func(t *testing.T) {
@@ -318,15 +304,14 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(2)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
 		require.True(t, result)
-		require.True(t, (*validations.Traces).Parity)
-		require.True(t, (*validations.Traces).Policy)
+		require.True(t, (*validations.GetTraces()).GetParity())
+		require.True(t, (*validations.GetTraces()).GetPolicy())
 
-		val, exists := (*validations.Traces).Attributes.Parity["span_id"]
+		val, exists := (*validations.GetTraces()).GetAttributes().GetParity()["span_id"]
 		require.True(t, exists)
 		require.False(t, val)
 	})
@@ -359,17 +344,16 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(mixedVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
 		require.False(t, result)
 
 		// The signal should be false because the fail overrides the pass
-		require.False(t, (*validations.Traces).Parity)
+		require.False(t, (*validations.GetTraces()).GetParity())
 
 		// The attribute should be false for the same reason
-		val, exists := (*validations.Traces).Attributes.Parity["span_id"]
+		val, exists := (*validations.GetTraces()).GetAttributes().GetParity()["span_id"]
 		require.True(t, exists)
 		require.False(t, val)
 	})
@@ -394,17 +378,16 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(zeroVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Traces})
 
 		require.NoError(t, err)
 		require.False(t, result)
 
 		// Signals default to false
-		require.False(t, (*validations.Traces).Parity)
+		require.False(t, (*validations.GetTraces()).GetParity())
 
 		// The attribute should not even exist in the map
-		_, exists := (*validations.Traces).Attributes.Parity["ignored_attr"]
+		_, exists := (*validations.GetTraces()).GetAttributes().GetParity()["ignored_attr"]
 		require.False(t, exists)
 	})
 
@@ -436,18 +419,16 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(weirdVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{}
-
 		// We explicitly only ask for Logs
-		_, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
+		_, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 
 		require.NoError(t, err)
 
 		// Traces should not exist
-		require.Nil(t, validations.Traces)
+		require.Nil(t, validations.GetTraces())
 
 		// Empty attribute should not be in the logs parity map
-		_, emptyAttrExists := (*validations.Logs).Attributes.Parity[""]
+		_, emptyAttrExists := (*validations.GetLogs()).GetAttributes().GetParity()[""]
 		require.False(t, emptyAttrExists)
 	})
 
@@ -471,16 +452,15 @@ func TestVerifyDataFidelity(t *testing.T) {
 			Return(unknownVector, nil, nil).
 			Times(4)
 
-		theThing := &ConnectionStatus{}
-		result, validations, err := theThing.VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
+		result, validations, err := VerifyDataFidelity(t.Context(), mockPromAPI, "test-conn", []telemetry.MLT{telemetry.Logs})
 
 		require.NoError(t, err)
 		require.False(t, result)
 
-		require.False(t, validations.Logs.Parity)
+		require.False(t, validations.GetLogs().GetParity())
 
 		// Unknown string should record the attribute as false
-		val, exists := (*validations.Logs).Attributes.Parity["log_body"]
+		val, exists := (*validations.GetLogs()).GetAttributes().GetParity()["log_body"]
 		require.True(t, exists)
 		require.False(t, val)
 	})

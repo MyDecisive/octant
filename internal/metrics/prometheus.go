@@ -2,10 +2,16 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/api"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"os"
 	"sync"
+
+	"github.com/prometheus/client_golang/api"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+)
+
+const (
+	defaultPromPort = 9090
+	defaultPromHost = "prometheus-operated"
 )
 
 type PromClientFactory interface {
@@ -21,8 +27,8 @@ type promClientFactoryImpl struct {
 func NewPromClientFactory() PromClientFactory {
 	return &promClientFactoryImpl{
 		// TODO: Update this to be configurable
-		serviceName: "prometheus-operated",
-		port:        9090,
+		serviceName: defaultPromHost,
+		port:        defaultPromPort,
 	}
 }
 

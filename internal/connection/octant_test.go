@@ -586,9 +586,9 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, status)
-	assert.True(t, status.ReceivingData)
-	assert.True(t, status.SendingData)
-	assert.True(t, status.DataIntegrity)
+	assert.True(t, status.GetReceivingData())
+	assert.True(t, status.GetSendingData())
+	assert.True(t, status.GetDataIntegrity())
 }
 
 func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {

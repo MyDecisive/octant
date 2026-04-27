@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
-	"github.com/mydecisive/octant/internal/wrapper"
 	"slices"
 
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
+	"github.com/mydecisive/octant/internal/wrapper"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +36,6 @@ type OctantConnection struct {
 	k8sClient         kubernetes.Interface
 	argoClient        integration.Integration[integration.ArgoCDIntegrationData]
 	datadogClient     integration.Integration[integration.DataDogIntegrationData]
-	promClientFactory metrics.PromClientFactory
 	connectionMetrics *metrics.ConnectionStatus
 	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
 	// taskSets      map[DeploymentType]DeploymentTaskSet
