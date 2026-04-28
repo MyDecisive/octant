@@ -1,6 +1,7 @@
 package budgetfilter
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -8,7 +9,7 @@ import (
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/config"
-	budgetfiltermock "github.com/mydecisive/octant/internal/mock/budgetfilter"
+	budgetdatamock "github.com/mydecisive/octant/internal/mock/budgetdata"
 	kubernetesmock "github.com/mydecisive/octant/internal/mock/kubernetes"
 	kubeappsv1mock "github.com/mydecisive/octant/internal/mock/kubernetes/appsv1"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("success log", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().
 			GetVariable(namespace, connection, varLogsRatioNumber).
 			Return(strconv.Itoa(expectedPct), nil).
@@ -52,7 +53,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("success trace", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().
 			GetVariable(namespace, connection, varTracesRatioNumber).
 			Return(strconv.Itoa(expectedPct), nil).
@@ -74,7 +75,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("err log lock in use", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 		target.log.Lock()
@@ -87,7 +88,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("err trace lock in use", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 		target.trace.Lock()
@@ -100,7 +101,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("err ratio num not found", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return("", assert.AnError).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
@@ -113,20 +114,20 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("err ratio num invalid", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().GetVariable(namespace, connection, varLogsRatioNumber).Return(faker.Word(), nil).Once()
 
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		require.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrFormat)
 		assert.Nil(t, actual)
 	})
 
 	t.Run("err include err not found", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().
 			GetVariable(namespace, connection, varLogsRatioNumber).
 			Return(strconv.Itoa(expectedPct), nil).
@@ -146,7 +147,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	t.Run("err include err invalid", func(t *testing.T) {
 		t.Parallel()
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().
 			GetVariable(namespace, connection, varLogsRatioNumber).
 			Return(strconv.Itoa(expectedPct), nil).
@@ -159,7 +160,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		target := NewMDAISettingController(c, mockAccessor, nil)
 
 		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
-		require.ErrorIs(t, err, ErrInvalid)
+		require.ErrorIs(t, err, ErrFormat)
 		assert.Nil(t, actual)
 	})
 }
@@ -188,7 +189,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		controllerName := fmt.Sprintf(collectorLogNameFormatter, connection)
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).Return(nil).Once()
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsPersistErrors, mock.Anything).Return(nil).Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
@@ -206,8 +207,24 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.NoError(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
+			case 2:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
+			}
+			assert.NoError(t, result.Err)
+			count++
+		}
 	})
 
 	t.Run("success trace", func(t *testing.T) {
@@ -221,7 +238,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		controllerName := fmt.Sprintf(collectorTraceNameFormatter, connection)
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesRatioNumber, mock.Anything).Return(nil).Once()
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, mock.Anything).Return(nil).Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
@@ -239,8 +256,24 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.NoError(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
+			case 2:
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED, result.Status)
+			}
+			assert.NoError(t, result.Err)
+			count++
+		}
 	})
 
 	t.Run("err log lock in use", func(t *testing.T) {
@@ -252,14 +285,20 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			IncludeErr: true,
 		}
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockKube := kubernetesmock.NewMockInterface(t)
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 		target.log.Lock()
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrStillUpdating)
 	})
 
 	t.Run("err trace lock in use", func(t *testing.T) {
@@ -271,14 +310,45 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			IncludeErr: true,
 		}
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockKube := kubernetesmock.NewMockInterface(t)
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 		target.trace.Lock()
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrStillUpdating)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrStillUpdating)
+	})
+
+	t.Run("err invalid type", func(t *testing.T) {
+		t.Parallel()
+
+		input := budgetv1alpha.Filter{
+			Type:       budgetv1alpha.FilterType_FILTER_TYPE_UNSPECIFIED,
+			PctSampled: 10,
+			IncludeErr: true,
+		}
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockKube := kubernetesmock.NewMockInterface(t)
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+		target.trace.Lock()
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrInvalid)
 	})
 
 	t.Run("err update ratio num", func(t *testing.T) {
@@ -290,7 +360,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			IncludeErr: true,
 		}
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().
 			UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).
 			Return(assert.AnError).
@@ -299,8 +369,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrUpdateValue)
 	})
 
 	t.Run("err update include err", func(t *testing.T) {
@@ -312,7 +388,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 			IncludeErr: true,
 		}
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsRatioNumber, mock.Anything).Return(nil).Once()
 		mockAccessor.EXPECT().
 			UpdateVariable(namespace, connection, varLogsPersistErrors, mock.Anything).
@@ -322,8 +398,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		actualData := <-actual
+		assert.Empty(t, actualData.Status)
+		assert.ErrorIs(t, actualData.Err, ErrUpdateValue)
 	})
 
 	t.Run("err get deployment", func(t *testing.T) {
@@ -337,7 +419,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		controllerName := fmt.Sprintf(collectorTraceNameFormatter, connection)
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesRatioNumber, mock.Anything).Return(nil).Once()
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, mock.Anything).Return(nil).Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
@@ -349,8 +431,26 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.Error(t, err)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(t.Context(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
+			case 2:
+				assert.Empty(t, result.Status)
+				assert.ErrorIs(t, result.Err, ErrUpdateCollector)
+			}
+			count++
+		}
 	})
 
 	t.Run("err timeout", func(t *testing.T) {
@@ -364,7 +464,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		controllerName := fmt.Sprintf(collectorTraceNameFormatter, connection)
 
-		mockAccessor := budgetfiltermock.NewMockVariableAccessor(t)
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesRatioNumber, mock.Anything).Return(nil).Once()
 		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, mock.Anything).Return(nil).Once()
 		mockKube := kubernetesmock.NewMockInterface(t)
@@ -381,7 +481,25 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 
 		target := NewMDAISettingController(c, mockAccessor, mockKube)
 
-		err := target.UpdateFilter(t.Context(), namespace, connection, &input)
-		assert.ErrorIs(t, err, ErrTimeout)
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.UpdateFilter(context.TODO(), namespace, connection, &input, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED, result.Status)
+			case 1:
+				require.NoError(t, result.Err)
+				assert.Equal(t, budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION, result.Status)
+			case 3:
+				assert.Empty(t, result.Status)
+				assert.ErrorIs(t, result.Err, ErrTimeout)
+			}
+			count++
+		}
 	})
 }
