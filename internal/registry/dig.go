@@ -8,6 +8,7 @@ import (
 
 	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
+	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
@@ -41,8 +42,8 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 
 	// Budget
 	if err := container.Provide(
-		budgetfilter.NewMDAIGateway,
-		dig.As(new(budgetfilter.VariableAccessor))); err != nil {
+		budgetdata.NewMDAIGateway,
+		dig.As(new(budgetdata.VariableAccessor))); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(
@@ -84,6 +85,9 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewConnectionHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewBudgetFilterHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpc.NewServer); err != nil {
