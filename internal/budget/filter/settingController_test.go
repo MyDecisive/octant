@@ -166,8 +166,6 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 }
 
 func TestMDAISettingController_UpdateFilter(t *testing.T) {
-	t.Parallel()
-
 	namespace := faker.Word()
 	connection := faker.Word()
 
@@ -179,8 +177,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	}
 
 	t.Run("success log", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
 			PctSampled: 10,
@@ -228,8 +224,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("success trace", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
 			PctSampled: 10,
@@ -277,8 +271,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err log lock in use", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
 			PctSampled: 10,
@@ -302,8 +294,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err trace lock in use", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
 			PctSampled: 10,
@@ -327,8 +317,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err invalid type", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_UNSPECIFIED,
 			PctSampled: 10,
@@ -352,8 +340,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err update ratio num", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
 			PctSampled: 10,
@@ -380,8 +366,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err update include err", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
 			PctSampled: 10,
@@ -409,8 +393,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err get deployment", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
 			PctSampled: 10,
@@ -454,8 +436,6 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	t.Run("err timeout", func(t *testing.T) {
-		t.Parallel()
-
 		input := budgetv1alpha.Filter{
 			Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
 			PctSampled: 10,
