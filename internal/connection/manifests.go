@@ -157,6 +157,7 @@ func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
 	return renderedYaml.Bytes(), nil
 }
 
+// renderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
 func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat ManifestOutputFormat) ([]byte, error) {
 	if outputFormat == "" {
 		return []byte{}, errors.New("no output format specified")
