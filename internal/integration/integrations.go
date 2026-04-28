@@ -19,14 +19,14 @@ type Integration[T any] interface {
 func updateSecretWithIntegration(
 	ctx context.Context,
 	k8sClient kubernetes.Interface,
-	namespace string,
+	namespace, integrationName string,
 	secret *corev1.Secret,
 	jsonData []byte,
 ) error {
 	if secret.Data == nil {
 		secret.Data = make(map[string][]byte)
 	}
-	secret.Data[secret.Name] = jsonData
+	secret.Data[integrationName] = jsonData
 
 	_, err := k8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
@@ -35,7 +35,7 @@ func updateSecretWithIntegration(
 func createIntegrationSecret(
 	ctx context.Context,
 	k8sClient kubernetes.Interface,
-	namespace, secretName string,
+	namespace, integrationName, secretName string,
 	jsonData []byte,
 ) error {
 	newSecret := &corev1.Secret{
@@ -44,7 +44,7 @@ func createIntegrationSecret(
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
-			secretName: jsonData,
+			integrationName: jsonData,
 		},
 		Type: corev1.SecretTypeOpaque,
 	}

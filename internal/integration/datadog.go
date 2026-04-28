@@ -94,8 +94,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(
 // SetIntegration adds or updates the "octant-integration" secret for the provided namespace.
 func (ddi *DataDogIntegration) SetIntegration(
 	ctx context.Context,
-	namespace,
-	_ string,
+	namespace, integrationName string,
 	integrationData DataDogIntegrationData,
 ) error {
 	jsonData, err := json.Marshal(integrationData) // nolint: gosec // what secrets...
@@ -111,10 +110,10 @@ func (ddi *DataDogIntegration) SetIntegration(
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, datadogSecretName, jsonData)
+		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, datadogSecretName, jsonData)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, secret, jsonData)
+	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, integrationName, secret, jsonData)
 }
 
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.

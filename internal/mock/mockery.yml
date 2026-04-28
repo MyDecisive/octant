@@ -21,12 +21,17 @@ packages:
   github.com/mydecisive/octant/internal/argocd:
     interfaces:
       APIClient:
+  github.com/argoproj/argo-cd/v3/pkg/apiclient/application:
+    interfaces:
+      ApplicationServiceServer:
   github.com/mydecisive/octant/internal/wrapper:
     interfaces:
       HTTPClient:
-  github.com/mydecisive/octant/internal/budget/filter:
+  github.com/mydecisive/octant/internal/budget/data:
     interfaces:
       VariableAccessor:
+  github.com/mydecisive/octant/internal/budget/filter:
+    interfaces:
       SettingController:
   k8s.io/client-go/kubernetes:
     interfaces:

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
+	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )
@@ -37,6 +38,75 @@ type MockAPIClient_Expecter struct {
 
 func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 	return &MockAPIClient_Expecter{mock: &_m.Mock}
+}
+
+// PushArgoApp provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) PushArgoApp(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp v1alpha1.Application) error {
+	ret := _mock.Called(ctx, logger, clientOpts, argoApp)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PushArgoApp")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, v1alpha1.Application) error); ok {
+		r0 = returnFunc(ctx, logger, clientOpts, argoApp)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAPIClient_PushArgoApp_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PushArgoApp'
+type MockAPIClient_PushArgoApp_Call struct {
+	*mock.Call
+}
+
+// PushArgoApp is a helper method to define mock.On call
+//   - ctx context.Context
+//   - logger *zap.Logger
+//   - clientOpts *apiclient.ClientOptions
+//   - argoApp v1alpha1.Application
+func (_e *MockAPIClient_Expecter) PushArgoApp(ctx interface{}, logger interface{}, clientOpts interface{}, argoApp interface{}) *MockAPIClient_PushArgoApp_Call {
+	return &MockAPIClient_PushArgoApp_Call{Call: _e.mock.On("PushArgoApp", ctx, logger, clientOpts, argoApp)}
+}
+
+func (_c *MockAPIClient_PushArgoApp_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp v1alpha1.Application)) *MockAPIClient_PushArgoApp_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *zap.Logger
+		if args[1] != nil {
+			arg1 = args[1].(*zap.Logger)
+		}
+		var arg2 *apiclient.ClientOptions
+		if args[2] != nil {
+			arg2 = args[2].(*apiclient.ClientOptions)
+		}
+		var arg3 v1alpha1.Application
+		if args[3] != nil {
+			arg3 = args[3].(v1alpha1.Application)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_PushArgoApp_Call) Return(err error) *MockAPIClient_PushArgoApp_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAPIClient_PushArgoApp_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp v1alpha1.Application) error) *MockAPIClient_PushArgoApp_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // TestConnection provides a mock function for the type MockAPIClient
