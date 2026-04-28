@@ -18,7 +18,9 @@ type BudgetTimeframeHandler struct {
 }
 
 func NewBudgetTimeframeHandler(con connection.Connection[connection.OctantConnectionData]) *BudgetTimeframeHandler {
-	return &BudgetTimeframeHandler{}
+	return &BudgetTimeframeHandler{
+		connection: con,
+	}
 }
 
 func (bth *BudgetTimeframeHandler) TimeframeStatus(
@@ -26,7 +28,7 @@ func (bth *BudgetTimeframeHandler) TimeframeStatus(
 	req *connect.Request[budgetv1alpha.TimeframeStatusRequest],
 ) (*connect.Response[budgetv1alpha.TimeframeStatusResponse], error) {
 	logger := zap.L().With(zap.String("operation", budgetv1alphaconnect.TimeframeServiceTimeframeStatusProcedure))
-	con, err := bth.connection.GetConnectionByName(ctx, req.Msg.GetConnectionName(), req.Msg.GetNamespace())
+	con, err := bth.connection.GetConnectionByName(ctx, req.Msg.GetNamespace(), req.Msg.GetConnectionName())
 	if err != nil {
 		logger.Error("failed to get connection data", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
