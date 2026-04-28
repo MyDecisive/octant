@@ -135,6 +135,7 @@ func CreateExportableTemplateData(
 	return &templateData, nil
 }
 
+// RenderMdaiAppManifest renders the mdai argo application manifest with the provided template inputs.
 func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
 	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
 	if err != nil {

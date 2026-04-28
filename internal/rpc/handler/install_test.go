@@ -227,6 +227,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				connect.NewRequest(&octantv1alpha.InstallMDAIHubRequest{
 					Namespace:      "mdai",
 					ConnectionName: "coolConnection",
+					MdaiVersion:    "0.9.0-dev",
 				}),
 			)
 

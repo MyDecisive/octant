@@ -44,6 +44,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 ) (*connect.Response[emptypb.Empty], error) {
 	installNamespace := req.Msg.GetNamespace()
 	connectionName := req.Msg.GetConnectionName()
+	installVersion := req.Msg.GetMdaiVersion()
 
 	logger := zap.L().With(zap.String("installNamespace", installNamespace))
 
@@ -59,7 +60,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	}
 
 	// 2) render the argo app template(s)
-	manifestBytes, err := connection.RenderMdaiAppManifest("0.9.3-envoy", installNamespace)
+	manifestBytes, err := connection.RenderMdaiAppManifest(installVersion, installNamespace)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
