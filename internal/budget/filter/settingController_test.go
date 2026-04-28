@@ -453,7 +453,7 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	})
 
 	// TODO: figure out why this test is failing
-	//t.Run("err timeout", func(t *testing.T) {
+	// t.Run("err timeout", func(t *testing.T) {
 	//	t.Parallel()
 	//
 	//	input := budgetv1alpha.Filter{
@@ -465,8 +465,14 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	//	controllerName := fmt.Sprintf(collectorTraceNameFormatter, connection)
 	//
 	//	mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
-	//	mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesRatioNumber, mock.Anything).Return(nil).Once()
-	//	mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, mock.Anything).Return(nil).Once()
+	//	mockAccessor.EXPECT().
+	//		UpdateVariable(namespace, connection, varTracesRatioNumber, mock.Anything).
+	//		Return(nil).
+	//		Once()
+	//	mockAccessor.EXPECT().
+	//		UpdateVariable(namespace, connection, varTracesPersistErrors, mock.Anything).
+	//		Return(nil).
+	//		Once()
 	//	mockKube := kubernetesmock.NewMockInterface(t)
 	//	mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
 	//	mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
@@ -501,5 +507,5 @@ func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	//		}
 	//		count++
 	//	}
-	//})
+	// })
 }
