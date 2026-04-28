@@ -106,7 +106,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
 
-		err = argocdIntegration.SetIntegration(t.Context(), defaultNamespace, "doesntMatter", newIntegration)
+		err = argocdIntegration.SetIntegration(t.Context(), defaultNamespace, "team-a", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
@@ -116,10 +116,10 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, argocdSecretName)
+		require.Contains(t, secret.Data, "team-a")
 
 		var teamData ArgoCDIntegrationData
-		err = json.Unmarshal(secret.Data[argocdSecretName], &teamData)
+		err = json.Unmarshal(secret.Data["team-a"], &teamData)
 		require.NoError(t, err)
 
 		assert.Equal(t, newIntegration, teamData)
@@ -132,7 +132,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 			&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
 				Data: map[string][]byte{
-					argocdSecretName: []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
+					"team-a": []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
 				},
 			},
 		}
@@ -148,9 +148,9 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, existingSecret.Data)
 		require.Len(t, existingSecret.Data, 1)
-		require.Contains(t, existingSecret.Data, argocdSecretName)
+		require.Contains(t, existingSecret.Data, "team-a")
 
-		err = datadogIntegration.SetIntegration(t.Context(), defaultNamespace, "doesntMatter", newIntegration)
+		err = datadogIntegration.SetIntegration(t.Context(), defaultNamespace, "team-b", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
@@ -159,11 +159,11 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 			Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.NoError(t, getErr)
 		require.NotNil(t, secret.Data)
-		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, argocdSecretName)
+		require.Len(t, secret.Data, 2)
+		require.Contains(t, secret.Data, "team-b")
 
 		var teamData ArgoCDIntegrationData
-		err = json.Unmarshal(secret.Data[argocdSecretName], &teamData)
+		err = json.Unmarshal(secret.Data["team-b"], &teamData)
 		require.NoError(t, err)
 
 		assert.Equal(t, newIntegration, teamData)

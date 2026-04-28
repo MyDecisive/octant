@@ -112,22 +112,12 @@ func TestGetConnectionByName(t *testing.T) {
 		},
 	})
 	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).
-		Return(&integration.ArgoCDIntegrationData{
-			APIUrl:       ts.URL,
-			AccountToken: "fake-token",
-		}, nil)
 
 	octantConnection := f.build()
 
 	actual, getErr := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
 	require.NoError(t, getErr)
 	require.NotNil(t, actual)
-
-	statusMap, ok := actual.Status.(*argoApp)
-	require.True(t, ok)
-	assert.Equal(t, "Healthy", statusMap.Status.Health.Status)
 }
 
 func TestGetConnectionByName_NotFound_NoConfigMap(t *testing.T) {
@@ -191,42 +181,6 @@ func TestGetConnectionByName_Error_InvalidJSON(t *testing.T) {
 	_, err := octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unmarshal connection data")
-}
-
-func TestGetConnectionByName_Error_ArgoStatusFailed(t *testing.T) {
-	t.Parallel()
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer ts.Close()
-
-	validConnection := OctantConnectionData{
-		Deployment: &Deployment{
-			Type:            ArgoSideloadDeploymentType,
-			IntegrationName: "argo-test",
-		},
-	}
-	validConnectionBytes, err := json.Marshal(validConnection)
-	require.NoError(t, err)
-
-	f := setupFixture(t, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-		Data: map[string]string{
-			"team-a": string(validConnectionBytes),
-		},
-	})
-	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, validConnection.Deployment.IntegrationName).
-		Return(&integration.ArgoCDIntegrationData{
-			APIUrl: ts.URL,
-		}, nil)
-
-	octantConnection := f.build()
-
-	_, err = octantConnection.GetConnectionByName(context.Background(), defaultNamespace, "team-a")
-	require.Error(t, err)
 }
 
 func TestSaveConnection(t *testing.T) {

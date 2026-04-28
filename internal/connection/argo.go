@@ -7,29 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/mydecisive/octant/internal/integration"
 )
-
-type argoApp struct {
-	Status argoAppStatus `json:"status"`
-}
-
-type argoAppStatus struct {
-	Resources []argoAppResources `json:"resources"`
-	Health    argoAppHealth      `json:"health"`
-}
-
-type argoAppHealth struct {
-	Status             string    `json:"status"`
-	LastTransitionTime time.Time `json:"lastTransitionTime"`
-}
-
-type argoAppResources struct {
-	Kind string `json:"kind"`
-	Name string `json:"name"`
-}
 
 type argoSyncPayload struct {
 	Revision  string           `json:"revision"`
@@ -45,46 +25,6 @@ type argoSyncStrategy struct {
 
 type argoSyncApply struct {
 	Force bool `json:"force"`
-}
-
-func (oc *OctantConnection) getArgoAppStatus(
-	ctx context.Context,
-	name string,
-	namespace string,
-	connection OctantConnectionData,
-) (*argoApp, error) {
-	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
-		ctx,
-		namespace,
-		connection.Deployment.IntegrationName,
-	)
-	if getArgoIntErr != nil {
-		return nil, getArgoIntErr
-	}
-
-	getAppURL := fmt.Sprintf("%s/api/v1/applications/%s", argoIntegration.APIUrl, name)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getAppURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+argoIntegration.AccountToken)
-	resp, err := oc.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	if resp.StatusCode != http.StatusOK {
-		return nil, handleArgoErrorResponse(resp, connection)
-	}
-	var app argoApp
-	if err := json.NewDecoder(resp.Body).Decode(&app); err != nil {
-		return nil, err
-	}
-
-	return &app, nil
 }
 
 func (oc *OctantConnection) pushArgoApp(

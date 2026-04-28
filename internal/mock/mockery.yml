@@ -21,6 +21,9 @@ packages:
   github.com/mydecisive/octant/internal/argocd:
     interfaces:
       APIClient:
+  github.com/argoproj/argo-cd/v3/pkg/apiclient/application:
+    interfaces:
+      ApplicationServiceServer:
   github.com/mydecisive/octant/internal/wrapper:
     interfaces:
       HTTPClient:

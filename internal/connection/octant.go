@@ -31,7 +31,6 @@ type OctantConnectionData struct {
 	Destinations   []OctantConnectionDestination `json:"destinations"`
 	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
 	Deployment     *Deployment                   `json:"deployment,omitempty"`
-	Status         any                           `json:"status,omitempty"`
 	Created        time.Time                     `json:"created"`
 }
 
@@ -130,16 +129,6 @@ func (oc *OctantConnection) GetConnectionByName(
 		return nil, fmt.Errorf("failed to unmarshal connection data: %w", err)
 	}
 
-	// TODO: This should be refactored to a more robust deployment-based task system
-	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		argoApp, err := oc.getArgoAppStatus(ctx, name, namespace, connection)
-		if err != nil {
-			return &connection, err
-		}
-
-		connection.Status = argoApp
-	}
-
 	return &connection, nil
 }
 
@@ -175,7 +164,7 @@ func (oc *OctantConnection) SaveConnection(
 		}
 	}
 
-	// TODO: This should be refactored to a more robust deployment-based task system
+	// TODO: This should be moved up to the service/rpc layer, not the logic layer
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
 		err := oc.pushArgoApp(ctx, namespace, connectionName, connection)
 		if err != nil {

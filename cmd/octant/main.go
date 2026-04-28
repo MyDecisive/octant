@@ -12,7 +12,7 @@ func main() {
 	}
 	registry.SetupGracefulShutdown()
 
-	if err := container.Invoke(registry.Start); err != nil {
+	if err = container.Invoke(registry.Start); err != nil {
 		zap.L().Fatal("Start servers", zap.Error(err))
 	}
 }
