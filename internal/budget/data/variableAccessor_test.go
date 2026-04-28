@@ -1,4 +1,4 @@
-package budgetfilter
+package budgetdata
 
 import (
 	"bytes"

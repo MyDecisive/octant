@@ -31,7 +31,7 @@ type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
 	CurrentNamespace string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
-	DefaultTimeout int    `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"10"`
+	DefaultTimeout int    `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
 	RPC            RPC    `yaml:"rpc"`
 	Budget         Budget `yaml:"budget"`
 }
