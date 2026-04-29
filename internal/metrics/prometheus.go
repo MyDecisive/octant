@@ -14,18 +14,18 @@ type PromClientFactory interface {
 	GetPromClient(namespace string) (v1.API, error)
 }
 
-type PromClientFactoryImpl struct {
+type NamespaceCachingPromClientFactory struct {
 	cache         sync.Map
 	configuration *config.Configuration
 }
 
-func NewPromClientFactory(configuration *config.Configuration) *PromClientFactoryImpl {
-	return &PromClientFactoryImpl{
+func NewPromClientFactory(configuration *config.Configuration) *NamespaceCachingPromClientFactory {
+	return &NamespaceCachingPromClientFactory{
 		configuration: configuration,
 	}
 }
 
-func (f *PromClientFactoryImpl) GetPromClient(namespace string) (v1.API, error) { // nolint: ireturn
+func (f *NamespaceCachingPromClientFactory) GetPromClient(namespace string) (v1.API, error) { // nolint: ireturn
 	if cachedClient, ok := f.cache.Load(namespace); ok {
 		client, ok := cachedClient.(v1.API)
 		if !ok {
