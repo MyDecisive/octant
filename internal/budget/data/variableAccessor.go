@@ -1,8 +1,9 @@
-package budgetfilter
+package budgetdata
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,8 @@ const (
 	mdaiGatewayGetVarFormatter  = "/variables/values/hub/%s/var/%s"
 	mdaiGatewayPostVarFormatter = "/variables/hub/%s/var/%s"
 )
+
+var ErrInvalid = errors.New("invalid")
 
 // VariableAccessor provide functionalities to get and update the underlying storage for the filter settings.
 type VariableAccessor interface {

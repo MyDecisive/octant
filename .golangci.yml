@@ -9,6 +9,7 @@ linters:
     - exhaustruct
     - exhaustive
     - godox
+    - gomoddirectives # needed for https://argo-cd.readthedocs.io/en/stable/user-guide/import/
     - nlreturn
     - noinlineerr
     - nolintlint

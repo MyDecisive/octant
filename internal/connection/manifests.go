@@ -12,8 +12,14 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+//go:embed manifests/cert-manager.yaml
+var CertManagerAppManifest []byte
+
 //go:embed templates/argo-app.yaml.tmpl
 var argoAppTemplate string
+
+//go:embed templates/mdai-app.yaml.tmpl
+var mdaiAppTemplate string
 
 //go:embed templates/collector.yaml.tmpl
 var primaryCollectorTemplate string
@@ -129,6 +135,29 @@ func CreateExportableTemplateData(
 	return &templateData, nil
 }
 
+// RenderMdaiAppManifest renders the mdai argo application manifest with the provided template inputs.
+func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
+	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error parsing mdai app template: %w", err)
+	}
+
+	var renderedYaml bytes.Buffer
+	templateData := struct {
+		MdaiVersion string
+		Namespace   string
+	}{
+		MdaiVersion: mdaiVersion,
+		Namespace:   namespace,
+	}
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
+// renderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
 func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat ManifestOutputFormat) ([]byte, error) {
 	if outputFormat == "" {
 		return []byte{}, errors.New("no output format specified")

@@ -8,7 +8,7 @@ require (
 	connectrpc.com/grpcreflect v1.3.0
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
-	github.com/MyDecisive/octant-contracts/go v0.4.3-alpha
+	github.com/MyDecisive/octant-contracts/go v0.4.5-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/go-faker/faker/v4 v4.7.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
@@ -198,8 +198,18 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.1-0.20251003215857-446d8398e19c // indirect
 )
 
-
+// needed to import argocd packages, see https://argo-cd.readthedocs.io/en/stable/user-guide/import/
 replace (
+	github.com/golang/protobuf => github.com/golang/protobuf v1.5.4
+	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	golang.org/x/tools => golang.org/x/tools v0.35.0
+
+	// Avoid CVE-2022-3064
+	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
+
+	// Avoid CVE-2022-28948
+	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
+
 	k8s.io/api => k8s.io/api v0.34.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.34.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.34.0

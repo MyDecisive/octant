@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -112,6 +113,27 @@ func TestRenderArgoAppManifest(t *testing.T) {
 		destination, ok := spec["destination"].(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "team-a-namespace", destination["namespace"])
+	})
+}
+
+func TestRenderMdaiAppManifest(t *testing.T) {
+	t.Parallel()
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := RenderMdaiAppManifest("0.9.0", "mdai")
+		require.NoError(t, err)
+
+		var parsedApp argoapp.Application
+		require.NoError(t, yaml.Unmarshal(result, &parsedApp))
+
+		sources := parsedApp.Spec.Sources
+		require.Len(t, sources, 2)
+
+		// validate mdai install version
+		assert.Equal(t, "0.9.0", sources[0].TargetRevision)
+
+		assert.Equal(t, "mdai", parsedApp.Spec.Destination.Namespace)
 	})
 }
 
@@ -460,5 +482,29 @@ func TestCreateTemplateData(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "injected api failure")
 		assert.Nil(t, data)
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t)
+		oc := f.build()
+
+		connection := OctantConnectionData{
+			Destinations: []OctantConnectionDestination{
+				{DestinationType: "datadog", IntegrationName: "broken-integration"},
+			},
+			Deployment: &Deployment{
+				Type: ArgoManifestsDeploymentType,
+			},
+		}
+
+		f.datadogMock.EXPECT().
+			GetIntegrationByName(mock.Anything, "default", "broken-integration").
+			Return(&integration.DataDogIntegrationData{}, nil).
+			Once()
+
+		data, err := oc.createTemplateData(context.Background(), "default", "test-app", connection)
+		require.NoError(t, err)
+		require.NotNil(t, data)
 	})
 }
