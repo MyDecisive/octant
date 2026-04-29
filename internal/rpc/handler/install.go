@@ -2,6 +2,7 @@ package rpchandler
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"connectrpc.com/connect"
@@ -9,6 +10,8 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/samber/lo"
+
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
@@ -17,6 +20,11 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"sigs.k8s.io/yaml"
 )
+
+var terminalInstallStates = []octantv1alpha.InstallStatus{
+	octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+	octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
+}
 
 type InstallHandler struct {
 	octantv1alphaconnect.UnimplementedInstallServiceHandler
@@ -96,36 +104,80 @@ func (ih *InstallHandler) InstallMDAIHub(
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 
-func (*InstallHandler) GetInstallStatus(
-	_ context.Context,
+func (ih *InstallHandler) GetInstallStatus(
+	ctx context.Context,
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
 ) error {
-	hubName := req.Msg.GetHubName()
+	connectionName := req.Msg.GetConnectionName()
 
-	logger := zap.L().With(zap.String("hubName", hubName))
+	logger := zap.L().With(zap.String("connectionName", connectionName))
 
 	logger.Debug("received install status request")
 
-	err := response.Send(&octantv1alpha.GetInstallStatusResponse{
-		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
-		Details:       "installing...",
-	})
+	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
 	if err != nil {
-		logger.Error("sending install status", zap.Error(err))
 		return connect.NewError(connect.CodeInternal, err)
 	}
+	if argoIntegration == nil {
+		return connect.NewError(connect.CodeNotFound, err)
+	}
 
-	// for now, emulating install time passing...
-	time.Sleep(3 * time.Second) // nolint: mnd
-
-	err = response.Send(&octantv1alpha.GetInstallStatusResponse{
-		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-		Details:       "successfully installed",
-	})
+	clientOpts := &apiclient.ClientOptions{
+		ServerAddr: argoIntegration.APIUrl,
+		AuthToken:  argoIntegration.AccountToken,
+		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
+	}
+	status, details, err := ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
 	if err != nil {
-		logger.Error("sending install status", zap.Error(err))
 		return connect.NewError(connect.CodeInternal, err)
 	}
-	return nil
+	if status == octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED {
+		return connect.NewError(connect.CodeUnknown, errors.New("install status is unspecified"))
+	}
+
+	if lo.Contains(terminalInstallStates, status) {
+		if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
+			InstallStatus: status,
+			Details:       details,
+		}); err != nil {
+			return connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	// we're in a non-terminal state (installing), keep polling for a change
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	shutdownChan := make(chan bool)
+	go func() {
+		// TODO: configurable timeout??
+		time.Sleep(1 * time.Minute)
+		shutdownChan <- true
+	}()
+
+	for {
+		select {
+		case <-shutdownChan:
+			logger.Warn("reached timeout waiting for app (mdai) to be healthy")
+			return connect.NewError(connect.CodeDeadlineExceeded, errors.New("timeout waiting for app (mdai) to be healthy"))
+		case <-ticker.C:
+			logger.Debug("checking install status")
+			status, details, err = ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			}
+
+			// send the install status
+			if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
+				InstallStatus: status,
+				Details:       details,
+			}); err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			}
+			if lo.Contains(terminalInstallStates, status) {
+				return nil
+			}
+		}
+	}
 }

@@ -7,6 +7,7 @@ package argocdmock
 import (
 	"context"
 
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
@@ -38,6 +39,86 @@ type MockAPIClient_Expecter struct {
 
 func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 	return &MockAPIClient_Expecter{mock: &_m.Mock}
+}
+
+// GetAppStatus provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) GetAppStatus(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error) {
+	ret := _mock.Called(ctx, logger, clientOpts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAppStatus")
+	}
+
+	var r0 octantv1alpha.InstallStatus
+	var r1 []*octantv1alpha.ResourceDetails
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)); ok {
+		return returnFunc(ctx, logger, clientOpts)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) octantv1alpha.InstallStatus); ok {
+		r0 = returnFunc(ctx, logger, clientOpts)
+	} else {
+		r0 = ret.Get(0).(octantv1alpha.InstallStatus)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) []*octantv1alpha.ResourceDetails); ok {
+		r1 = returnFunc(ctx, logger, clientOpts)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]*octantv1alpha.ResourceDetails)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) error); ok {
+		r2 = returnFunc(ctx, logger, clientOpts)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockAPIClient_GetAppStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAppStatus'
+type MockAPIClient_GetAppStatus_Call struct {
+	*mock.Call
+}
+
+// GetAppStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - logger *zap.Logger
+//   - clientOpts *apiclient.ClientOptions
+func (_e *MockAPIClient_Expecter) GetAppStatus(ctx interface{}, logger interface{}, clientOpts interface{}) *MockAPIClient_GetAppStatus_Call {
+	return &MockAPIClient_GetAppStatus_Call{Call: _e.mock.On("GetAppStatus", ctx, logger, clientOpts)}
+}
+
+func (_c *MockAPIClient_GetAppStatus_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions)) *MockAPIClient_GetAppStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *zap.Logger
+		if args[1] != nil {
+			arg1 = args[1].(*zap.Logger)
+		}
+		var arg2 *apiclient.ClientOptions
+		if args[2] != nil {
+			arg2 = args[2].(*apiclient.ClientOptions)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_GetAppStatus_Call) Return(installStatus octantv1alpha.InstallStatus, resourceDetailss []*octantv1alpha.ResourceDetails, err error) *MockAPIClient_GetAppStatus_Call {
+	_c.Call.Return(installStatus, resourceDetailss, err)
+	return _c
+}
+
+func (_c *MockAPIClient_GetAppStatus_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)) *MockAPIClient_GetAppStatus_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // PushArgoApp provides a mock function for the type MockAPIClient
