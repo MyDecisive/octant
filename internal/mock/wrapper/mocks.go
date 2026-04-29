@@ -38,6 +38,68 @@ func (_m *MockHTTPClient) EXPECT() *MockHTTPClient_Expecter {
 	return &MockHTTPClient_Expecter{mock: &_m.Mock}
 }
 
+// Do provides a mock function for the type MockHTTPClient
+func (_mock *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	ret := _mock.Called(req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Do")
+	}
+
+	var r0 *http.Response
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*http.Request) (*http.Response, error)); ok {
+		return returnFunc(req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*http.Request) *http.Response); ok {
+		r0 = returnFunc(req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*http.Response)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*http.Request) error); ok {
+		r1 = returnFunc(req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockHTTPClient_Do_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Do'
+type MockHTTPClient_Do_Call struct {
+	*mock.Call
+}
+
+// Do is a helper method to define mock.On call
+//   - req *http.Request
+func (_e *MockHTTPClient_Expecter) Do(req interface{}) *MockHTTPClient_Do_Call {
+	return &MockHTTPClient_Do_Call{Call: _e.mock.On("Do", req)}
+}
+
+func (_c *MockHTTPClient_Do_Call) Run(run func(req *http.Request)) *MockHTTPClient_Do_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *http.Request
+		if args[0] != nil {
+			arg0 = args[0].(*http.Request)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockHTTPClient_Do_Call) Return(response *http.Response, err error) *MockHTTPClient_Do_Call {
+	_c.Call.Return(response, err)
+	return _c
+}
+
+func (_c *MockHTTPClient_Do_Call) RunAndReturn(run func(req *http.Request) (*http.Response, error)) *MockHTTPClient_Do_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockHTTPClient
 func (_mock *MockHTTPClient) Get(url string) (*http.Response, error) {
 	ret := _mock.Called(url)
