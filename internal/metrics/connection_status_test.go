@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mydecisive/octant/internal/mock/metrics"
 	v1mock "github.com/mydecisive/octant/internal/mock/v1"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/prometheus/common/model"
@@ -11,6 +12,151 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetConnectionStatus(t *testing.T) {
+	t.Parallel()
+
+	t.Run("error - factory fails to get client", func(t *testing.T) {
+		t.Parallel()
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(nil, assert.AnError)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.ErrorIs(t, err, assert.AnError)
+		require.Nil(t, resp)
+	})
+
+	t.Run("error - querying telemetry ingress status", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "otelcol_receiver")
+			}), mock.Anything).
+			Return(nil, nil, assert.AnError).
+			Times(1)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.ErrorContains(t, err, "querying telemetry ingress status")
+		require.Nil(t, resp)
+	})
+
+	t.Run("error - querying telemetry egress status", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+
+		// Ingress succeeds (empty vector = no data, but no error)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "otelcol_receiver")
+			}), mock.Anything).
+			Return(model.Vector{}, nil, nil).
+			Times(1)
+
+		// Egress fails
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "otelcol_exporter")
+			}), mock.Anything).
+			Return(nil, nil, assert.AnError).
+			Times(1)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.ErrorContains(t, err, "querying telemetry egress status")
+		require.Nil(t, resp)
+	})
+
+	t.Run("error - verifying data integrity", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+
+		// Flow queries succeed
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "otelcol_")
+			}), mock.Anything).
+			Return(model.Vector{}, nil, nil).
+			Times(2)
+
+		// Fidelity fails on the very first attribute check
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "mdai_fidelity")
+			}), mock.Anything).
+			Return(nil, nil, assert.AnError).
+			Times(1)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.ErrorContains(t, err, "verifying data integrity")
+		require.ErrorIs(t, err, assert.AnError)
+		require.Nil(t, resp)
+	})
+
+	t.Run("success - returns full connection status", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+
+		// Flow queries return valid >0 values (flowing = true)
+		flowVector := model.Vector{{Value: 10.0}}
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "otelcol_")
+			}), mock.Anything).
+			Return(flowVector, nil, nil).
+			Times(2)
+
+		// Fidelity queries return passing signal checks
+		passVector := model.Vector{
+			{
+				Metric: model.Metric{
+					fidelityMetricResult: fidelityCheckPass,
+					fidelityMetricSignal: model.LabelValue(telemetry.Logs),
+				},
+				Value: 5.0,
+			},
+		}
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "mdai_fidelity")
+			}), mock.Anything).
+			Return(passVector, nil, nil).
+			Times(4)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs})
+
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		assert.True(t, resp.ReceivingData)
+		assert.True(t, resp.SendingData)
+		assert.True(t, resp.DataIntegrity)
+
+		assert.NotNil(t, resp.ValidationResults)
+		assert.True(t, resp.ValidationResults.GetLogs().GetParity())
+		assert.True(t, resp.ValidationResults.GetLogs().GetPolicy())
+	})
+}
 
 func TestIsTelemetryFlowing(t *testing.T) {
 	t.Parallel()

@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/mydecisive/octant/internal/integration"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
-	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/prometheus/client_golang/api"
-	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -53,11 +52,11 @@ func setupTestServer() *httptest.Server {
 // --- FIXTURE HELPER ---
 
 type octantTestFixture struct {
-	k8sClient       *fake.Clientset
-	argoMock        *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
-	datadogMock     *integrationmock.MockIntegration[integration.DataDogIntegrationData]
-	promFactoryMock *metricsmock.MockPromClientFactory
-	httpClient      *http.Client
+	k8sClient        *fake.Clientset
+	argoMock         *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
+	datadogMock      *integrationmock.MockIntegration[integration.DataDogIntegrationData]
+	httpClient       *http.Client
+	connectionStatus *metricsmock.MockConnectionStatus
 }
 
 // setupFixture initializes a default set of dependencies for OctantConnection.
@@ -65,11 +64,11 @@ type octantTestFixture struct {
 func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 	t.Helper()
 	return &octantTestFixture{
-		k8sClient:       fake.NewClientset(objects...),
-		argoMock:        integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
-		datadogMock:     integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
-		promFactoryMock: metricsmock.NewMockPromClientFactory(t),
-		httpClient:      http.DefaultClient, // Default safe client; tests can override with httptest server clients
+		k8sClient:        fake.NewClientset(objects...),
+		argoMock:         integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
+		datadogMock:      integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
+		httpClient:       http.DefaultClient, // Default safe client; tests can override with httptest server clients
+		connectionStatus: metricsmock.NewMockConnectionStatus(t),
 	}
 }
 
@@ -80,7 +79,7 @@ func (f *octantTestFixture) build() *OctantConnection {
 		f.k8sClient,
 		f.argoMock,
 		f.datadogMock,
-		f.promFactoryMock,
+		f.connectionStatus,
 	)
 }
 
@@ -563,22 +562,14 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 		},
 	})
 
-	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		responseString := `{"status":"success",
-		"data":{"resultType":"vector","result":[{"metric":{"signal":"logs","result":"pass"},"value":[1712419691,"5"]}]}}`
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(responseString)) //nolint: errcheck,gosec,revive
-	}))
-	defer promServer.Close()
-
-	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
-	require.NoError(t, err)
-	promAPI := promv1.NewAPI(promClient)
-
-	// Set up the PromClientFactory mock to return our test PromAPI
-	f.promFactoryMock.EXPECT().GetPromClient(defaultNamespace).Return(promAPI, nil).Times(1)
+	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
+		telemetry.Logs,
+	}).Return(&octantv1alpha.GetConnectionStatusResponse{
+		ReceivingData:     true,
+		SendingData:       true,
+		DataIntegrity:     true,
+		ValidationResults: nil,
+	}, nil)
 
 	octantConnection := f.build()
 
@@ -607,18 +598,9 @@ func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
 		},
 	})
 
-	// Mock Prometheus server returning a 500 error
-	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer promServer.Close()
-
-	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
-	require.NoError(t, err)
-	promAPI := promv1.NewAPI(promClient)
-
-	// Set up the PromClientFactory mock to return our test PromAPI
-	f.promFactoryMock.EXPECT().GetPromClient(defaultNamespace).Return(promAPI, nil).Times(1)
+	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
+		telemetry.Logs,
+	}).Return(nil, errors.New("querying telemetry"))
 
 	octantConnection := f.build()
 
