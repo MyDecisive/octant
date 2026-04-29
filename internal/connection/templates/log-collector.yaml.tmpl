@@ -87,7 +87,7 @@ spec:
           site: "${env:DD_SITE}"
       {{- end }}
       otlp/observer:
-        endpoint: {{ .AppName }}-mdai-observer-service.mdai.svc.cluster.local:4317
+        endpoint: {{ .AppName }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
         tls:
           insecure: true
     extensions:

@@ -35,7 +35,7 @@ spec:
 
   observerResource:
     image: ghcr.io/mydecisive/observer-collector:0.1.6
-    ownLogsOtlpEndpoint: {{ .AppName }}-mdai-collector-service.mdai.svc.cluster.local:4318
+    ownLogsOtlpEndpoint: {{ .AppName }}-mdai-collector-service.{{ .Namespace }}.svc.cluster.local:4318
     replicas: 2
     resources:
       limits:

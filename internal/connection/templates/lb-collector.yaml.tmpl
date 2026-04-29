@@ -62,7 +62,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-trace-sampling.mdai.svc.cluster.local
+            hostname: {{ .AppName }}-trace-sampling.{{ .Namespace }}.svc.cluster.local
             port: 4317
             interval: 10s
             timeout: 5s
@@ -83,7 +83,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-log-sampling.mdai.svc.cluster.local
+            hostname: {{ .AppName }}-log-sampling.{{ .Namespace }}.svc.cluster.local
             port: 4317
             interval: 10s
             timeout: 5s
