@@ -33,13 +33,13 @@ spec:
               - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
               - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
         log_statements:
-          - context: resource
+          - context: log
             statements:
               - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
               - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
-              - set(attributes["traceID"], "unknown")
-              - set(attributes["traceID"], attributes["service.name"]) where attributes["service.name"] != nil
-              - set(attributes["traceID"], attributes["servicename"]) where attributes["servicename"] != nil
+              - set(attributes["service"], "unknown") where attributes["service"] == nil
+              - set(attributes["service"], attributes["service.name"]) where attributes["service.name"] != nil
+              - set(attributes["service"], attributes["servicename"]) where attributes["servicename"] != nil
           - context: log
             statements:
               - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{.*\\}\\s*$")
@@ -68,7 +68,7 @@ spec:
             interval: 10s
             timeout: 5s
       loadbalancing/logs:
-        routing_key: traceID
+        routing_key: service
         protocol:
           otlp:
             tls:

@@ -67,7 +67,6 @@ func TestRenderManifestFormats(t *testing.T) {
 				fmt.Sprintf("log-collector.%s", format),
 				fmt.Sprintf("trace-collector.%s", format),
 				fmt.Sprintf("observer.%s", format),
-				fmt.Sprintf("monitor.%s", format),
 				fmt.Sprintf("hub.%s", format),
 				fmt.Sprintf("validator.%s", format),
 				fmt.Sprintf("secret.%s", format),
@@ -461,31 +460,6 @@ func TestRenderValidatorManifest(t *testing.T) {
 	})
 }
 
-func TestRenderMonitorManifest(t *testing.T) {
-	t.Parallel()
-	t.Run("With Signals", func(t *testing.T) {
-		t.Parallel()
-		templateData := ArgoTemplateData{
-			AppName: "test-app",
-			ConnectionData: OctantConnectionData{
-				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
-			},
-			DatadogIntegrationData: &integration.DataDogIntegrationData{
-				DDUrl: "https://datadoghq.com",
-			},
-		}
-
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
-		require.NoError(t, err)
-		bytes := (manifests)["monitor.yaml"]
-
-		var data map[string]any
-		require.NoError(t, yaml.Unmarshal(bytes, &data))
-
-		assert.Contains(t, data, "spec")
-	})
-}
-
 func TestRenderObserverManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
@@ -582,8 +556,6 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 	assert.True(t, hasHub, "hub.yaml should exist")
 	_, hasObserver := manifests["observer.yaml"]
 	assert.True(t, hasObserver, "observer.yaml should exist")
-	_, hasMonitor := manifests["monitor.yaml"]
-	assert.True(t, hasMonitor, "monitor.yaml should exist")
 	_, hasSecret := manifests["secret.yaml"]
 	assert.True(t, hasSecret, "secret.yaml should exist")
 	_, hasValidator := manifests["validator.yaml"]

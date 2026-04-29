@@ -36,9 +36,6 @@ var hubTemplate string
 //go:embed templates/observer.yaml.tmpl
 var observerTemplate string
 
-//go:embed templates/monitor.yaml.tmpl
-var monitorTemplate string
-
 //go:embed templates/validator.yaml.tmpl
 var validatorTemplate string
 
@@ -213,7 +210,6 @@ func renderCollectorDeploymentManifests(
 		"trace-collector": traceCollectorTemplate,
 		"hub":             hubTemplate,
 		"observer":        observerTemplate,
-		"monitor":         monitorTemplate,
 		"validator":       validatorTemplate,
 		"secret":          secretTemplate,
 	} {
