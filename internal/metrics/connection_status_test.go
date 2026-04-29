@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mydecisive/octant/internal/mock/metrics"
+	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	v1mock "github.com/mydecisive/octant/internal/mock/v1"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/prometheus/common/model"
@@ -148,13 +148,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		assert.True(t, resp.ReceivingData)
-		assert.True(t, resp.SendingData)
-		assert.True(t, resp.DataIntegrity)
+		assert.True(t, resp.GetReceivingData())
+		assert.True(t, resp.GetSendingData())
+		assert.True(t, resp.GetDataIntegrity())
 
-		assert.NotNil(t, resp.ValidationResults)
-		assert.True(t, resp.ValidationResults.GetLogs().GetParity())
-		assert.True(t, resp.ValidationResults.GetLogs().GetPolicy())
+		assert.NotNil(t, resp.GetValidationResults())
+		assert.True(t, resp.GetValidationResults().GetLogs().GetParity())
+		assert.True(t, resp.GetValidationResults().GetLogs().GetPolicy())
 	})
 }
 
