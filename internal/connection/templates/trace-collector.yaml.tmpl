@@ -47,6 +47,7 @@ spec:
           http:
             endpoint: 0.0.0.0:4318
     processors:
+      deltatocumulative: {}
       memory_limiter:
         check_interval: 1s
         limit_percentage: 80
@@ -70,7 +71,7 @@ spec:
                     span:
                       - '"${env:TRACES_PERSIST_ERRORS}" == "true"'
                 - name: is-error-status
-                  type: status
+                  type: status_code
                   status_code:
                     status_codes: [ERROR]
           - name: ratio_mode_policy
@@ -88,6 +89,20 @@ spec:
           key: ${env:DD_API_KEY}
           site: "${env:DD_SITE}"
       {{- end }}
+      prometheus:
+        endpoint: "0.0.0.0:8899"
+        metric_expiration: 180m
+        resource_to_telemetry_conversion:
+          enabled: true
+    connectors:
+      count/spans_by_facet:
+        spans:
+          trace.span.service.total:
+            description: Total span count by service (all spans).
+          trace.span.service.root:
+            description: Root span count by service.
+            conditions:
+              - 'IsRootSpan()'
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
@@ -99,7 +114,11 @@ spec:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, tail_sampling, batch]
-          exporters: [ datadog ]
+          exporters: [ datadog, count/spans_by_facet ]
+        metrics:
+          receivers: [count/spans_by_facet]
+          processors: [deltatocumulative]
+          exporters: [prometheus]
       telemetry:
         resource:
           mdai_connection: "{{ .AppName }}"

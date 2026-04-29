@@ -37,6 +37,7 @@ spec:
             statements:
               - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
               - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
+              - set(attributes["traceID"], "unknown")
               - set(attributes["traceID"], attributes["service.name"]) where attributes["service.name"] != nil
               - set(attributes["traceID"], attributes["servicename"]) where attributes["servicename"] != nil
           - context: log
@@ -63,7 +64,7 @@ spec:
         resolver:
           dns:
             hostname: {{ .AppName }}-trace-sampling-collector.{{ .Namespace }}.svc.cluster.local
-            port: 4317
+            port: "4317"
             interval: 10s
             timeout: 5s
       loadbalancing/logs:
@@ -84,7 +85,7 @@ spec:
         resolver:
           dns:
             hostname: {{ .AppName }}-log-sampling-collector.{{ .Namespace }}.svc.cluster.local
-            port: 4317
+            port: "4317"
             interval: 10s
             timeout: 5s
       prometheus:
