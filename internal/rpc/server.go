@@ -22,11 +22,12 @@ import (
 type Server struct {
 	configuration *config.Configuration
 
-	argocdHandler       *rpchandler.ArgoCDHandler
-	installHandler      *rpchandler.InstallHandler
-	datadogHandler      *rpchandler.DatadogHandler
-	connectionHandler   *rpchandler.ConnectionHandler
-	budgetFilterHandler *rpchandler.BudgetFilterHandler
+	argocdHandler          *rpchandler.ArgoCDHandler
+	installHandler         *rpchandler.InstallHandler
+	datadogHandler         *rpchandler.DatadogHandler
+	connectionHandler      *rpchandler.ConnectionHandler
+	budgetFilterHandler    *rpchandler.BudgetFilterHandler
+	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler
 }
 
 // NewServer create a new Server.
@@ -37,14 +38,16 @@ func NewServer(
 	datadogHandler *rpchandler.DatadogHandler,
 	connectionHandler *rpchandler.ConnectionHandler,
 	budgetFilterHandler *rpchandler.BudgetFilterHandler,
+	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler,
 ) *Server {
 	return &Server{
-		configuration:       configuration,
-		argocdHandler:       argocdHandler,
-		installHandler:      installHandler,
-		datadogHandler:      datadogHandler,
-		connectionHandler:   connectionHandler,
-		budgetFilterHandler: budgetFilterHandler,
+		configuration:          configuration,
+		argocdHandler:          argocdHandler,
+		installHandler:         installHandler,
+		datadogHandler:         datadogHandler,
+		connectionHandler:      connectionHandler,
+		budgetFilterHandler:    budgetFilterHandler,
+		budgetTimeframeHandler: budgetTimeframeHandler,
 	}
 }
 
@@ -73,6 +76,7 @@ func (s Server) Start() error {
 	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
+	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -91,6 +95,7 @@ func (Server) getServices() []string {
 		octantv1alphaconnect.DatadogServiceName,
 		octantv1alphaconnect.ConnectionServiceName,
 		budgetv1alphaconnect.FilterServiceName,
+		budgetv1alphaconnect.TimeframeServiceName,
 	}
 }
 
