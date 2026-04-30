@@ -36,7 +36,13 @@ spec:
         ports:
         {{- .Values.deployment.ports | toYaml | nindent 8 }}
         env:
-        - name: HTTP_PORT
-          value: "{{ .Values.deployment.containerPort }}"
-        - name: PROMETHEUS_ENDPOINT
-          value: "{{ .Values.deployment.prometheusEndpoint }}"
+        {{- $httpPort := 5678 }}
+        {{- range .Values.deployment.ports }}
+          {{- if eq .name "octant-ui" }}
+            {{- $httpPort = .containerPort }}
+          {{- end }}
+        {{- end }}
+          - name: HTTP_PORT
+            value: "{{ $httpPort }}"
+          - name: PROMETHEUS_ENDPOINT
+            value: "{{ .Values.deployment.prometheusEndpoint }}"
