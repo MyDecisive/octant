@@ -8,7 +8,7 @@ require (
 	connectrpc.com/grpcreflect v1.3.0
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
-	github.com/MyDecisive/octant-contracts/go v0.4.6-alpha
+	github.com/MyDecisive/octant-contracts/go v0.4.7-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/go-faker/faker/v4 v4.7.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
