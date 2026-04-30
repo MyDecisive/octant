@@ -262,7 +262,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 
 		client := octantv1alphaconnect.NewInstallServiceClient(testServer.Client(), testServer.URL, connect.WithSendGzip())
 		response, err := client.GetInstallStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetInstallStatusRequest{
-			HubName: "coolHub",
+			ConnectionName: "coolHub",
 		}))
 		require.NoError(t, err)
 		require.NotNil(t, response)
