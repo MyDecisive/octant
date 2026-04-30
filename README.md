@@ -46,5 +46,5 @@ Then, load the image to the kind cluster, package a helm release, and deploy it.
 kind load docker-image local/octant-ui:latest --name mdai
 # helm package and deploy
 make helm-package
-helm upgrade octant ./octant-0.1.0.tgz --install
+helm upgrade octant ./octant-0.1.2.tgz --install
 ```

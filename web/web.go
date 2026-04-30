@@ -5,11 +5,11 @@ package web
 
 import (
 	"embed"
+	"go.uber.org/zap"
 	"io/fs"
 	"net/http"
+	"os"
 	"time"
-
-	"github.com/mydecisive/mdai-data-core/helpers"
 )
 
 //go:embed dist/*
@@ -36,7 +36,9 @@ func CreateServer() (*http.Server, error) {
 	// octant UI
 	mainRouter.Handle("/", http.FileServerFS(octantApp))
 
-	httpPort := helpers.GetEnvVariableWithDefault(httpPortEnvVarKey, defaultHTTPPort)
+	httpPort := getEnvVariableWithDefault(httpPortEnvVarKey, defaultHTTPPort)
+
+	zap.L().Info(`Starting octant-ui server at :` + httpPort)
 
 	return &http.Server{
 		Addr:              ":" + httpPort,
@@ -46,4 +48,11 @@ func CreateServer() (*http.Server, error) {
 		WriteTimeout:      defaultWriteTimeout,
 		IdleTimeout:       defaultIdleTimeout,
 	}, nil
+}
+
+func getEnvVariableWithDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		return value
+	}
+	return defaultValue
 }
