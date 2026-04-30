@@ -13,6 +13,7 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
+	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
 	"github.com/mydecisive/octant/internal/wrapper"
@@ -37,6 +38,12 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(provideHTTPClient); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(metrics.NewPromClientFactory, dig.As(new(metrics.PromClientFactory))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(metrics.NewPrometheusConnectionStatus, dig.As(new(metrics.ConnectionStatus))); err != nil {
 		return nil, err
 	}
 
@@ -71,6 +78,18 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(
 		connection.NewConnectionManifestCompressor,
 		dig.As(new(connection.ManifestCompressor))); err != nil {
+		return nil, err
+	}
+
+	// Connection
+	if err := container.Provide(
+		connection.NewOctantConnection,
+		dig.As(
+			new(
+				connection.Connection[connection.OctantConnectionData],
+			),
+		),
+	); err != nil {
 		return nil, err
 	}
 

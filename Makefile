@@ -1,4 +1,5 @@
 DOCKER_TAG ?= 0.1.0
+OCTANT_UI_TAG ?= latest
 CHART_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
 BUILD_PLATFORMS ?= linux/arm64,linux/amd64
@@ -18,7 +19,9 @@ ifndef CI
 endif
 
 docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
+docker-login docker-build docker-push: GHCR_REPO ?= ghcr.io/mydecisive
 docker-build docker-push: DOCKER_IMAGE ?= $(AWS_ECR_REPO)/$(REPO_NAME):$(DOCKER_TAG)
+docker-build docker-push: OCTANT_UI_IMAGE ?= $(GHCR_REPO)/octant-ui:$(OCTANT_UI_TAG)
 
 .PHONY: docker-login
 docker-login:
@@ -26,7 +29,7 @@ docker-login:
 
 .PHONY: docker-build
 docker-build: tidy
-	docker buildx build --platform $(BUILD_PLATFORMS) -t $(DOCKER_IMAGE) . --load
+	docker buildx build --platform $(BUILD_PLATFORMS) --build-arg OCTANT_UI_IMAGE=$(OCTANT_UI_IMAGE) -t $(DOCKER_IMAGE) . --load
 
 .PHONY: docker-push
 docker-push: tidy docker-login

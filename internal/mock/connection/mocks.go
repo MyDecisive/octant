@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/connection"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -177,23 +178,23 @@ func (_c *MockConnection_GetConnectionByName_Call[T]) RunAndReturn(run func(ctx 
 }
 
 // GetConnectionStatus provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, namespace string, connectionName string) (*connection.Status, error) {
+func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, namespace string, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error) {
 	ret := _mock.Called(ctx, namespace, connectionName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConnectionStatus")
 	}
 
-	var r0 *connection.Status
+	var r0 *octantv1alpha.GetConnectionStatusResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*connection.Status, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
 		return returnFunc(ctx, namespace, connectionName)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *connection.Status); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *octantv1alpha.GetConnectionStatusResponse); ok {
 		r0 = returnFunc(ctx, namespace, connectionName)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*connection.Status)
+			r0 = ret.Get(0).(*octantv1alpha.GetConnectionStatusResponse)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
@@ -240,19 +241,19 @@ func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) Return(status *connection.Status, err error) *MockConnection_GetConnectionStatus_Call[T] {
-	_c.Call.Return(status, err)
+func (_c *MockConnection_GetConnectionStatus_Call[T]) Return(getConnectionStatusResponse *octantv1alpha.GetConnectionStatusResponse, err error) *MockConnection_GetConnectionStatus_Call[T] {
+	_c.Call.Return(getConnectionStatusResponse, err)
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string) (*connection.Status, error)) *MockConnection_GetConnectionStatus_Call[T] {
+func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnection_GetConnectionStatus_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SaveConnection provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection1 T, namespace string, connectionName string) error {
-	ret := _mock.Called(ctx, connection1, namespace, connectionName)
+func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection T, namespace string, connectionName string) error {
+	ret := _mock.Called(ctx, connection, namespace, connectionName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveConnection")
@@ -260,7 +261,7 @@ func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection1 
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, T, string, string) error); ok {
-		r0 = returnFunc(ctx, connection1, namespace, connectionName)
+		r0 = returnFunc(ctx, connection, namespace, connectionName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -274,14 +275,14 @@ type MockConnection_SaveConnection_Call[T any] struct {
 
 // SaveConnection is a helper method to define mock.On call
 //   - ctx context.Context
-//   - connection1 T
+//   - connection T
 //   - namespace string
 //   - connectionName string
-func (_e *MockConnection_Expecter[T]) SaveConnection(ctx interface{}, connection1 interface{}, namespace interface{}, connectionName interface{}) *MockConnection_SaveConnection_Call[T] {
-	return &MockConnection_SaveConnection_Call[T]{Call: _e.mock.On("SaveConnection", ctx, connection1, namespace, connectionName)}
+func (_e *MockConnection_Expecter[T]) SaveConnection(ctx interface{}, connection interface{}, namespace interface{}, connectionName interface{}) *MockConnection_SaveConnection_Call[T] {
+	return &MockConnection_SaveConnection_Call[T]{Call: _e.mock.On("SaveConnection", ctx, connection, namespace, connectionName)}
 }
 
-func (_c *MockConnection_SaveConnection_Call[T]) Run(run func(ctx context.Context, connection1 T, namespace string, connectionName string)) *MockConnection_SaveConnection_Call[T] {
+func (_c *MockConnection_SaveConnection_Call[T]) Run(run func(ctx context.Context, connection T, namespace string, connectionName string)) *MockConnection_SaveConnection_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -314,7 +315,7 @@ func (_c *MockConnection_SaveConnection_Call[T]) Return(err error) *MockConnecti
 	return _c
 }
 
-func (_c *MockConnection_SaveConnection_Call[T]) RunAndReturn(run func(ctx context.Context, connection1 T, namespace string, connectionName string) error) *MockConnection_SaveConnection_Call[T] {
+func (_c *MockConnection_SaveConnection_Call[T]) RunAndReturn(run func(ctx context.Context, connection T, namespace string, connectionName string) error) *MockConnection_SaveConnection_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
