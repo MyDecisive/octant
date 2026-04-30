@@ -10,9 +10,20 @@ metadata:
   {{- if .IsArgoSideload }}
   annotations:
     argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-lb
-  {{- end }}
+  {{- end }}  
 spec:
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
+  observability:
+    metrics:
+      enableMetrics: true
+  replicas: 1
+  resources:
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
   config:
     receivers:
       datadog:
@@ -23,11 +34,13 @@ spec:
       transform/add_dd_fields:
         error_mode: ignore
         trace_statements:
-          - context: resource
-            statements:
-              - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
-              - set(attributes["datadog.host.name"], attributes["hostname"]) where attributes["hostname"] != nil
-        metric_statements:
+          - statements:
+              - set(span.attributes["span_name"], "unknown")
+              - set(span.attributes["span_name"], span.span_id.string) where span.span_id != nil
+              - set(span.attributes["span_name"], span.name) where span.name != nil
+              - set(span.attributes["span_name"], span.attributes["dd.span.Resource"]) where span.attributes["dd.span.Resource"] != nil
+              - set(span.attributes["span_service"], "unknown")
+              - set(span.attributes["span_service"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
           - context: resource
             statements:
               - set(attributes["datadog.host.name"], attributes["host.name"]) where attributes["host.name"] != nil
@@ -96,10 +109,16 @@ spec:
     connectors:
       count/spans_by_facet:
         spans:
-          trace.span.service.total:
-            description: Total span count by service (all spans).
-          trace.span.service.root:
-            description: Root span count by service.
+          received_span_count:
+            description: Received total span count by service (all spans).
+            attributes:
+              - key: span_name
+              - key: span_service
+          received_span_root_count:
+            description: Received root span count by service.
+            attributes:
+              - key: span_name
+              - key: span_service
             conditions:
               - 'IsRootSpan()'
     extensions:
@@ -111,12 +130,12 @@ spec:
       extensions: [health_check, zpages]
       pipelines:
         {{- range .ConnectionData.TelemetryTypes }}
-          {{ if eq . "logs" }}
+          {{- if eq . "logs" }}
           logs:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
             exporters: [loadbalancing/logs]
-          {{ else if eq . "traces" }}
+          {{- else if eq . "traces" }}
           traces:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
@@ -125,7 +144,7 @@ spec:
             receivers: [count/spans_by_facet]
             processors: [deltatocumulative]
             exporters: [prometheus]
-          {{ end }}
+          {{- end }}
         {{- end }}
       telemetry:
         resource:

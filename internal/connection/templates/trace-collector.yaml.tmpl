@@ -14,7 +14,17 @@ metadata:
 spec:
   managementState: managed
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
-  replicas: 3
+  observability:
+    metrics:
+      enableMetrics: true
+  {{- $replicas:=0}}
+  {{- range .ConnectionData.TelemetryTypes }}
+    {{- if eq . "traces" }}
+      {{- $replicas = 3}}
+      {{- break }}
+    {{- end }}
+  {{- end }}
+  replicas: {{$replicas | printf "%d"}}
   resources:
     limits:
       memory: "256Mi"
@@ -97,10 +107,16 @@ spec:
     connectors:
       count/spans_by_facet:
         spans:
-          trace.span.service.total:
-            description: Total span count by service (all spans).
-          trace.span.service.root:
-            description: Root span count by service.
+          sent_span_count:
+            description: Exported total span count by service (all spans).
+            attributes:
+              - key: span_name
+              - key: span_service
+          sent_span_root_count:
+            description: Exported root span count by service.
+            attributes:
+              - key: span_name
+              - key: span_service
             conditions:
               - 'IsRootSpan()'
     extensions:
