@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/telemetry"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -66,68 +67,136 @@ type parsedSample struct {
 	Attribute string
 }
 
-type ConnectionStatus struct {
-	promClient promv1.API
-	logger     *zap.Logger
+type ConnectionStatus interface {
+	GetConnectionStatus(
+		ctx context.Context,
+		namespace string,
+		connectionName string,
+		telemetryTypes []telemetry.MLT,
+	) (*octantv1alpha.GetConnectionStatusResponse, error)
 }
 
-func NewConnectionStatus(promClient promv1.API, logger *zap.Logger) *ConnectionStatus {
-	return &ConnectionStatus{
-		promClient: promClient,
-		logger:     logger,
+type PrometheusConnectionStatus struct {
+	promClientFactory PromClientFactory
+}
+
+func NewPrometheusConnectionStatus(promClientFactory PromClientFactory) *PrometheusConnectionStatus {
+	return &PrometheusConnectionStatus{
+		promClientFactory: promClientFactory,
 	}
 }
 
-func (cs *ConnectionStatus) VerifyDataFidelity(
+// GetConnectionStatus reads OTEL Collectoor and validator metrics to ensure a MDAI Connection is working.
+func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 	ctx context.Context,
+	namespace string,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
-) (bool, map[telemetry.MLT]ValidationResult, error) {
+) (*octantv1alpha.GetConnectionStatusResponse, error) {
+	promClient, err := cs.promClientFactory.GetPromClient(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	receivingData, err := isTelemetryFlowing(ctx, promClient, connectionName, Ingress, telemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("querying telemetry ingress status: %w", err)
+	}
+
+	sendingData, err := isTelemetryFlowing(ctx, promClient, connectionName, Egress, telemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
+	}
+
+	dataIntegrity, validationResults, err := verifyDataFidelity(ctx, promClient, connectionName, telemetryTypes)
+	if err != nil {
+		return nil, fmt.Errorf("verifying data integrity: %w", err)
+	}
+
+	return &octantv1alpha.GetConnectionStatusResponse{
+		ReceivingData:     receivingData,
+		SendingData:       sendingData,
+		DataIntegrity:     dataIntegrity,
+		ValidationResults: validationResults,
+	}, nil
+}
+
+// verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar to data going
+// out of the connection.
+func verifyDataFidelity(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+	telemetryTypes []telemetry.MLT,
+) (bool, *octantv1alpha.ValidationResultsBySignal, error) {
 	dataIntegrity := true
 
-	attrParity, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributeParityFidelityMetric)
+	attrParity, err := checkAttributeFidelity(
+		ctx, promClient, connectionName, telemetryTypes, attributeParityFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute parity fidelity: %w", err)
 	}
 
-	attrPolicy, err := cs.checkAttributeFidelity(ctx, connectionName, telemetryTypes, attributePolicyFidelityMetric)
+	attrPolicy, err := checkAttributeFidelity(
+		ctx, promClient, connectionName, telemetryTypes, attributePolicyFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute policy fidelity: %w", err)
 	}
 
-	signalParity, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalParityFidelityMetric)
+	signalParity, err := checkSignalFidelity(
+		ctx, promClient, connectionName, telemetryTypes, signalParityFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal parity fidelity: %w", err)
 	}
 
-	signalPolicy, err := cs.checkSignalFidelity(ctx, connectionName, telemetryTypes, signalPolicyFidelityMetric)
+	signalPolicy, err := checkSignalFidelity(
+		ctx, promClient, connectionName, telemetryTypes, signalPolicyFidelityMetric,
+	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
 	}
 
-	results := make(map[telemetry.MLT]ValidationResult)
+	results := octantv1alpha.ValidationResultsBySignal{}
 	for _, t := range telemetryTypes {
-		res := ValidationResult{
+		res := octantv1alpha.ValidationResult{
 			Parity: signalParity[t],
 			Policy: signalPolicy[t],
-			Attributes: ValidationAttributes{
+			Attributes: &octantv1alpha.ValidationAttributes{
 				Parity: attrParity[t],
 				Policy: attrPolicy[t],
 			},
 		}
 
-		if !res.Parity && !res.Policy {
+		if !res.GetParity() && !res.GetPolicy() {
 			dataIntegrity = false
 		}
 
-		results[t] = res
+		switch t {
+		case telemetry.Logs:
+			results.Logs = &res
+		case telemetry.Metrics:
+			results.Metrics = &res
+		case telemetry.Traces:
+			results.Traces = &res
+		default:
+			zap.L().Error(
+				"exotic telemetry type in verifyDataFidelity (how did we get here?!)",
+				zap.String("telemetryType", string(t)),
+			)
+		}
 	}
 
-	return dataIntegrity, results, nil
+	return dataIntegrity, &results, nil
 }
 
-func (cs *ConnectionStatus) IsTelemetryFlowing(
+// isTelemetryFlowing reads OTEL Collector metrics to ensure that the connection collector is receiving/sending
+// telemetry.
+func isTelemetryFlowing(
 	ctx context.Context,
+	promClient promv1.API,
 	connectionName string,
 	ie IngressEgress,
 	telemetryTypes []telemetry.MLT,
@@ -145,7 +214,7 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(
 			return false, fmt.Errorf("unknown telemetry type: %s", connectionType)
 		}
 
-		resultVector, err := cs.queryVector(ctx, promQuery)
+		resultVector, err := queryVector(ctx, promClient, promQuery)
 		if err != nil {
 			return false, fmt.Errorf("failed to query prometheus: %w", err)
 		}
@@ -161,8 +230,11 @@ func (cs *ConnectionStatus) IsTelemetryFlowing(
 	return true, nil
 }
 
-func (cs *ConnectionStatus) checkAttributeFidelity(
+// checkAttributeFidelity inspects attribute fidelity metric results and assigns a true/false for pass/fail per
+// attribute.
+func checkAttributeFidelity(
 	ctx context.Context,
+	promClient promv1.API,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
 	metricName fidelityMetric,
@@ -173,7 +245,7 @@ func (cs *ConnectionStatus) checkAttributeFidelity(
 	}
 
 	query := buildValidationQuery(metricName, connectionName)
-	vector, err := cs.queryVector(ctx, query)
+	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +277,10 @@ func (cs *ConnectionStatus) checkAttributeFidelity(
 	return attrs, nil
 }
 
-func (cs *ConnectionStatus) checkSignalFidelity(
+// checkSignalFidelity inspects signal fidelity metric results and assigns a true/false for pass/fail per MLT.
+func checkSignalFidelity(
 	ctx context.Context,
+	promClient promv1.API,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
 	metricName fidelityMetric,
@@ -220,7 +294,7 @@ func (cs *ConnectionStatus) checkSignalFidelity(
 	}
 
 	query := buildValidationQuery(metricName, connectionName)
-	vector, err := cs.queryVector(ctx, query)
+	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
 		return nil, err
 	}
@@ -244,10 +318,14 @@ func (cs *ConnectionStatus) checkSignalFidelity(
 				signals[parsed.Signal] = true
 			}
 		default:
-			cs.logger.Info("encountered unexpected fidelity check metric label",
-				zap.String(fidelityMetricResult, parsed.Result),
-				zap.String("name", string(metricName)),
-				zap.String("signal", string(parsed.Signal)))
+			zap.L().Info(fmt.Sprintf(
+				"encountered unexpected fidelity check metric label %s=%q for metric name %s data type %s",
+				fidelityMetricResult, parsed.Result, metricName, parsed.Signal,
+			),
+				zap.String("promLabel", fidelityMetricResult),
+				zap.String("parsedResult", parsed.Result),
+				zap.String("metric", string(metricName)),
+				zap.String("telemetryType", string(parsed.Signal)))
 		}
 	}
 
@@ -271,8 +349,9 @@ func parseFidelitySample(sample *model.Sample) (parsedSample, bool) {
 	}, true
 }
 
-func (cs *ConnectionStatus) queryVector(ctx context.Context, query string) (model.Vector, error) {
-	results, _, err := cs.promClient.Query(ctx, query, time.Now())
+// queryVector wraps a Prometheus query call to extract a well-typed vector model from the response.
+func queryVector(ctx context.Context, promClient promv1.API, query string) (model.Vector, error) {
+	results, _, err := promClient.Query(ctx, query, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +378,11 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 }
 
 func buildValidationQuery(metricName fidelityMetric, connectionName string) string {
-	return fmt.Sprintf(`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`, metricName, connectionName)
+	return fmt.Sprintf(
+		`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`,
+		metricName,
+		connectionName,
+	)
 }
 
 func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {
