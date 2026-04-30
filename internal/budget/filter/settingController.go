@@ -273,10 +273,12 @@ func (sc *MDAISettingController) update(
 			out <- UpdateFilterResult{
 				Err: ErrTimeout,
 			}
+			return
 		}
 		out <- UpdateFilterResult{
 			Err: fmt.Errorf("%w:%w", ErrUpdateCollector, err),
 		}
+		return
 	}
 	out <- UpdateFilterResult{
 		Status: budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED,
