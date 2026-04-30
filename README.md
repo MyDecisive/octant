@@ -7,6 +7,13 @@
 Check out the [octant](https://docs.mydecisive.ai/) docs.
 
 ## Building Octant
+### Pre-Requisites
+Octant communicates with a kubernetes cluster to manage objects that it needs for various operations. If you are running
+octant **_outside_** of a cluster, ensure that you have a valid kubernetes config (`~/.kube/config`) set to your local cluster context.
+When run inside a cluster, it will have everything it needs due to the Role/RoleBinding octant sets up.
+```shell
+kubectl config current-context
+```
 ### Building and running just the Octant API:
 Octant API runs on port `50051`, so the easiest way to integrate with it for localdev is to set the `baseUrl` in the octant
 typescript client to `localhost:50051`.<br>
