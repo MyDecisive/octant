@@ -109,6 +109,9 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(rpchandler.NewBudgetFilterHandler); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(rpchandler.NewBudgetTimeframeHandler); err != nil {
+		return nil, err
+	}
 	if err := container.Provide(rpc.NewServer); err != nil {
 		return nil, err
 	}
