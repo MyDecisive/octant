@@ -103,3 +103,11 @@ func (ch *ConnectionHandler) GenerateManifests(
 		}
 	}
 }
+
+func (ch *ConnectionHandler) GetConnectionValidatorRuns(context.Context, *connect.Request[octantv1alpha.GetConnectionValidatorRunsRequest]) (*connect.Response[v1alpha.GetConnectionValidatorRunsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octant.v1alpha.ConnectionService.GetConnectionValidatorRuns is not implemented"))
+}
+
+func (ch *ConnectionHandler) PutConnectionValidatorRun(context.Context, *connect.Request[octantv1alpha.PutConnectionValidatorRunRequest]) (*connect.Response[v1alpha.PutConnectionValidatorRunResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("octant.v1alpha.ConnectionService.PutConnectionValidatorRun is not implemented"))
+}

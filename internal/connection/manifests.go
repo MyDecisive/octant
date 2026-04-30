@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"text/template"
+	"time"
 
 	"github.com/mydecisive/octant/internal/integration"
 	"sigs.k8s.io/yaml"
@@ -40,6 +41,7 @@ type ArgoTemplateData struct {
 	DatadogIntegrationData *integration.DataDogIntegrationData
 	ValidatorEnabled       bool
 	IsArgoSideload         bool
+	ValidatorRunID         string
 }
 
 type ManifestOutputFormat string
@@ -48,6 +50,10 @@ const (
 	YAMLOutputFormat ManifestOutputFormat = "yaml"
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
+
+func getRunId() string {
+	return time.Now().UTC().Format("2006-01-02_15-04-05.999999")
+}
 
 func (oc *OctantConnection) createTemplateData(
 	ctx context.Context,
@@ -79,6 +85,7 @@ func (oc *OctantConnection) createTemplateData(
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
 		ValidatorEnabled:       true,
+		ValidatorRunID:         getRunId(),
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
 	}
@@ -129,6 +136,7 @@ func CreateExportableTemplateData(
 		ConnectionData:         connection,
 		DatadogIntegrationData: &datadogIntegration,
 		ValidatorEnabled:       true,
+		ValidatorRunID:         getRunId(),
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
 	}
