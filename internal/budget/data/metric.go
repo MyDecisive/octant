@@ -14,12 +14,21 @@ type Overall struct {
 
 // Log represents a single log data entry from the data store.
 type Log struct {
-	Name     string
-	Received uint64
+	Name string
+	Sent uint64
 }
 
-// MetricDataRetrieverInput contains parameters needed by the MetricDataRetriever methods.
-type MetricDataRetrieverInput struct {
+// RootSpan represents a single root span data entry from the data store.
+type RootSpan struct {
+	Name       string
+	Breath     uint32
+	Depth      uint32
+	Invocation uint32
+	Count      uint64
+}
+
+// MetricDataInput contains parameters needed to retrieve metric data.
+type MetricDataInput struct {
 	Timeframe budgetv1alpha.Timeframe
 	Size      uint32
 	PageToken string
@@ -31,6 +40,10 @@ type MetricDataRetrieverInput struct {
 type MetricDataRetriever interface {
 	// GetOverall returns the overall summary of the log and span data for the given timeframe.
 	GetOverall(timeframe budgetv1alpha.Timeframe, namespace string) (*Overall, error)
+	// GetTotalLog returns total amount of log data sent.
+	GetTotalLog(timeframe budgetv1alpha.Timeframe, namespace string) (uint64, error)
 	// GetLogs returns the list of log data that matches the given inputs.
-	GetLogs(input MetricDataRetrieverInput) ([]Log, error)
+	GetLogs(input MetricDataInput) ([]Log, error)
+	// GetRootSpans returns the list of root span data that matches the given inputs.
+	GetRootSpans(input MetricDataInput) ([]RootSpan, error)
 }
