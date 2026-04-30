@@ -239,38 +239,100 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 func TestInstallHandler_GetInstallStatus(t *testing.T) {
 	t.Parallel()
 
-	// setup the install handler and test server
-	handler := NewInstallHandler(nil, nil, nil)
+	defaultNamespace := "default"
+	theConfig := &config.Configuration{
+		CurrentNamespace: defaultNamespace,
+		Env:              config.Dev,
+		Install: config.Install{
+			MdaiInstallTimeout:               10,
+			MdaiInstallPollingIntervalMillis: 200, // .2 seconds
+		},
+	}
+	resourceDetails := []*octantv1alpha.ResourceDetails{
+		{
+			Name:    "mdai-event-hub",
+			Message: "we good",
+		},
+	}
+	argoIntegrationData := &integration.ArgoCDIntegrationData{
+		APIUrl:       "http://argocd.com",
+		AccountToken: "abc123",
+	}
 	installServiceMethods := octantv1alpha.File_octant_v1alpha_install_service_proto.
 		Services().
 		ByName("InstallService").
 		Methods()
-	installServiceGetInstallStatusHandler := connect.NewServerStreamHandler(
-		octantv1alphaconnect.InstallServiceGetInstallStatusProcedure,
-		handler.GetInstallStatus,
-		connect.WithSchema(installServiceMethods.ByName("GetInstallStatus")),
-	)
 
-	testServer := httptest.NewUnstartedServer(installServiceGetInstallStatusHandler)
-	testServer.Config.ErrorLog = log.New(io.Discard, "", 0) //nolint:forbidigo
-	testServer.EnableHTTP2 = true
-	testServer.StartTLS()
-	t.Cleanup(testServer.Close)
+	testCases := []struct {
+		description         string
+		setupInstallHandler func() *InstallHandler
+		validateResult      func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error)
+	}{
+		{
+			description: "happy path",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(argoIntegrationData, nil).
+					Once()
 
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
+				mockArgoClient := argocdmock.NewMockAPIClient(t)
+				// returns installing twice, THEN installed
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
+					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil).Twice()
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
+					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, resourceDetails, nil).Once()
+				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NoError(t, err)
+				require.NotNil(t, response)
 
-		client := octantv1alphaconnect.NewInstallServiceClient(testServer.Client(), testServer.URL, connect.WithSendGzip())
-		response, err := client.GetInstallStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetInstallStatusRequest{
-			HubName: "coolHub",
-		}))
-		require.NoError(t, err)
-		require.NotNil(t, response)
+				count := 0
+				for response.Receive() {
+					getInstallResponse := response.Msg()
+					require.NoError(t, response.Err())
+					switch count {
+					case 0, 1:
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, getInstallResponse.InstallStatus)
+					case 2:
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, getInstallResponse.InstallStatus)
+					}
+					count++
+				}
+				require.NoError(t, response.Err())
+			},
+		},
+	}
 
-		for response.Receive() {
-		} // wait to receive all response stream messages
+	for _, tc := range testCases {
+		testCase := tc
+		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 
-		require.NoError(t, response.Err())
-		require.NoError(t, response.Close())
-	})
+			handler := testCase.setupInstallHandler()
+
+			installServiceGetInstallStatusHandler := connect.NewServerStreamHandler(
+				octantv1alphaconnect.InstallServiceGetInstallStatusProcedure,
+				handler.GetInstallStatus,
+				connect.WithSchema(installServiceMethods.ByName("GetInstallStatus")),
+			)
+
+			testServer := httptest.NewUnstartedServer(installServiceGetInstallStatusHandler)
+			testServer.Config.ErrorLog = log.New(io.Discard, "", 0) //nolint:forbidigo
+			testServer.EnableHTTP2 = true
+			testServer.StartTLS()
+			t.Cleanup(testServer.Close)
+
+			client := octantv1alphaconnect.NewInstallServiceClient(testServer.Client(), testServer.URL, connect.WithSendGzip())
+
+			response, err := client.GetInstallStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetInstallStatusRequest{
+				ConnectionName: "coolConnection",
+			}))
+			testCase.validateResult(response, err)
+		})
+	}
 }

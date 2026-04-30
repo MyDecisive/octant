@@ -31,14 +31,20 @@ type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
 	CurrentNamespace string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
-	DefaultTimeout int    `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
-	RPC            RPC    `yaml:"rpc"`
-	Budget         Budget `yaml:"budget"`
+	DefaultTimeout int     `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
+	RPC            RPC     `yaml:"rpc"`
+	Budget         Budget  `yaml:"budget"`
+	Install        Install `yaml:"install"`
 }
 
 // RPC contains configuration for RPC related code.
 type RPC struct {
 	Port uint16 `yaml:"port" env:"OCTANT_RPC_PORT" env-default:"50051"`
+}
+
+type Install struct {
+	MdaiInstallTimeout               int `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"60"`
+	MdaiInstallPollingIntervalMillis int `yaml:"mdaiInstallPollingIntervalMillis" env:"MDAI_INSTALL_POLLING_INTERVAL_MILLIS" env-default:"3000"`
 }
 
 // Budget contains configuration specifically for budget applet.

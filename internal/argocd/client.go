@@ -129,6 +129,14 @@ func (*Client) GetAppStatus(
 		}
 	}()
 
+	// NOTE about using `ResourceTree` here instead of just `GetApplication`:
+	// 	The application `Get` doesn't retrieve the pods created for the application, just the Deployments
+	//	and a list of other resources, which wasn't enough to get individual resource details for why the
+	//	application might be in the Installing or Errored state.
+	//
+	// Also, ideally we can set the `Kind` to "Pod" on the `ResourcesQuery` here and significantly filter down
+	// the number of resources coming back, but apparently the `ApplicationName` and `Kind` parameters are
+	// mutually exclusive.
 	tree, err := applicationClient.ResourceTree(ctx, &application.ResourcesQuery{
 		ApplicationName: lo.ToPtr("mdai"),
 	})

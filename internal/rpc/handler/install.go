@@ -3,6 +3,7 @@ package rpchandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -50,13 +51,16 @@ func (ih *InstallHandler) InstallMDAIHub(
 	ctx context.Context,
 	req *connect.Request[octantv1alpha.InstallMDAIHubRequest],
 ) (*connect.Response[emptypb.Empty], error) {
+	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.InstallServiceInstallMDAIHubProcedure))
+
 	installNamespace := req.Msg.GetNamespace()
 	connectionName := req.Msg.GetConnectionName()
 	installVersion := req.Msg.GetMdaiVersion()
 
-	logger := zap.L().With(zap.String("installNamespace", installNamespace))
-
-	logger.Debug("received install MDAIHub request")
+	logger.Debug("received install MDAIHub request",
+		zap.String("namespace", installNamespace),
+		zap.String("mdaiVersion", installVersion),
+	)
 
 	// 1) get the argo integration details
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
@@ -109,11 +113,10 @@ func (ih *InstallHandler) GetInstallStatus(
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
 ) error {
+	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.InstallServiceGetInstallStatusProcedure))
 	connectionName := req.Msg.GetConnectionName()
 
-	logger := zap.L().With(zap.String("connectionName", connectionName))
-
-	logger.Debug("received install status request")
+	logger.Debug("received install status request", zap.String("connectionName", connectionName))
 
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
 	if err != nil {
@@ -132,33 +135,27 @@ func (ih *InstallHandler) GetInstallStatus(
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
-	if status == octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED {
-		return connect.NewError(connect.CodeUnknown, errors.New("install status is unspecified"))
-	}
 
+	// send the install status
+	if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
+		InstallStatus: status,
+		Details:       details,
+	}); err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
 	if lo.Contains(terminalInstallStates, status) {
-		if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
-			InstallStatus: status,
-			Details:       details,
-		}); err != nil {
-			return connect.NewError(connect.CodeInternal, err)
-		}
+		return nil
 	}
 
 	// we're in a non-terminal state (installing), keep polling for a change
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(time.Duration(ih.config.Install.MdaiInstallPollingIntervalMillis) * time.Millisecond)
 	defer ticker.Stop()
-
-	shutdownChan := make(chan bool)
-	go func() {
-		// TODO: configurable timeout??
-		time.Sleep(1 * time.Minute)
-		shutdownChan <- true
-	}()
 
 	for {
 		select {
-		case <-shutdownChan:
+		case <-ctx.Done():
+			return connect.NewError(connect.CodeCanceled, ctx.Err())
+		case <-time.After(time.Duration(ih.config.Install.MdaiInstallTimeout) * time.Second):
 			logger.Warn("reached timeout waiting for app (mdai) to be healthy")
 			return connect.NewError(connect.CodeDeadlineExceeded, errors.New("timeout waiting for app (mdai) to be healthy"))
 		case <-ticker.C:
@@ -178,6 +175,7 @@ func (ih *InstallHandler) GetInstallStatus(
 			if lo.Contains(terminalInstallStates, status) {
 				return nil
 			}
+			logger.Debug(fmt.Sprintf("install status (%s) is not healthy", status))
 		}
 	}
 }
