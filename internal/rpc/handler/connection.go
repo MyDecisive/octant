@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"go.uber.org/zap"
 )
@@ -20,13 +21,40 @@ const (
 type ConnectionHandler struct {
 	octantv1alphaconnect.UnimplementedConnectionServiceHandler
 
-	compressor connection.ManifestCompressor
+	config           *config.Configuration
+	octantConnection connection.Connection[connection.OctantConnectionData]
+	compressor       connection.ManifestCompressor
 }
 
-func NewConnectionHandler(compressor connection.ManifestCompressor) *ConnectionHandler {
+func NewConnectionHandler(
+	octantConfig *config.Configuration,
+	octantConnection connection.Connection[connection.OctantConnectionData],
+	compressor connection.ManifestCompressor,
+) *ConnectionHandler {
 	return &ConnectionHandler{
-		compressor: compressor,
+		config:           octantConfig,
+		octantConnection: octantConnection,
+		compressor:       compressor,
 	}
+}
+
+func (ch *ConnectionHandler) GetConnectionStatus(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GetConnectionStatusRequest],
+) (
+	*connect.Response[octantv1alpha.GetConnectionStatusResponse],
+	error,
+) {
+	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
+		ctx,
+		request.Msg.GetNamespace(),
+		request.Msg.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(connectionStatus), nil
 }
 
 func (ch *ConnectionHandler) GenerateManifests(

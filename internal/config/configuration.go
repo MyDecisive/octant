@@ -31,9 +31,10 @@ type Configuration struct {
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
 	CurrentNamespace string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
-	DefaultTimeout int    `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
-	RPC            RPC    `yaml:"rpc"`
-	Budget         Budget `yaml:"budget"`
+	DefaultTimeout int     `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
+	RPC            RPC     `yaml:"rpc"`
+	Budget         Budget  `yaml:"budget"`
+	Metrics        Metrics `yaml:"metrics"`
 }
 
 // RPC contains configuration for RPC related code.
@@ -50,6 +51,12 @@ type Budget struct {
 	// FilterSettingUpdateInterval (in seconds) controls how often
 	//  Octant check if the filter setting update have been applied or not.
 	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
+}
+
+type Metrics struct {
+	PrometheusURLOverride string `yaml:"prometheusUrlOverride" env:"PROMETHEUS_URL"`
+	PrometheusPort        int    `yaml:"prometheusPort" env:"PROMETHEUS_PORT" env-default:"9090"`
+	PrometheusServiceName string `yaml:"prometheusServiceName" env:"PROMETHEUS_SERVICE_NAME" env-default:"prometheus-operated"` // nolint:lll
 }
 
 // Read will read configuration from file first, if `ConfigPathEnvVarName` is set,

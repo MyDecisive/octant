@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mydecisive/octant/internal/metrics"
-	"github.com/mydecisive/octant/internal/telemetry"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -13,19 +12,18 @@ import (
 
 const connectionsConfigmapName = "mdai-octant-connections"
 
-type Status struct {
-	ReceivingData     bool                                       `json:"receivingData"`
-	SendingData       bool                                       `json:"sendingData"`
-	DataIntegrity     bool                                       `json:"dataIntegrity"`
-	Details           string                                     `json:"details"`
-	ValidationResults map[telemetry.MLT]metrics.ValidationResult `json:"validationResults"`
-}
-
 type Connection[T any] interface {
 	GetConnectionByName(ctx context.Context, namespace, name string) (*T, error)
 	SaveConnection(ctx context.Context, connection T, namespace, connectionName string) error
 	DeleteConnection(ctx context.Context, namespace, connectionName string) error
-	GetConnectionStatus(ctx context.Context, namespace, connectionName string) (*Status, error)
+	GetConnectionStatus(
+		ctx context.Context,
+		namespace string,
+		connectionName string,
+	) (
+		*octantv1alpha.GetConnectionStatusResponse,
+		error,
+	)
 }
 
 func updateConfigMapWithConnection(
