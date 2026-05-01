@@ -230,22 +230,22 @@ func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(input
 }
 
 // GetTotalLog provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetTotalLog(timeframe budgetv1alpha.Timeframe, namespace string) (uint64, error) {
+func (_mock *MockMetricDataRetriever) GetTotalLog(timeframe budgetv1alpha.Timeframe, namespace string) (int64, error) {
 	ret := _mock.Called(timeframe, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalLog")
 	}
 
-	var r0 uint64
+	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) (uint64, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) (int64, error)); ok {
 		return returnFunc(timeframe, namespace)
 	}
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) uint64); ok {
+	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) int64); ok {
 		r0 = returnFunc(timeframe, namespace)
 	} else {
-		r0 = ret.Get(0).(uint64)
+		r0 = ret.Get(0).(int64)
 	}
 	if returnFunc, ok := ret.Get(1).(func(budgetv1alpha.Timeframe, string) error); ok {
 		r1 = returnFunc(timeframe, namespace)
@@ -285,12 +285,12 @@ func (_c *MockMetricDataRetriever_GetTotalLog_Call) Run(run func(timeframe budge
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) Return(v uint64, err error) *MockMetricDataRetriever_GetTotalLog_Call {
-	_c.Call.Return(v, err)
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) Return(n int64, err error) *MockMetricDataRetriever_GetTotalLog_Call {
+	_c.Call.Return(n, err)
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(timeframe budgetv1alpha.Timeframe, namespace string) (uint64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
 	_c.Call.Return(run)
 	return _c
 }
