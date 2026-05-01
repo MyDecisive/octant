@@ -74,6 +74,11 @@ type ConnectionStatus interface {
 		connectionName string,
 		telemetryTypes []telemetry.MLT,
 	) (*octantv1alpha.GetConnectionStatusResponse, error)
+	GetConnectionValidatorRuns(
+		ctx context.Context,
+		namespace string,
+		connectionName string,
+	) ([]string, error)
 }
 
 type PrometheusConnectionStatus struct {
@@ -412,4 +417,38 @@ func (ie IngressEgress) getComponentType() string {
 		return "receiver"
 	}
 	return "exporter"
+}
+
+func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
+	ctx context.Context,
+	namespace string,
+	connectionName string,
+) ([]string, error) {
+	promClient, err := cs.promClientFactory.GetPromClient(namespace) // [cite: 1]
+	if err != nil {
+		return nil, fmt.Errorf("getting prometheus client: %w", err)
+	}
+
+	// This query extracts unique validator_run_id labels associated with the connection's validation metrics over the last 7 days.
+	// You can adjust the time range [7d] or target metric if needed.
+	query := fmt.Sprintf(`count by (validator_run_id) (last_over_time(mdai_fidelity_signal_checks_total{mdai_connection="%s-telemetry-validation"}[7d]))`, connectionName) //
+
+	vector, err := queryVector(ctx, promClient, query) //
+	if err != nil {
+		return nil, fmt.Errorf("failed to query prometheus for validator runs: %w", err)
+	}
+
+	var runIDs []string
+	seen := make(map[string]bool)
+
+	for _, sample := range vector {
+		// Assuming the label is named "validator_run_id" in Prometheus
+		runID := string(sample.Metric["validator_run_id"])
+		if runID != "" && !seen[runID] {
+			seen[runID] = true
+			runIDs = append(runIDs, runID)
+		}
+	}
+
+	return runIDs, nil
 }

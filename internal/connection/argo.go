@@ -31,10 +31,10 @@ func (oc *OctantConnection) pushArgoApp(
 	ctx context.Context,
 	namespace, name string,
 	connection OctantConnectionData,
-) error {
+) (string, error) {
 	templateData, err := oc.createTemplateData(ctx, namespace, name, connection)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
@@ -43,17 +43,22 @@ func (oc *OctantConnection) pushArgoApp(
 		connection.Deployment.IntegrationName,
 	)
 	if getArgoIntErr != nil {
-		return getArgoIntErr
+		return "", getArgoIntErr
 	}
 	if argoIntegration == nil {
-		return fmt.Errorf("no ArgoCD integration found with name %s", connection.Deployment.IntegrationName)
+		return "", fmt.Errorf("no ArgoCD integration found with name %s", connection.Deployment.IntegrationName)
 	}
 
 	if appCreateErr := oc.doArgoAppCreation(ctx, templateData, connection, argoIntegration); appCreateErr != nil {
-		return appCreateErr
+		return "", appCreateErr
 	}
 
-	return oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name)
+	if err := oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name); err != nil {
+		return "", err
+	}
+
+	// Return the ID generated during template creation
+	return templateData.ValidatorRunID, nil
 }
 
 func (oc *OctantConnection) doArgoAppSync(

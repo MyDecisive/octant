@@ -14,7 +14,8 @@ const connectionsConfigmapName = "mdai-octant-connections"
 
 type Connection[T any] interface {
 	GetConnectionByName(ctx context.Context, namespace, name string) (*T, error)
-	SaveConnection(ctx context.Context, connection T, namespace, connectionName string) error
+	GetConnections(ctx context.Context, namespace string) ([]string, error)
+	SaveConnection(ctx context.Context, connection T, namespace, connectionName string) (string, error)
 	DeleteConnection(ctx context.Context, namespace, connectionName string) error
 	GetConnectionStatus(
 		ctx context.Context,
@@ -24,6 +25,8 @@ type Connection[T any] interface {
 		*octantv1alpha.GetConnectionStatusResponse,
 		error,
 	)
+	GetConnectionValidatorRuns(ctx context.Context, namespace, connectionName string) ([]string, error)
+	PutConnectionValidatorRun(ctx context.Context, namespace, connectionName string) (string, error)
 }
 
 func updateConfigMapWithConnection(
