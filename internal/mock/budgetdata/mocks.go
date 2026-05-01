@@ -5,6 +5,8 @@
 package budgetdatamock
 
 import (
+	"context"
+
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/mydecisive/octant/internal/budget/data"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *MockMetricDataRetriever) EXPECT() *MockMetricDataRetriever_Expecter {
 }
 
 // GetLogs provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetLogs(input budgetdata.MetricDataInput) ([]budgetdata.Log, error) {
-	ret := _mock.Called(input)
+func (_mock *MockMetricDataRetriever) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, error) {
+	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetLogs")
@@ -47,18 +49,18 @@ func (_mock *MockMetricDataRetriever) GetLogs(input budgetdata.MetricDataInput) 
 
 	var r0 []budgetdata.Log
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(budgetdata.MetricDataInput) ([]budgetdata.Log, error)); ok {
-		return returnFunc(input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.Log, error)); ok {
+		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(budgetdata.MetricDataInput) []budgetdata.Log); ok {
-		r0 = returnFunc(input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) []budgetdata.Log); ok {
+		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]budgetdata.Log)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(budgetdata.MetricDataInput) error); ok {
-		r1 = returnFunc(input)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -71,19 +73,25 @@ type MockMetricDataRetriever_GetLogs_Call struct {
 }
 
 // GetLogs is a helper method to define mock.On call
+//   - ctx context.Context
 //   - input budgetdata.MetricDataInput
-func (_e *MockMetricDataRetriever_Expecter) GetLogs(input interface{}) *MockMetricDataRetriever_GetLogs_Call {
-	return &MockMetricDataRetriever_GetLogs_Call{Call: _e.mock.On("GetLogs", input)}
+func (_e *MockMetricDataRetriever_Expecter) GetLogs(ctx interface{}, input interface{}) *MockMetricDataRetriever_GetLogs_Call {
+	return &MockMetricDataRetriever_GetLogs_Call{Call: _e.mock.On("GetLogs", ctx, input)}
 }
 
-func (_c *MockMetricDataRetriever_GetLogs_Call) Run(run func(input budgetdata.MetricDataInput)) *MockMetricDataRetriever_GetLogs_Call {
+func (_c *MockMetricDataRetriever_GetLogs_Call) Run(run func(ctx context.Context, input budgetdata.MetricDataInput)) *MockMetricDataRetriever_GetLogs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 budgetdata.MetricDataInput
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(budgetdata.MetricDataInput)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 budgetdata.MetricDataInput
+		if args[1] != nil {
+			arg1 = args[1].(budgetdata.MetricDataInput)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -94,14 +102,14 @@ func (_c *MockMetricDataRetriever_GetLogs_Call) Return(logs []budgetdata.Log, er
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetLogs_Call) RunAndReturn(run func(input budgetdata.MetricDataInput) ([]budgetdata.Log, error)) *MockMetricDataRetriever_GetLogs_Call {
+func (_c *MockMetricDataRetriever_GetLogs_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, error)) *MockMetricDataRetriever_GetLogs_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOverall provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetOverall(timeframe budgetv1alpha.Timeframe, namespace string) (*budgetdata.Overall, error) {
-	ret := _mock.Called(timeframe, namespace)
+func (_mock *MockMetricDataRetriever) GetOverall(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (*budgetdata.Overall, error) {
+	ret := _mock.Called(ctx, timeframe, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOverall")
@@ -109,18 +117,18 @@ func (_mock *MockMetricDataRetriever) GetOverall(timeframe budgetv1alpha.Timefra
 
 	var r0 *budgetdata.Overall
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) (*budgetdata.Overall, error)); ok {
-		return returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) (*budgetdata.Overall, error)); ok {
+		return returnFunc(ctx, timeframe, namespace)
 	}
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) *budgetdata.Overall); ok {
-		r0 = returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) *budgetdata.Overall); ok {
+		r0 = returnFunc(ctx, timeframe, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*budgetdata.Overall)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(budgetv1alpha.Timeframe, string) error); ok {
-		r1 = returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetv1alpha.Timeframe, string) error); ok {
+		r1 = returnFunc(ctx, timeframe, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -133,25 +141,31 @@ type MockMetricDataRetriever_GetOverall_Call struct {
 }
 
 // GetOverall is a helper method to define mock.On call
+//   - ctx context.Context
 //   - timeframe budgetv1alpha.Timeframe
 //   - namespace string
-func (_e *MockMetricDataRetriever_Expecter) GetOverall(timeframe interface{}, namespace interface{}) *MockMetricDataRetriever_GetOverall_Call {
-	return &MockMetricDataRetriever_GetOverall_Call{Call: _e.mock.On("GetOverall", timeframe, namespace)}
+func (_e *MockMetricDataRetriever_Expecter) GetOverall(ctx interface{}, timeframe interface{}, namespace interface{}) *MockMetricDataRetriever_GetOverall_Call {
+	return &MockMetricDataRetriever_GetOverall_Call{Call: _e.mock.On("GetOverall", ctx, timeframe, namespace)}
 }
 
-func (_c *MockMetricDataRetriever_GetOverall_Call) Run(run func(timeframe budgetv1alpha.Timeframe, namespace string)) *MockMetricDataRetriever_GetOverall_Call {
+func (_c *MockMetricDataRetriever_GetOverall_Call) Run(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string)) *MockMetricDataRetriever_GetOverall_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 budgetv1alpha.Timeframe
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(budgetv1alpha.Timeframe)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 budgetv1alpha.Timeframe
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(budgetv1alpha.Timeframe)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -162,14 +176,14 @@ func (_c *MockMetricDataRetriever_GetOverall_Call) Return(overall *budgetdata.Ov
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetOverall_Call) RunAndReturn(run func(timeframe budgetv1alpha.Timeframe, namespace string) (*budgetdata.Overall, error)) *MockMetricDataRetriever_GetOverall_Call {
+func (_c *MockMetricDataRetriever_GetOverall_Call) RunAndReturn(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (*budgetdata.Overall, error)) *MockMetricDataRetriever_GetOverall_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetRootSpans provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetRootSpans(input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error) {
-	ret := _mock.Called(input)
+func (_mock *MockMetricDataRetriever) GetRootSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error) {
+	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRootSpans")
@@ -177,18 +191,18 @@ func (_mock *MockMetricDataRetriever) GetRootSpans(input budgetdata.MetricDataIn
 
 	var r0 []budgetdata.RootSpan
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)); ok {
-		return returnFunc(input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)); ok {
+		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(budgetdata.MetricDataInput) []budgetdata.RootSpan); ok {
-		r0 = returnFunc(input)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) []budgetdata.RootSpan); ok {
+		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]budgetdata.RootSpan)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(budgetdata.MetricDataInput) error); ok {
-		r1 = returnFunc(input)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -201,19 +215,25 @@ type MockMetricDataRetriever_GetRootSpans_Call struct {
 }
 
 // GetRootSpans is a helper method to define mock.On call
+//   - ctx context.Context
 //   - input budgetdata.MetricDataInput
-func (_e *MockMetricDataRetriever_Expecter) GetRootSpans(input interface{}) *MockMetricDataRetriever_GetRootSpans_Call {
-	return &MockMetricDataRetriever_GetRootSpans_Call{Call: _e.mock.On("GetRootSpans", input)}
+func (_e *MockMetricDataRetriever_Expecter) GetRootSpans(ctx interface{}, input interface{}) *MockMetricDataRetriever_GetRootSpans_Call {
+	return &MockMetricDataRetriever_GetRootSpans_Call{Call: _e.mock.On("GetRootSpans", ctx, input)}
 }
 
-func (_c *MockMetricDataRetriever_GetRootSpans_Call) Run(run func(input budgetdata.MetricDataInput)) *MockMetricDataRetriever_GetRootSpans_Call {
+func (_c *MockMetricDataRetriever_GetRootSpans_Call) Run(run func(ctx context.Context, input budgetdata.MetricDataInput)) *MockMetricDataRetriever_GetRootSpans_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 budgetdata.MetricDataInput
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(budgetdata.MetricDataInput)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 budgetdata.MetricDataInput
+		if args[1] != nil {
+			arg1 = args[1].(budgetdata.MetricDataInput)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -224,14 +244,14 @@ func (_c *MockMetricDataRetriever_GetRootSpans_Call) Return(rootSpans []budgetda
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)) *MockMetricDataRetriever_GetRootSpans_Call {
+func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)) *MockMetricDataRetriever_GetRootSpans_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTotalLog provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetTotalLog(timeframe budgetv1alpha.Timeframe, namespace string) (int64, error) {
-	ret := _mock.Called(timeframe, namespace)
+func (_mock *MockMetricDataRetriever) GetTotalLog(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error) {
+	ret := _mock.Called(ctx, timeframe, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalLog")
@@ -239,16 +259,16 @@ func (_mock *MockMetricDataRetriever) GetTotalLog(timeframe budgetv1alpha.Timefr
 
 	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) (int64, error)); ok {
-		return returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) (int64, error)); ok {
+		return returnFunc(ctx, timeframe, namespace)
 	}
-	if returnFunc, ok := ret.Get(0).(func(budgetv1alpha.Timeframe, string) int64); ok {
-		r0 = returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) int64); ok {
+		r0 = returnFunc(ctx, timeframe, namespace)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(budgetv1alpha.Timeframe, string) error); ok {
-		r1 = returnFunc(timeframe, namespace)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetv1alpha.Timeframe, string) error); ok {
+		r1 = returnFunc(ctx, timeframe, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -261,25 +281,31 @@ type MockMetricDataRetriever_GetTotalLog_Call struct {
 }
 
 // GetTotalLog is a helper method to define mock.On call
+//   - ctx context.Context
 //   - timeframe budgetv1alpha.Timeframe
 //   - namespace string
-func (_e *MockMetricDataRetriever_Expecter) GetTotalLog(timeframe interface{}, namespace interface{}) *MockMetricDataRetriever_GetTotalLog_Call {
-	return &MockMetricDataRetriever_GetTotalLog_Call{Call: _e.mock.On("GetTotalLog", timeframe, namespace)}
+func (_e *MockMetricDataRetriever_Expecter) GetTotalLog(ctx interface{}, timeframe interface{}, namespace interface{}) *MockMetricDataRetriever_GetTotalLog_Call {
+	return &MockMetricDataRetriever_GetTotalLog_Call{Call: _e.mock.On("GetTotalLog", ctx, timeframe, namespace)}
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) Run(run func(timeframe budgetv1alpha.Timeframe, namespace string)) *MockMetricDataRetriever_GetTotalLog_Call {
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) Run(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string)) *MockMetricDataRetriever_GetTotalLog_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 budgetv1alpha.Timeframe
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(budgetv1alpha.Timeframe)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 budgetv1alpha.Timeframe
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(budgetv1alpha.Timeframe)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -290,7 +316,7 @@ func (_c *MockMetricDataRetriever_GetTotalLog_Call) Return(n int64, err error) *
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
 	_c.Call.Return(run)
 	return _c
 }

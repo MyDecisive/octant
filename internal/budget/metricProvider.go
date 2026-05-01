@@ -1,6 +1,7 @@
 package budget
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -17,13 +18,14 @@ const (
 type MetricDataProvider interface {
 	// GetOverall returns the overall summary of the log and span data for the given timeframe.
 	GetOverall(
+		ctx context.Context,
 		timeframe budgetv1alpha.Timeframe,
 		namespace string,
 	) (*budgetv1alpha.Overall, error)
 	// GetLogs returns the list of log data that matches the given input.
-	GetLogs(input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error)
+	GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error)
 	// GetSpans returns the list of span data that matches the given input.
-	GetSpans(input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error)
+	GetSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error)
 }
 
 type MetricProvider struct {
@@ -45,10 +47,11 @@ func NewMetricProvider(c *config.Configuration, retriever budgetdata.MetricDataR
 // GetOverall retrieves basic summary metrics from data store and then perform
 // additional calculations base on the metrics to generated the overall summary.
 func (mp *MetricProvider) GetOverall(
+	ctx context.Context,
 	timeframe budgetv1alpha.Timeframe,
 	namespace string,
 ) (*budgetv1alpha.Overall, error) {
-	raw, err := mp.retriever.GetOverall(timeframe, namespace)
+	raw, err := mp.retriever.GetOverall(ctx, timeframe, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -91,12 +94,12 @@ func (mp *MetricProvider) GetOverall(
 
 // GetLogs retrieves the log metric from the data store and then
 // perform additional calculations base on the log metrics to generate the log budget data.
-func (mp *MetricProvider) GetLogs(input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error) {
-	total, err := mp.retriever.GetTotalLog(input.Timeframe, input.Namespace)
+func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error) {
+	total, err := mp.retriever.GetTotalLog(ctx, input.Timeframe, input.Namespace)
 	if err != nil {
 		return nil, err
 	}
-	raw, err := mp.retriever.GetLogs(input)
+	raw, err := mp.retriever.GetLogs(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +128,8 @@ func (mp *MetricProvider) GetLogs(input budgetdata.MetricDataInput) ([]*budgetv1
 
 // GetSpans retrieves the span metric from the data store and then
 // perform additional calculations base on the span metrics to generate the span budget data.
-func (mp *MetricProvider) GetSpans(input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error) {
-	raw, err := mp.retriever.GetRootSpans(input)
+func (mp *MetricProvider) GetSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error) {
+	raw, err := mp.retriever.GetRootSpans(ctx, input)
 	if err != nil {
 		return nil, err
 	}

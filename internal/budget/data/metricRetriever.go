@@ -1,6 +1,8 @@
 package budgetdata
 
 import (
+	"context"
+
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 )
 
@@ -39,11 +41,11 @@ type MetricDataInput struct {
 // MetricDataRetriever is used to retrieve metric data from the data store.
 type MetricDataRetriever interface {
 	// GetOverall returns the overall summary of the log and span data for the given timeframe.
-	GetOverall(timeframe budgetv1alpha.Timeframe, namespace string) (*Overall, error)
+	GetOverall(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (*Overall, error)
 	// GetTotalLog returns total amount of log data sent.
-	GetTotalLog(timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)
+	GetTotalLog(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)
 	// GetLogs returns the list of log data that matches the given inputs.
-	GetLogs(input MetricDataInput) ([]Log, error)
+	GetLogs(ctx context.Context, input MetricDataInput) ([]Log, error)
 	// GetRootSpans returns the list of root span data that matches the given inputs.
-	GetRootSpans(input MetricDataInput) ([]RootSpan, error)
+	GetRootSpans(ctx context.Context, input MetricDataInput) ([]RootSpan, error)
 }
