@@ -8,15 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/integration"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/prometheus/client_golang/api"
-	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -53,10 +52,11 @@ func setupTestServer() *httptest.Server {
 // --- FIXTURE HELPER ---
 
 type octantTestFixture struct {
-	k8sClient   *fake.Clientset
-	argoMock    *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
-	datadogMock *integrationmock.MockIntegration[integration.DataDogIntegrationData]
-	httpClient  *http.Client
+	k8sClient        *fake.Clientset
+	argoMock         *integrationmock.MockIntegration[integration.ArgoCDIntegrationData]
+	datadogMock      *integrationmock.MockIntegration[integration.DataDogIntegrationData]
+	httpClient       *http.Client
+	connectionStatus *metricsmock.MockConnectionStatus
 }
 
 // setupFixture initializes a default set of dependencies for OctantConnection.
@@ -64,10 +64,11 @@ type octantTestFixture struct {
 func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 	t.Helper()
 	return &octantTestFixture{
-		k8sClient:   fake.NewClientset(objects...),
-		argoMock:    integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
-		datadogMock: integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
-		httpClient:  http.DefaultClient, // Default safe client; tests can override with httptest server clients
+		k8sClient:        fake.NewClientset(objects...),
+		argoMock:         integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t),
+		datadogMock:      integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
+		httpClient:       http.DefaultClient, // Default safe client; tests can override with httptest server clients
+		connectionStatus: metricsmock.NewMockConnectionStatus(t),
 	}
 }
 
@@ -78,8 +79,7 @@ func (f *octantTestFixture) build() *OctantConnection {
 		f.k8sClient,
 		f.argoMock,
 		f.datadogMock,
-		nil,
-		zap.NewNop(),
+		f.connectionStatus,
 	)
 }
 
@@ -516,36 +516,24 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 		},
 	})
 
-	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		responseString := `{"status":"success",
-		"data":{"resultType":"vector","result":[{"metric":{"signal":"logs","result":"pass"},"value":[1712419691,"5"]}]}}`
+	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
+		telemetry.Logs,
+	}).Return(&octantv1alpha.GetConnectionStatusResponse{
+		ReceivingData:     true,
+		SendingData:       true,
+		DataIntegrity:     true,
+		ValidationResults: nil,
+	}, nil)
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(responseString)) //nolint: errcheck,gosec,revive
-	}))
-	defer promServer.Close()
-
-	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
-	require.NoError(t, err)
-	promAPI := promv1.NewAPI(promClient)
-
-	octantConnection := NewOctantConnection(
-		f.httpClient,
-		f.k8sClient,
-		f.argoMock,
-		f.datadogMock,
-		promAPI,
-		zap.NewNop(),
-	)
+	octantConnection := f.build()
 
 	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
 
 	require.NoError(t, err)
 	require.NotNil(t, status)
-	assert.True(t, status.ReceivingData)
-	assert.True(t, status.SendingData)
-	assert.True(t, status.DataIntegrity)
+	assert.True(t, status.GetReceivingData())
+	assert.True(t, status.GetSendingData())
+	assert.True(t, status.GetDataIntegrity())
 }
 
 func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
@@ -564,24 +552,11 @@ func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
 		},
 	})
 
-	// Mock Prometheus server returning a 500 error
-	promServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer promServer.Close()
+	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
+		telemetry.Logs,
+	}).Return(nil, errors.New("querying telemetry"))
 
-	promClient, err := api.NewClient(api.Config{Address: promServer.URL})
-	require.NoError(t, err)
-	promAPI := promv1.NewAPI(promClient)
-
-	octantConnection := NewOctantConnection(
-		f.httpClient,
-		f.k8sClient,
-		f.argoMock,
-		f.datadogMock,
-		promAPI,
-		zap.NewNop(),
-	)
+	octantConnection := f.build()
 
 	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a")
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	connectcors "connectrpc.com/cors"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/otelconnect"
@@ -14,19 +15,23 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
+
+const maxAge = 7200 // 2 hours in seconds
 
 // Server that will serve internal RPC endpoint handlers.
 type Server struct {
 	configuration *config.Configuration
 
-	argocdHandler       *rpchandler.ArgoCDHandler
-	installHandler      *rpchandler.InstallHandler
-	datadogHandler      *rpchandler.DatadogHandler
-	connectionHandler   *rpchandler.ConnectionHandler
-	budgetFilterHandler *rpchandler.BudgetFilterHandler
+	argocdHandler          *rpchandler.ArgoCDHandler
+	installHandler         *rpchandler.InstallHandler
+	datadogHandler         *rpchandler.DatadogHandler
+	connectionHandler      *rpchandler.ConnectionHandler
+	budgetFilterHandler    *rpchandler.BudgetFilterHandler
+	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler
 }
 
 // NewServer create a new Server.
@@ -37,14 +42,16 @@ func NewServer(
 	datadogHandler *rpchandler.DatadogHandler,
 	connectionHandler *rpchandler.ConnectionHandler,
 	budgetFilterHandler *rpchandler.BudgetFilterHandler,
+	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler,
 ) *Server {
 	return &Server{
-		configuration:       configuration,
-		argocdHandler:       argocdHandler,
-		installHandler:      installHandler,
-		datadogHandler:      datadogHandler,
-		connectionHandler:   connectionHandler,
-		budgetFilterHandler: budgetFilterHandler,
+		configuration:          configuration,
+		argocdHandler:          argocdHandler,
+		installHandler:         installHandler,
+		datadogHandler:         datadogHandler,
+		connectionHandler:      connectionHandler,
+		budgetFilterHandler:    budgetFilterHandler,
+		budgetTimeframeHandler: budgetTimeframeHandler,
 	}
 }
 
@@ -73,11 +80,12 @@ func (s Server) Start() error {
 	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
+	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
 		fmt.Sprintf(":%d", s.configuration.RPC.Port),
-		h2c.NewHandler(mux, &http2.Server{}),
+		h2c.NewHandler(s.withCORS(mux), &http2.Server{}),
 	)
 }
 
@@ -91,6 +99,7 @@ func (Server) getServices() []string {
 		octantv1alphaconnect.DatadogServiceName,
 		octantv1alphaconnect.ConnectionServiceName,
 		budgetv1alphaconnect.FilterServiceName,
+		budgetv1alphaconnect.TimeframeServiceName,
 	}
 }
 
@@ -106,4 +115,16 @@ func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 	}
 
 	return connect.WithInterceptors(validateInterceptor, otelInterceptor), nil
+}
+
+// withCORS adds CORS support to a Connect HTTP handler.
+func (Server) withCORS(connectHandler http.Handler) http.Handler {
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: connectcors.AllowedMethods(),
+		AllowedHeaders: connectcors.AllowedHeaders(),
+		ExposedHeaders: connectcors.ExposedHeaders(),
+		MaxAge:         maxAge,
+	})
+	return c.Handler(connectHandler)
 }

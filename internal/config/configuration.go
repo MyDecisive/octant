@@ -35,6 +35,7 @@ type Configuration struct {
 	RPC            RPC     `yaml:"rpc"`
 	Budget         Budget  `yaml:"budget"`
 	Install        Install `yaml:"install"`
+	Metrics        Metrics `yaml:"metrics"`
 }
 
 // RPC contains configuration for RPC related code.
@@ -56,6 +57,12 @@ type Budget struct {
 	// FilterSettingUpdateInterval (in seconds) controls how often
 	//  Octant check if the filter setting update have been applied or not.
 	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
+}
+
+type Metrics struct {
+	PrometheusURLOverride string `yaml:"prometheusUrlOverride" env:"PROMETHEUS_URL"`
+	PrometheusPort        int    `yaml:"prometheusPort" env:"PROMETHEUS_PORT" env-default:"9090"`
+	PrometheusServiceName string `yaml:"prometheusServiceName" env:"PROMETHEUS_SERVICE_NAME" env-default:"prometheus-operated"` // nolint:lll
 }
 
 // Read will read configuration from file first, if `ConfigPathEnvVarName` is set,

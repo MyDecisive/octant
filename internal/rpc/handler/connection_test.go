@@ -25,7 +25,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := connectionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(bytes.NewBufferString(expected), nil)
 
-		target := NewConnectionHandler(mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockCompressor)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -53,7 +53,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := connectionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
-		target := NewConnectionHandler(mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockCompressor)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
