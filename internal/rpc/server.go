@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	connectcors "connectrpc.com/cors"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
 	"connectrpc.com/otelconnect"
@@ -14,9 +15,12 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
+
+const maxAge = 7200 // 2 hours in seconds
 
 // Server that will serve internal RPC endpoint handlers.
 type Server struct {
@@ -71,12 +75,12 @@ func (s Server) Start() error {
 	mux.Handle(grpchealth.NewHandler(checker))
 
 	// Service Handlers
-	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
-	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
-	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
-	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
-	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
-	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
+	mux.Handle(s.withCORS(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors)))
+	mux.Handle(s.withCORS(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors)))
+	mux.Handle(s.withCORS(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors)))
+	mux.Handle(s.withCORS(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors)))
+	mux.Handle(s.withCORS(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors)))
+	mux.Handle(s.withCORS(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors)))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -111,4 +115,16 @@ func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 	}
 
 	return connect.WithInterceptors(validateInterceptor, otelInterceptor), nil
+}
+
+// withCORS adds CORS support to a Connect HTTP handler.
+func (Server) withCORS(path string, connectHandler http.Handler) (string, http.Handler) {
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: connectcors.AllowedMethods(),
+		AllowedHeaders: connectcors.AllowedHeaders(),
+		ExposedHeaders: connectcors.ExposedHeaders(),
+		MaxAge:         maxAge,
+	})
+	return path, c.Handler(connectHandler)
 }
