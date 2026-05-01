@@ -28,7 +28,7 @@ type MetricDataProvider interface {
 }
 
 type MetricProvider struct {
-	config    config.Configuration
+	config    *config.Configuration
 	retriever budgetdata.MetricDataRetriever
 }
 
@@ -36,7 +36,7 @@ type MetricProvider struct {
 var _ MetricDataProvider = &MetricProvider{}
 
 // NewMetricProvider returns a new instance of MetricProvider.
-func NewMetricProvider(c config.Configuration, retriever budgetdata.MetricDataRetriever) *MetricProvider {
+func NewMetricProvider(c *config.Configuration, retriever budgetdata.MetricDataRetriever) *MetricProvider {
 	return &MetricProvider{
 		config:    c,
 		retriever: retriever,
@@ -104,19 +104,19 @@ func (mp *MetricProvider) GetLogs(input budgetdata.MetricDataInput) ([]*budgetv1
 
 	result := make([]*budgetv1alpha.Log, len(raw))
 	for i, rlog := range raw {
-		cost, err := mp.logCost(rlog.Sent)
+		cost, err := mp.logCost(rlog.Amount)
 		if err != nil {
 			return nil, err
 		}
 
-		pct, err := mp.pct(float64(rlog.Sent), float64(total))
+		pct, err := mp.pct(float64(rlog.Amount), float64(total))
 		if err != nil {
 			return nil, err
 		}
 
 		result[i] = &budgetv1alpha.Log{
 			Name: rlog.Name,
-			Sent: rlog.Sent,
+			Sent: rlog.Amount,
 			Pct:  float32(pct),
 			Cost: cost,
 		}
@@ -151,14 +151,14 @@ func (mp *MetricProvider) GetSpans(input budgetdata.MetricDataInput) ([]*budgetv
 }
 
 // traceCost returns the trace cost calculated base on the given count.
-func (mp *MetricProvider) traceCost(count uint64) (float64, error) {
+func (mp *MetricProvider) traceCost(count int64) (float64, error) {
 	return mp.truncate(
 		float64(count) / traceCostConstant * float64(mp.config.Budget.DefaultTraceCostRate),
 	)
 }
 
 // logCost returns the log cost calculated base on the given log data amount.
-func (mp *MetricProvider) logCost(amount uint64) (float64, error) {
+func (mp *MetricProvider) logCost(amount int64) (float64, error) {
 	return mp.truncate(float64(amount) * float64(mp.config.Budget.DefaultLogCostRate))
 }
 
