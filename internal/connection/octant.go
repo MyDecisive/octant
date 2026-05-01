@@ -200,8 +200,7 @@ func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string
 }
 
 func (oc *OctantConnection) GetConnectionValidatorRuns(ctx context.Context, namespace, connectionName string) ([]string, error) {
-	// TODO: Integrate with connectionMetrics to fetch historical validator_run_ids from the metric store
-	return nil, errors.New("fetching historical validator runs is not yet implemented")
+	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, namespace, connectionName)
 }
 
 func (oc *OctantConnection) SaveConnection(
