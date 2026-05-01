@@ -120,7 +120,7 @@ func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 // withCORS adds CORS support to a Connect HTTP handler.
 func (Server) withCORS(path string, connectHandler http.Handler) (string, http.Handler) {
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
+		AllowedOrigins: []string{"localhost", "127.0.0.1", "0.0.0.0"},
 		AllowedMethods: connectcors.AllowedMethods(),
 		AllowedHeaders: connectcors.AllowedHeaders(),
 		ExposedHeaders: connectcors.ExposedHeaders(),
