@@ -19,14 +19,23 @@ var CertManagerAppManifest []byte
 //go:embed templates/argo-app.yaml.tmpl
 var argoAppTemplate string
 
+//go:embed templates/lb-collector.yaml.tmpl
+var lbCollectorTemplate string
+
+//go:embed templates/log-collector.yaml.tmpl
+var logCollectorTemplate string
+
+//go:embed templates/trace-collector.yaml.tmpl
+var traceCollectorTemplate string
+
 //go:embed templates/mdai-app.yaml.tmpl
 var mdaiAppTemplate string
 
-//go:embed templates/collector.yaml.tmpl
-var primaryCollectorTemplate string
-
 //go:embed templates/hub.yaml.tmpl
 var hubTemplate string
+
+//go:embed templates/observer.yaml.tmpl
+var observerTemplate string
 
 //go:embed templates/validator.yaml.tmpl
 var validatorTemplate string
@@ -204,10 +213,13 @@ func renderCollectorDeploymentManifests(
 
 	manifests := make(map[string][]byte)
 	for templateName, templateString := range map[string]string{
-		"collector": primaryCollectorTemplate,
-		"hub":       hubTemplate,
-		"validator": validatorTemplate,
-		"secret":    secretTemplate,
+		"lb-collector":    lbCollectorTemplate,
+		"log-collector":   logCollectorTemplate,
+		"trace-collector": traceCollectorTemplate,
+		"hub":             hubTemplate,
+		"observer":        observerTemplate,
+		"validator":       validatorTemplate,
+		"secret":          secretTemplate,
 	} {
 		appManifestTemplate, err := template.New(templateName).Parse(templateString)
 		if err != nil {

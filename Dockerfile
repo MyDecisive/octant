@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 ARG GO_VERSION=1.25
+ARG OCTANT_UI_IMAGE=ghcr.io/mydecisive/octant-ui:latest
 
-FROM ghcr.io/mydecisive/octant-ui:latest as ui-builder
+FROM ${OCTANT_UI_IMAGE} as ui-builder
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-bookworm AS binary-builder
 ARG TARGETOS

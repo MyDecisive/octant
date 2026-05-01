@@ -101,7 +101,7 @@ func (*InstallHandler) GetInstallStatus(
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
 ) error {
-	hubName := req.Msg.GetHubName()
+	hubName := req.Msg.GetConnectionName()
 
 	logger := zap.L().With(zap.String("hubName", hubName))
 
@@ -109,7 +109,6 @@ func (*InstallHandler) GetInstallStatus(
 
 	err := response.Send(&octantv1alpha.GetInstallStatusResponse{
 		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
-		Details:       "installing...",
 	})
 	if err != nil {
 		logger.Error("sending install status", zap.Error(err))
@@ -121,7 +120,6 @@ func (*InstallHandler) GetInstallStatus(
 
 	err = response.Send(&octantv1alpha.GetInstallStatusResponse{
 		InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-		Details:       "successfully installed",
 	})
 	if err != nil {
 		logger.Error("sending install status", zap.Error(err))
