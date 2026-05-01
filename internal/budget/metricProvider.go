@@ -23,9 +23,9 @@ type MetricDataProvider interface {
 		namespace string,
 	) (*budgetv1alpha.Overall, error)
 	// GetLogs returns the list of log data that matches the given input.
-	GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error)
+	GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, string, error)
 	// GetSpans returns the list of span data that matches the given input.
-	GetSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error)
+	GetSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, string, error)
 }
 
 type MetricProvider struct {
@@ -94,26 +94,26 @@ func (mp *MetricProvider) GetOverall(
 
 // GetLogs retrieves the log metric from the data store and then
 // perform additional calculations base on the log metrics to generate the log budget data.
-func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, error) {
+func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, string, error) {
 	total, err := mp.retriever.GetTotalLog(ctx, input.Timeframe, input.Namespace)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	raw, err := mp.retriever.GetLogs(ctx, input)
+	raw, nextPage, err := mp.retriever.GetLogs(ctx, input)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	result := make([]*budgetv1alpha.Log, len(raw))
 	for i, rlog := range raw {
 		cost, err := mp.logCost(rlog.Amount)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		pct, err := mp.pct(float64(rlog.Amount), float64(total))
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		result[i] = &budgetv1alpha.Log{
@@ -123,7 +123,7 @@ func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDa
 			Cost: cost,
 		}
 	}
-	return result, nil
+	return result, nextPage, nil
 }
 
 // GetSpans retrieves the span metric from the data store and then
@@ -131,17 +131,17 @@ func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDa
 func (mp *MetricProvider) GetSpans(
 	ctx context.Context,
 	input budgetdata.MetricDataInput,
-) ([]*budgetv1alpha.Span, error) {
-	raw, err := mp.retriever.GetRootSpans(ctx, input)
+) ([]*budgetv1alpha.Span, string, error) {
+	raw, nextPage, err := mp.retriever.GetRootSpans(ctx, input)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	result := make([]*budgetv1alpha.Span, len(raw))
 	for i, r := range raw {
 		cost, err := mp.traceCost(r.Count)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		result[i] = &budgetv1alpha.Span{
@@ -152,7 +152,7 @@ func (mp *MetricProvider) GetSpans(
 			Cost:        cost,
 		}
 	}
-	return result, nil
+	return result, nextPage, nil
 }
 
 // traceCost returns the trace cost calculated base on the given count.

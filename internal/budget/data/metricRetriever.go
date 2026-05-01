@@ -45,7 +45,7 @@ type MetricDataRetriever interface {
 	// GetTotalLog returns total amount of log data sent.
 	GetTotalLog(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)
 	// GetLogs returns the list of log data that matches the given inputs.
-	GetLogs(ctx context.Context, input MetricDataInput) ([]Log, error)
+	GetLogs(ctx context.Context, input MetricDataInput) ([]Log, string, error)
 	// GetRootSpans returns the list of root span data that matches the given inputs.
-	GetRootSpans(ctx context.Context, input MetricDataInput) ([]RootSpan, error)
+	GetRootSpans(ctx context.Context, input MetricDataInput) ([]RootSpan, string, error)
 }

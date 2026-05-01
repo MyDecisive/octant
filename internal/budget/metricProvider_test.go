@@ -99,6 +99,8 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 	}
 	total := 20
 
+	next := faker.Word()
+
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
@@ -123,12 +125,13 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
 		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
-		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{raw}, nil).Once()
+		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{raw}, next, nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetLogs(t.Context(), input)
+		actual, actualNext, err := target.GetLogs(t.Context(), input)
 		require.NoError(t, err)
 
+		assert.Equal(t, next, actualNext)
 		assert.Len(t, actual, 1)
 		assert.Equal(t, expected, actual[0])
 	})
@@ -143,12 +146,13 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
 		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
-		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{}, nil).Once()
+		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{}, "", nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetLogs(t.Context(), input)
+		actual, actualNext, err := target.GetLogs(t.Context(), input)
 		require.NoError(t, err)
 
+		assert.Empty(t, actualNext)
 		assert.Empty(t, actual)
 	})
 
@@ -164,8 +168,9 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(0, assert.AnError).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetLogs(t.Context(), input)
+		actual, actualNext, err := target.GetLogs(t.Context(), input)
 		assert.Nil(t, actual)
+		assert.Empty(t, actualNext)
 		assert.Error(t, err)
 	})
 
@@ -179,11 +184,12 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
 		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
-		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return(nil, assert.AnError).Once()
+		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return(nil, "", assert.AnError).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetLogs(t.Context(), input)
+		actual, actualNext, err := target.GetLogs(t.Context(), input)
 		assert.Nil(t, actual)
+		assert.Empty(t, actualNext)
 		assert.Error(t, err)
 	})
 }
@@ -200,6 +206,8 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 			DefaultTraceCostRate: 2,
 		},
 	}
+
+	next := faker.Word()
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -222,12 +230,13 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return([]budgetdata.RootSpan{raw}, nil).Once()
+		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return([]budgetdata.RootSpan{raw}, next, nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetSpans(t.Context(), input)
+		actual, actualNext, err := target.GetSpans(t.Context(), input)
 		require.NoError(t, err)
 
+		assert.Equal(t, next, actualNext)
 		assert.Len(t, actual, 1)
 		assert.Equal(t, expected, actual[0])
 	})
@@ -241,12 +250,13 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return([]budgetdata.RootSpan{}, nil).Once()
+		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return([]budgetdata.RootSpan{}, "", nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetSpans(t.Context(), input)
+		actual, actualNext, err := target.GetSpans(t.Context(), input)
 		require.NoError(t, err)
 
+		assert.Empty(t, actualNext)
 		assert.Empty(t, actual)
 	})
 
@@ -259,11 +269,12 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return(nil, assert.AnError).Once()
+		mockRetriever.EXPECT().GetRootSpans(mock.Anything, input).Return(nil, "", assert.AnError).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
-		actual, err := target.GetSpans(t.Context(), input)
+		actual, actualNext, err := target.GetSpans(t.Context(), input)
 		assert.Nil(t, actual)
+		assert.Empty(t, actualNext)
 		assert.Error(t, err)
 	})
 }

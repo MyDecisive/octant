@@ -40,7 +40,7 @@ func (_m *MockMetricDataRetriever) EXPECT() *MockMetricDataRetriever_Expecter {
 }
 
 // GetLogs provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, error) {
+func (_mock *MockMetricDataRetriever) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, string, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -48,8 +48,9 @@ func (_mock *MockMetricDataRetriever) GetLogs(ctx context.Context, input budgetd
 	}
 
 	var r0 []budgetdata.Log
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.Log, error)); ok {
+	var r1 string
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.Log, string, error)); ok {
 		return returnFunc(ctx, input)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) []budgetdata.Log); ok {
@@ -59,12 +60,17 @@ func (_mock *MockMetricDataRetriever) GetLogs(ctx context.Context, input budgetd
 			r0 = ret.Get(0).([]budgetdata.Log)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) string); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(string)
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+		r2 = returnFunc(ctx, input)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockMetricDataRetriever_GetLogs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLogs'
@@ -97,12 +103,12 @@ func (_c *MockMetricDataRetriever_GetLogs_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetLogs_Call) Return(logs []budgetdata.Log, err error) *MockMetricDataRetriever_GetLogs_Call {
-	_c.Call.Return(logs, err)
+func (_c *MockMetricDataRetriever_GetLogs_Call) Return(logs []budgetdata.Log, s string, err error) *MockMetricDataRetriever_GetLogs_Call {
+	_c.Call.Return(logs, s, err)
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetLogs_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, error)) *MockMetricDataRetriever_GetLogs_Call {
+func (_c *MockMetricDataRetriever_GetLogs_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.Log, string, error)) *MockMetricDataRetriever_GetLogs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -182,7 +188,7 @@ func (_c *MockMetricDataRetriever_GetOverall_Call) RunAndReturn(run func(ctx con
 }
 
 // GetRootSpans provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetRootSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error) {
+func (_mock *MockMetricDataRetriever) GetRootSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, string, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -190,8 +196,9 @@ func (_mock *MockMetricDataRetriever) GetRootSpans(ctx context.Context, input bu
 	}
 
 	var r0 []budgetdata.RootSpan
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)); ok {
+	var r1 string
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) ([]budgetdata.RootSpan, string, error)); ok {
 		return returnFunc(ctx, input)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetdata.MetricDataInput) []budgetdata.RootSpan); ok {
@@ -201,12 +208,17 @@ func (_mock *MockMetricDataRetriever) GetRootSpans(ctx context.Context, input bu
 			r0 = ret.Get(0).([]budgetdata.RootSpan)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetdata.MetricDataInput) string); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(string)
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(context.Context, budgetdata.MetricDataInput) error); ok {
+		r2 = returnFunc(ctx, input)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockMetricDataRetriever_GetRootSpans_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRootSpans'
@@ -239,12 +251,12 @@ func (_c *MockMetricDataRetriever_GetRootSpans_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetRootSpans_Call) Return(rootSpans []budgetdata.RootSpan, err error) *MockMetricDataRetriever_GetRootSpans_Call {
-	_c.Call.Return(rootSpans, err)
+func (_c *MockMetricDataRetriever_GetRootSpans_Call) Return(rootSpans []budgetdata.RootSpan, s string, err error) *MockMetricDataRetriever_GetRootSpans_Call {
+	_c.Call.Return(rootSpans, s, err)
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, error)) *MockMetricDataRetriever_GetRootSpans_Call {
+func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(ctx context.Context, input budgetdata.MetricDataInput) ([]budgetdata.RootSpan, string, error)) *MockMetricDataRetriever_GetRootSpans_Call {
 	_c.Call.Return(run)
 	return _c
 }
