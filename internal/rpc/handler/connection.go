@@ -189,12 +189,22 @@ func (ch *ConnectionHandler) PutConnection(
 		telemetries = append(telemetries, telemetry.MLT(t.String()))
 	}
 
+	var deploymentType connection.DeploymentType
+	switch request.Msg.GetDeployment().GetType() {
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
+		deploymentType = connection.ArgoSideloadDeploymentType
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST:
+		deploymentType = connection.ArgoManifestsDeploymentType
+	default:
+		deploymentType = ""
+	}
 	connData := connection.OctantConnectionData{
 		SourceType:     "octant",
 		Destinations:   destinations,
 		TelemetryTypes: telemetries,
 		Deployment: &connection.Deployment{
-			Type: connection.DeploymentType(request.Msg.GetDeploymentType().String()),
+			Type:            deploymentType,
+			IntegrationName: request.Msg.GetDeployment().GetIntegrationName(),
 		},
 	}
 
