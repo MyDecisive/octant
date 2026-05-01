@@ -128,7 +128,10 @@ func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDa
 
 // GetSpans retrieves the span metric from the data store and then
 // perform additional calculations base on the span metrics to generate the span budget data.
-func (mp *MetricProvider) GetSpans(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Span, error) {
+func (mp *MetricProvider) GetSpans(
+	ctx context.Context,
+	input budgetdata.MetricDataInput,
+) ([]*budgetv1alpha.Span, error) {
 	raw, err := mp.retriever.GetRootSpans(ctx, input)
 	if err != nil {
 		return nil, err
