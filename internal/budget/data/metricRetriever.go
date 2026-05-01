@@ -6,16 +6,16 @@ import (
 
 // Overall represents an overall metric data entry from the data store.
 type Overall struct {
-	LogReceived  int64
-	LogSend      int64
-	SpanReceived int64
-	SpanSend     int64
+	LogReceived  int64 // in GB
+	LogSend      int64 // in GB
+	SpanReceived int64 // in million events
+	SpanSend     int64 // in million events
 }
 
 // Log represents a single log data entry from the data store.
 type Log struct {
 	Name   string
-	Amount int64
+	Amount int64 // Send amount in GB
 }
 
 // RootSpan represents a single root span data entry from the data store.
@@ -24,7 +24,7 @@ type RootSpan struct {
 	Breath     uint32
 	Depth      uint32
 	Invocation uint32
-	Count      int64
+	Count      int64 // Send count in million events
 }
 
 // MetricDataInput contains parameters needed to retrieve metric data.

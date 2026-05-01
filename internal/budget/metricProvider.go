@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	pctConstant       = 100
-	traceCostConstant = 1000000
+	pctConstant = 100
 )
 
 // MetricDataProvider is used to retrieve metric data.
@@ -153,7 +152,7 @@ func (mp *MetricProvider) GetSpans(input budgetdata.MetricDataInput) ([]*budgetv
 // traceCost returns the trace cost calculated base on the given count.
 func (mp *MetricProvider) traceCost(count int64) (float64, error) {
 	return mp.truncate(
-		float64(count) / traceCostConstant * float64(mp.config.Budget.DefaultTraceCostRate),
+		float64(count) * float64(mp.config.Budget.DefaultTraceCostRate),
 	)
 }
 

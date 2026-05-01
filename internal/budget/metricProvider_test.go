@@ -33,8 +33,8 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 		raw := budgetdata.Overall{
 			LogReceived:  20,
 			LogSend:      10,
-			SpanReceived: 20000000,
-			SpanSend:     10000000,
+			SpanReceived: 20,
+			SpanSend:     10,
 		}
 
 		expected := &budgetv1alpha.Overall{
@@ -51,7 +51,7 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 				Sent:     raw.SpanSend,
 				Filtered: raw.SpanReceived - raw.SpanSend,
 				CostRate: c.Budget.DefaultTraceCostRate,
-				Cost:     float64(raw.SpanSend) / traceCostConstant * float64(c.Budget.DefaultTraceCostRate),
+				Cost:     float64(raw.SpanSend) * float64(c.Budget.DefaultTraceCostRate),
 				Pct:      44.44,
 			},
 		}
@@ -210,14 +210,14 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 
 		var raw budgetdata.RootSpan
 		require.NoError(t, faker.FakeData(&raw))
-		raw.Count = 10000000
+		raw.Count = 10
 
 		expected := &budgetv1alpha.Span{
 			Name:        raw.Name,
 			Breath:      raw.Breath,
 			Depth:       raw.Depth,
 			Invocations: raw.Invocation,
-			Cost:        float64(raw.Count) / traceCostConstant * float64(c.Budget.DefaultTraceCostRate),
+			Cost:        float64(raw.Count) * float64(c.Budget.DefaultTraceCostRate),
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
