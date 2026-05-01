@@ -75,17 +75,17 @@ func (s Server) Start() error {
 	mux.Handle(grpchealth.NewHandler(checker))
 
 	// Service Handlers
-	mux.Handle(s.withCORS(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors)))
-	mux.Handle(s.withCORS(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors)))
-	mux.Handle(s.withCORS(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors)))
-	mux.Handle(s.withCORS(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors)))
-	mux.Handle(s.withCORS(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors)))
-	mux.Handle(s.withCORS(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors)))
+	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
+	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
+	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
 		fmt.Sprintf(":%d", s.configuration.RPC.Port),
-		h2c.NewHandler(mux, &http2.Server{}),
+		h2c.NewHandler(s.withCORS(mux), &http2.Server{}),
 	)
 }
 
@@ -118,13 +118,13 @@ func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 }
 
 // withCORS adds CORS support to a Connect HTTP handler.
-func (Server) withCORS(path string, connectHandler http.Handler) (string, http.Handler) {
+func (Server) withCORS(connectHandler http.Handler) http.Handler {
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"localhost", "127.0.0.1", "0.0.0.0"},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: connectcors.AllowedMethods(),
 		AllowedHeaders: connectcors.AllowedHeaders(),
 		ExposedHeaders: connectcors.ExposedHeaders(),
 		MaxAge:         maxAge,
 	})
-	return path, c.Handler(connectHandler)
+	return c.Handler(connectHandler)
 }
