@@ -94,7 +94,10 @@ func (mp *MetricProvider) GetOverall(
 
 // GetLogs retrieves the log metric from the data store and then
 // perform additional calculations base on the log metrics to generate the log budget data.
-func (mp *MetricProvider) GetLogs(ctx context.Context, input budgetdata.MetricDataInput) ([]*budgetv1alpha.Log, string, error) {
+func (mp *MetricProvider) GetLogs(
+	ctx context.Context,
+	input budgetdata.MetricDataInput,
+) ([]*budgetv1alpha.Log, string, error) {
 	total, err := mp.retriever.GetTotalLog(ctx, input.Timeframe, input.Namespace)
 	if err != nil {
 		return nil, "", err
