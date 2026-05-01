@@ -172,41 +172,7 @@ func (ch *ConnectionHandler) PutConnection(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.PutConnectionRequest],
 ) (*connect.Response[octantv1alpha.PutConnectionResponse], error) {
-	var destinations []connection.OctantConnectionDestination
-	for _, d := range request.Msg.GetDestinations() {
-		destType := "unknown"
-		if d.GetType() == octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG {
-			destType = "datadog"
-		}
-		destinations = append(destinations, connection.OctantConnectionDestination{
-			DestinationType: destType,
-			IntegrationName: d.GetIntegrationName(),
-		})
-	}
-
-	var telemetries []telemetry.MLT
-	for _, t := range request.Msg.GetTelemetryTypes() {
-		telemetries = append(telemetries, telemetry.MLT(t.String()))
-	}
-
-	var deploymentType connection.DeploymentType
-	switch request.Msg.GetDeployment().GetType() {
-	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
-		deploymentType = connection.ArgoSideloadDeploymentType
-	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST:
-		deploymentType = connection.ArgoManifestsDeploymentType
-	default:
-		deploymentType = ""
-	}
-	connData := connection.OctantConnectionData{
-		SourceType:     "octant",
-		Destinations:   destinations,
-		TelemetryTypes: telemetries,
-		Deployment: &connection.Deployment{
-			Type:            deploymentType,
-			IntegrationName: request.Msg.GetDeployment().GetIntegrationName(),
-		},
-	}
+	connData := convertRequestToConnectionData(request)
 
 	runID, err := ch.octantConnection.SaveConnection(
 		ctx,
@@ -221,6 +187,59 @@ func (ch *ConnectionHandler) PutConnection(
 	return connect.NewResponse(&octantv1alpha.PutConnectionResponse{
 		ValidatorRunId: runID,
 	}), nil
+}
+
+func convertRequestToConnectionData(request *connect.Request[octantv1alpha.PutConnectionRequest]) connection.OctantConnectionData {
+	destinations := extractDestinationsFromRequest(request)
+	dataTypes := extractDataTypesFromRequest(request)
+	deployment := extractDeploymentFromRequest(request)
+	connData := connection.OctantConnectionData{
+		SourceType:     "octant",
+		Destinations:   destinations,
+		TelemetryTypes: dataTypes,
+		Deployment:     deployment,
+	}
+	return connData
+}
+
+func extractDeploymentFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) *connection.Deployment {
+	var deploymentType connection.DeploymentType
+	switch request.Msg.GetDeployment().GetType() {
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
+		deploymentType = connection.ArgoSideloadDeploymentType
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST:
+		deploymentType = connection.ArgoManifestsDeploymentType
+	default:
+		deploymentType = ""
+	}
+	deployment := &connection.Deployment{
+		Type:            deploymentType,
+		IntegrationName: request.Msg.GetDeployment().GetIntegrationName(),
+	}
+	return deployment
+}
+
+func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) []telemetry.MLT {
+	var telemetries []telemetry.MLT
+	for _, t := range request.Msg.GetTelemetryTypes() {
+		telemetries = append(telemetries, telemetry.MLT(t.String()))
+	}
+	return telemetries
+}
+
+func extractDestinationsFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) []connection.OctantConnectionDestination {
+	var destinations []connection.OctantConnectionDestination
+	for _, d := range request.Msg.GetDestinations() {
+		destType := "unknown"
+		if d.GetType() == octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG {
+			destType = "datadog"
+		}
+		destinations = append(destinations, connection.OctantConnectionDestination{
+			DestinationType: destType,
+			IntegrationName: d.GetIntegrationName(),
+		})
+	}
+	return destinations
 }
 
 func (ch *ConnectionHandler) GetConnectionValidatorRuns(
