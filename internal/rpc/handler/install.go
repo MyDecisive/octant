@@ -11,18 +11,17 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
-	"github.com/samber/lo"
-
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"sigs.k8s.io/yaml"
 )
 
-var terminalInstallStates = []octantv1alpha.InstallStatus{
+var terminalInstallStates = []octantv1alpha.InstallStatus{ // nolint: gochecknoglobals
 	octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
 	octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
 }

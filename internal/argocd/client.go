@@ -2,6 +2,7 @@ package argocd
 
 import (
 	"context"
+	"errors"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
@@ -112,7 +113,11 @@ func (*Client) GetAppStatus(
 	ctx context.Context,
 	logger *zap.Logger,
 	clientOpts *apiclient.ClientOptions,
-) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error) {
+) (
+	octantv1alpha.InstallStatus,
+	[]*octantv1alpha.ResourceDetails,
+	error,
+) {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
 		logger.Error("creating argo api client", zap.Error(err))
@@ -149,6 +154,10 @@ func (*Client) GetAppStatus(
 		return item.Kind == "Pod"
 	})
 
+	if len(pods) == 0 {
+		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, errors.New("no pod resources found")
+	}
+
 	resourceDetails := make([]*octantv1alpha.ResourceDetails, len(pods))
 	statuses := make([]octantv1alpha.InstallStatus, len(pods))
 	for i, pod := range pods {
@@ -182,8 +191,8 @@ func determineAppInstallStatus(statuses []octantv1alpha.InstallStatus) octantv1a
 	}
 }
 
-func healthStatusCodeToAppResourceHealth(status health.HealthStatusCode) octantv1alpha.InstallStatus {
-	switch status {
+func healthStatusCodeToAppResourceHealth(healthStatus health.HealthStatusCode) octantv1alpha.InstallStatus {
+	switch healthStatus {
 	case health.HealthStatusDegraded, health.HealthStatusMissing, health.HealthStatusUnknown:
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR
 	case health.HealthStatusProgressing:

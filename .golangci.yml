@@ -134,6 +134,7 @@ linters:
           - gochecknoglobals
           - goconst
           - gosec
+          - lll
           - maintidx
           - tagliatelle
           - unparam
@@ -148,6 +149,9 @@ linters:
       - path: internal/integration/*
         linters:
           - tagliatelle
+      - path: internal/config/*
+        linters:
+          - revive
 issues:
     max-issues-per-linter: 0
     max-same-issues: 0

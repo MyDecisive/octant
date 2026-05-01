@@ -1,6 +1,7 @@
 package rpchandler
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http/httptest"
@@ -269,6 +270,140 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 		validateResult      func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error)
 	}{
 		{
+			description: "error getting argo integration",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(nil, assert.AnError).
+					Once()
+				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NotNil(t, response)
+				require.NoError(t, err)
+
+				response.Receive()
+				var connectErr *connect.Error
+				require.ErrorAs(t, response.Err(), &connectErr)
+				require.Equal(t, connect.CodeInternal, connectErr.Code())
+			},
+		},
+		{
+			description: "argo integration not found",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(nil, nil).
+					Once()
+				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NotNil(t, response)
+				require.NoError(t, err)
+
+				response.Receive()
+				var connectErr *connect.Error
+				require.ErrorAs(t, response.Err(), &connectErr)
+				require.Equal(t, connect.CodeNotFound, connectErr.Code())
+			},
+		},
+		{
+			description: "error getting app status",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(argoIntegrationData, nil).
+					Once()
+
+				mockArgoClient := argocdmock.NewMockAPIClient(t)
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
+					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, nil, assert.AnError).Once()
+				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NotNil(t, response)
+				require.NoError(t, err)
+
+				response.Receive()
+				var connectErr *connect.Error
+				require.ErrorAs(t, response.Err(), &connectErr)
+				require.Equal(t, connect.CodeInternal, connectErr.Code())
+			},
+		},
+		{
+			description: "happy path - errored install",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(argoIntegrationData, nil).
+					Once()
+
+				mockArgoClient := argocdmock.NewMockAPIClient(t)
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
+					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, resourceDetails, nil).Once()
+				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NoError(t, err)
+				require.NotNil(t, response)
+
+				count := 0
+				for response.Receive() {
+					getInstallResponse := response.Msg()
+					require.NoError(t, response.Err())
+					if count > 0 {
+						require.Fail(t, "shouldn't have received more than one response")
+					}
+					require.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, getInstallResponse.GetInstallStatus())
+					count++
+				}
+				require.NoError(t, response.Err())
+			},
+		},
+		{
+			description: "error - timeout reached",
+			setupInstallHandler: func() *InstallHandler {
+				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+				mockArgoIntegration.EXPECT().
+					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					Return(argoIntegrationData, nil).
+					Once()
+
+				mockArgoClient := argocdmock.NewMockAPIClient(t)
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
+					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil).Times(1)
+
+				testConfig := &config.Configuration{
+					CurrentNamespace: defaultNamespace,
+					Env:              config.Dev,
+					Install: config.Install{
+						MdaiInstallTimeout:               1,
+						MdaiInstallPollingIntervalMillis: 2000, // 2 seconds
+					},
+				}
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+			},
+			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
+				require.NotNil(t, response)
+				require.NoError(t, err)
+
+				for response.Receive() {
+					if response.Err() != nil {
+						var connectErr *connect.Error
+						require.ErrorAs(t, response.Err(), &connectErr)
+						require.Equal(t, connect.CodeDeadlineExceeded, connectErr.Code())
+					}
+				}
+			},
+		},
+		{
 			description: "happy path",
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
@@ -297,9 +432,9 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					require.NoError(t, response.Err())
 					switch count {
 					case 0, 1:
-						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, getInstallResponse.InstallStatus)
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, getInstallResponse.GetInstallStatus())
 					case 2:
-						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, getInstallResponse.InstallStatus)
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, getInstallResponse.GetInstallStatus())
 					}
 					count++
 				}
@@ -312,6 +447,8 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 		testCase := tc
 		t.Run(testCase.description, func(t *testing.T) {
 			t.Parallel()
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
 
 			handler := testCase.setupInstallHandler()
 
@@ -329,7 +466,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 
 			client := octantv1alphaconnect.NewInstallServiceClient(testServer.Client(), testServer.URL, connect.WithSendGzip())
 
-			response, err := client.GetInstallStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetInstallStatusRequest{
+			response, err := client.GetInstallStatus(ctx, connect.NewRequest(&octantv1alpha.GetInstallStatusRequest{
 				ConnectionName: "coolConnection",
 			}))
 			testCase.validateResult(response, err)
