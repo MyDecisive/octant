@@ -66,7 +66,7 @@ func (bh *BudgetHandler) Log( // nolint: dupl //no its not
 		logger.Error("failed to get connection data", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
-		logger.Error("connection does not support log type", zap.Error(err))
+		logger.Error("connection does not support log type", zap.Error(errors.New("log telemetry type not vailable")))
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("log telemetry type not available"))
 	}
 
