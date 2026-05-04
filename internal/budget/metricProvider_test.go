@@ -223,7 +223,7 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 
 		expected := &budgetv1alpha.Span{
 			Name:        raw.Name,
-			Breath:      raw.Breadth,
+			Breadth:     raw.Breadth,
 			Depth:       raw.Depth,
 			Invocations: raw.Invocation,
 			Cost:        float64(raw.Count) * float64(c.Budget.DefaultTraceCostRate),
