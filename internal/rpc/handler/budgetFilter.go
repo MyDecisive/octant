@@ -152,10 +152,14 @@ func (bfh *BudgetFilterHandler) isAllowed(
 	if err != nil {
 		return false, err
 	}
+	if con == nil {
+		return false, nil
+	}
 
 	mltType := telemetry.Logs
 	if mlt == budgetv1alpha.FilterType_FILTER_TYPE_TRACE {
 		mltType = telemetry.Traces
 	}
+
 	return lo.Contains(con.TelemetryTypes, mltType), nil
 }
