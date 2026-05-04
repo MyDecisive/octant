@@ -61,6 +61,22 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 		assert.Equal(t, varData, actual)
 	})
 
+	t.Run("success empty", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := wrappermock.NewMockHTTPClient(t)
+		mockClient.EXPECT().Get(url).Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("{}")),
+		}, nil)
+
+		target := NewMDAIGateway(c, mockClient)
+
+		actual, err := target.GetVariable(namespace, hubName, varName)
+		require.NoError(t, err)
+
+		assert.Empty(t, actual)
+	})
+
 	t.Run("err get", func(t *testing.T) {
 		t.Parallel()
 

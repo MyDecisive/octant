@@ -52,24 +52,21 @@ func (bfh *BudgetFilterHandler) GetFilter(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
 		logger.Error("connection does not support given type", zap.Error(err))
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("telemetry type not available"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("telemetry type not available"))
 	}
 
 	filter, err := bfh.setting.GetFilter(req.Msg.GetType(), req.Msg.GetNamespace(), req.Msg.GetConnectionName())
 	if err != nil {
 		logger.Error("failed to get filters", zap.Error(err))
 		code := connect.CodeUnknown
-		if errors.Is(err, budgetfilter.ErrInvalid) {
-			code = connect.CodeInvalidArgument
-		}
-		if errors.Is(err, budgetfilter.ErrFormat) {
-			code = connect.CodeInternal
-		}
-		if errors.Is(err, budgetfilter.ErrNotFound) {
-			code = connect.CodeNotFound
-		}
+		// nolint: gocritic // checking error type must use errors.Is
 		if errors.Is(err, budgetfilter.ErrStillUpdating) {
 			code = connect.CodeUnavailable
+		} else if errors.Is(err, budgetfilter.ErrInvalid) {
+			code = connect.CodeInvalidArgument
+		} else if errors.Is(err, budgetfilter.ErrFormat) ||
+			errors.Is(err, budgetfilter.ErrNotFound) {
+			code = connect.CodeInternal
 		}
 		return nil, connect.NewError(code, err)
 	}
@@ -101,7 +98,7 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 		return connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
 		logger.Error("connection does not support given type", zap.Error(err))
-		return connect.NewError(connect.CodeUnavailable, errors.New("telemetry type not available"))
+		return connect.NewError(connect.CodeNotFound, errors.New("telemetry type not available"))
 	}
 
 	results := make(chan budgetfilter.UpdateFilterResult)
@@ -120,16 +117,14 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 
 		if result.Err != nil {
 			logger.Error("failed to update filters", zap.Error(result.Err))
-			if errors.Is(result.Err, budgetfilter.ErrInvalid) {
-				return connect.NewError(connect.CodeInvalidArgument, budgetfilter.ErrInvalid)
-			}
+			// nolint: gocritic // checking error type must use errors.Is
 			if errors.Is(result.Err, budgetfilter.ErrStillUpdating) {
 				return connect.NewError(connect.CodeUnavailable, budgetfilter.ErrStillUpdating)
-			}
-			if errors.Is(result.Err, budgetfilter.ErrUpdateValue) {
+			} else if errors.Is(result.Err, budgetfilter.ErrInvalid) {
+				return connect.NewError(connect.CodeInvalidArgument, budgetfilter.ErrInvalid)
+			} else if errors.Is(result.Err, budgetfilter.ErrUpdateValue) {
 				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateValue)
-			}
-			if errors.Is(result.Err, budgetfilter.ErrUpdateCollector) {
+			} else if errors.Is(result.Err, budgetfilter.ErrUpdateCollector) {
 				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateCollector)
 			}
 			return connect.NewError(connect.CodeUnknown, result.Err)

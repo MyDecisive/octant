@@ -151,7 +151,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
 		require.ErrorAs(t, err, &connectErr)
-		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
+		assert.Equal(t, connect.CodeInternal, connectErr.Code())
 	})
 
 	t.Run("err still updating", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
 		require.ErrorAs(t, err, &connectErr)
-		assert.Equal(t, connect.CodeUnavailable, connectErr.Code())
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
 	})
 }
 
@@ -504,6 +504,6 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		stream.Receive()
 		var connectErr *connect.Error
 		require.ErrorAs(t, stream.Err(), &connectErr)
-		assert.Equal(t, connect.CodeUnavailable, connectErr.Code())
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
 	})
 }

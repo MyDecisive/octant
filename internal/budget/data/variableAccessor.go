@@ -78,7 +78,11 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return "", err
 	}
 
-	return result[varName], nil
+	if val, ok := result[varName]; ok {
+		return val, nil
+	}
+
+	return "", nil
 }
 
 // UpdateVariable updates the value of the given variable in MDAI gateway.
