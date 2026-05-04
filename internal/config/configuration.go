@@ -50,7 +50,9 @@ type Budget struct {
 	FilterSettingUpdateTimeout int `yaml:"filterSettingUpdateTimeout" env:"OCTANT_FILTER_SETTING_UPDATE_TIMEOUT" env-default:"60"` // nolint:lll
 	// FilterSettingUpdateInterval (in seconds) controls how often
 	//  Octant check if the filter setting update have been applied or not.
-	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
+	FilterSettingUpdateInterval int     `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
+	DefaultLogCostRate          float64 `env:"OCTANT_DEFAULT_LOG_COST_RATE" env-default:"2.50"`
+	DefaultTraceCostRate        float64 `env:"OCTANT_DEFAULT_TRACE_COST_RATE" env-default:"2.50"`
 }
 
 type Metrics struct {

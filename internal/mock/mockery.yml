@@ -34,6 +34,7 @@ packages:
   github.com/mydecisive/octant/internal/budget/data:
     interfaces:
       VariableAccessor:
+      MetricDataRetriever:
   github.com/mydecisive/octant/internal/budget/filter:
     interfaces:
       SettingController:
