@@ -12,6 +12,7 @@ require (
 	github.com/MyDecisive/octant-contracts/go v0.4.10-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/go-faker/faker/v4 v4.7.0
+	github.com/go-jet/jet/v2 v2.14.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mydecisive/mdai-data-core v0.3.1
 	github.com/prometheus/client_golang v1.23.2

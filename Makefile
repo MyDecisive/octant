@@ -12,6 +12,7 @@ install-tools:
 	@echo "$@: Install development tools"
 	@go install github.com/vektra/mockery/v3@v3.7.0
 	@go install github.com/dmarkham/enumer@v1.6.3
+	go install github.com/go-jet/jet/v2/cmd/jet@v2.14.1
 # Only install following tools if not in CI
 ifndef CI
 # Don't forget to update the golangci-lint version in CI
