@@ -1,7 +1,7 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: {{ .AppName }}
+  name: {{ .AppName }}-sampling-lb
   namespace: {{ .Namespace }}
   labels:
     app: {{ .AppName }}
@@ -9,7 +9,7 @@ metadata:
     hub.mydecisive.ai/role: connection-collector
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-lb
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-sampling-lb
   {{- end }}  
 spec:
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
@@ -149,7 +149,7 @@ spec:
       telemetry:
         resource:
           mdai_connection: "{{ .AppName }}"
-          service.name: "{{ .AppName }}-lb-collector"
+          service.name: "{{ .AppName }}-sampling-lb-collector"
         metrics:
           readers:
             - pull:
