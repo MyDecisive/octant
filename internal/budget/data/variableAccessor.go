@@ -64,6 +64,10 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
+	}
+
 	if resp.StatusCode >= http.StatusMultipleChoices {
 		return "", fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
 	}
