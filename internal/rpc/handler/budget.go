@@ -106,7 +106,7 @@ func (bh *BudgetHandler) Trace( // nolint: dupl //no its not
 		logger.Error("failed to get connection data", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
-		logger.Error("connection does not support trace type", zap.Error(err))
+		logger.Error("connection does not support trace type", zap.Error(errors.New("trace telemetry type not available")))
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("trace telemetry type not available"))
 	}
 
@@ -140,5 +140,8 @@ func (bh *BudgetHandler) isAllowed(
 		return false, err
 	}
 
+  if con == nil {
+      return false, nil  // or errors.New("connection not found")
+  }
 	return lo.Contains(con.TelemetryTypes, mlt), nil
 }
