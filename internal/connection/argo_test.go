@@ -114,7 +114,7 @@ func TestPushArgoApp(t *testing.T) { // nolint:gocognit
 				},
 			}
 
-			err := octantConnection.pushArgoApp(context.Background(), "default", "my-test-app", connData)
+			err := octantConnection.sideloadConnectionApp(context.Background(), "default", "my-test-app", connData)
 
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
@@ -271,6 +271,6 @@ func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	}
 
-	err := octantConnection.pushArgoApp(context.Background(), "default", "my-test-app", connData)
+	err := octantConnection.sideloadConnectionApp(context.Background(), "default", "my-test-app", connData)
 	require.Error(t, err)
 }

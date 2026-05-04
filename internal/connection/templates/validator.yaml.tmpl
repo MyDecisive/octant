@@ -1,9 +1,9 @@
 apiVersion: hub.mydecisive.ai/v1
 kind: TelemetryValidation
 metadata:
-  name: {{ .AppName }}-telemetry-validation
+  name: {{ .ConnectionName }}-telemetry-validation
   namespace: {{ .Namespace }}
 spec:
   runID: {{ .ValidatorRunID }}
   collectorRef:
-    name: {{ .AppName }}
+    name: {{ .ConnectionName }}

@@ -42,7 +42,7 @@ func getNestedField(m map[string]any, keys ...string) (any, bool) {
 
 func TestRenderManifestFormats(t *testing.T) {
 	t.Parallel()
-	templateData := ArgoTemplateData{
+	templateData := ArgoConnectionTemplateData{
 		AppName:   "format-test-app",
 		Namespace: "default",
 		ConnectionData: OctantConnectionData{
@@ -96,7 +96,7 @@ func TestRenderArgoAppManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("Valid Argo App Configuration", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName:   "test-app",
 			Namespace: "team-a-namespace",
 		}
@@ -144,7 +144,7 @@ func TestRenderSecretManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Sideload and Datadog Integration", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName:        "test-app",
 			IsArgoSideload: true,
 			DatadogIntegrationData: &integration.DataDogIntegrationData{
@@ -175,7 +175,7 @@ func TestRenderSecretManifest(t *testing.T) {
 
 	t.Run("Without Sideload or Datadog", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName:                "test-app",
 			IsArgoSideload:         false,
 			DatadogIntegrationData: nil,
@@ -205,7 +205,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("Full Configuration with Pipelines", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName:        "test-app",
 			IsArgoSideload: true,
 			ConnectionData: OctantConnectionData{
@@ -267,7 +267,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 
 	t.Run("Minimal Configuration without Pipelines", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName:        "minimal-app",
 			IsArgoSideload: false,
 			ConnectionData: OctantConnectionData{
@@ -309,7 +309,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 
 func TestRenderLogCollectorManifest(t *testing.T) {
 	t.Parallel()
-	templateData := ArgoTemplateData{
+	templateData := ArgoConnectionTemplateData{
 		AppName:        "test-app",
 		IsArgoSideload: true,
 		ConnectionData: OctantConnectionData{
@@ -372,7 +372,7 @@ func TestRenderLogCollectorManifest(t *testing.T) {
 
 func TestRenderTraceCollectorManifest(t *testing.T) {
 	t.Parallel()
-	templateData := ArgoTemplateData{
+	templateData := ArgoConnectionTemplateData{
 		AppName:        "test-app",
 		IsArgoSideload: true,
 		ConnectionData: OctantConnectionData{
@@ -437,7 +437,7 @@ func TestRenderValidatorManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
 				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
@@ -464,7 +464,7 @@ func TestRenderObserverManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
 				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
@@ -491,7 +491,7 @@ func TestRenderHubManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoTemplateData{
+		templateData := ArgoConnectionTemplateData{
 			AppName: "test-app",
 			ConnectionData: OctantConnectionData{
 				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},

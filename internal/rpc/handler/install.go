@@ -51,7 +51,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	logger.Debug("received install MDAIHub request")
 
 	// 1) get the argo integration details
-	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
+	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

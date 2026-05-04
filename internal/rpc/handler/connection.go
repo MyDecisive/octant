@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mydecisive/octant/internal/telemetry"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"io"
 
 	"connectrpc.com/connect"
@@ -168,13 +169,13 @@ func (ch *ConnectionHandler) GetConnection(
 	}), nil
 }
 
-func (ch *ConnectionHandler) PutConnection(
+func (ch *ConnectionHandler) CreateConnection(
 	ctx context.Context,
-	request *connect.Request[octantv1alpha.PutConnectionRequest],
-) (*connect.Response[octantv1alpha.PutConnectionResponse], error) {
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) (*connect.Response[emptypb.Empty], error) {
 	connData := convertRequestToConnectionData(request)
 
-	runID, err := ch.octantConnection.SaveConnection(
+	err := ch.octantConnection.SaveConnection(
 		ctx,
 		connData,
 		request.Msg.GetNamespace(),
@@ -184,12 +185,10 @@ func (ch *ConnectionHandler) PutConnection(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
 	}
 
-	return connect.NewResponse(&octantv1alpha.PutConnectionResponse{
-		ValidatorRunId: runID,
-	}), nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func convertRequestToConnectionData(request *connect.Request[octantv1alpha.PutConnectionRequest]) connection.OctantConnectionData {
+func convertRequestToConnectionData(request *connect.Request[octantv1alpha.CreateConnectionRequest]) connection.OctantConnectionData {
 	destinations := extractDestinationsFromRequest(request)
 	dataTypes := extractDataTypesFromRequest(request)
 	deployment := extractDeploymentFromRequest(request)
@@ -202,7 +201,7 @@ func convertRequestToConnectionData(request *connect.Request[octantv1alpha.PutCo
 	return connData
 }
 
-func extractDeploymentFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) *connection.Deployment {
+func extractDeploymentFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) *connection.Deployment {
 	var deploymentType connection.DeploymentType
 	switch request.Msg.GetDeployment().GetType() {
 	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
@@ -219,15 +218,22 @@ func extractDeploymentFromRequest(request *connect.Request[octantv1alpha.PutConn
 	return deployment
 }
 
-func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) []telemetry.MLT {
+func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []telemetry.MLT {
 	var telemetries []telemetry.MLT
 	for _, t := range request.Msg.GetTelemetryTypes() {
-		telemetries = append(telemetries, telemetry.MLT(t.String()))
+		switch t {
+		case octantv1alpha.MLTType_MLT_TYPE_METRIC:
+			telemetries = append(telemetries, telemetry.Metrics)
+		case octantv1alpha.MLTType_MLT_TYPE_TRACE:
+			telemetries = append(telemetries, telemetry.Traces)
+		case octantv1alpha.MLTType_MLT_TYPE_LOG:
+			telemetries = append(telemetries, telemetry.Logs)
+		}
 	}
 	return telemetries
 }
 
-func extractDestinationsFromRequest(request *connect.Request[octantv1alpha.PutConnectionRequest]) []connection.OctantConnectionDestination {
+func extractDestinationsFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []connection.OctantConnectionDestination {
 	var destinations []connection.OctantConnectionDestination
 	for _, d := range request.Msg.GetDestinations() {
 		destType := "unknown"
@@ -260,10 +266,10 @@ func (ch *ConnectionHandler) GetConnectionValidatorRuns(
 	}), nil
 }
 
-func (ch *ConnectionHandler) PutConnectionValidatorRun(
+func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 	ctx context.Context,
-	request *connect.Request[octantv1alpha.PutConnectionValidatorRunRequest],
-) (*connect.Response[octantv1alpha.PutConnectionValidatorRunResponse], error) {
+	request *connect.Request[octantv1alpha.CreateConnectionValidatorRunRequest],
+) (*connect.Response[octantv1alpha.CreateConnectionValidatorRunResponse], error) {
 	runID, err := ch.octantConnection.PutConnectionValidatorRun(
 		ctx,
 		request.Msg.GetNamespace(),
@@ -273,7 +279,23 @@ func (ch *ConnectionHandler) PutConnectionValidatorRun(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate validator run: %w", err))
 	}
 
-	return connect.NewResponse(&octantv1alpha.PutConnectionValidatorRunResponse{
+	return connect.NewResponse(&octantv1alpha.CreateConnectionValidatorRunResponse{
 		ValidatorRunId: runID,
 	}), nil
+}
+
+func (ch *ConnectionHandler) DeleteConnection(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.DeleteConnectionRequest],
+) (*connect.Response[emptypb.Empty], error) {
+	err := ch.octantConnection.DeleteConnection(
+		ctx,
+		request.Msg.GetNamespace(),
+		request.Msg.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }

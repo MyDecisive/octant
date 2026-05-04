@@ -27,43 +27,49 @@ type argoSyncApply struct {
 	Force bool `json:"force"`
 }
 
-func (oc *OctantConnection) pushArgoApp(
+func (oc *OctantConnection) sideloadConnectionApp(
 	ctx context.Context,
 	namespace, name string,
 	connection OctantConnectionData,
-) (string, error) {
+) error {
 	templateData, err := oc.createTemplateData(ctx, namespace, name, connection)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
-		ctx,
-		namespace,
-		connection.Deployment.IntegrationName,
-	)
-	if getArgoIntErr != nil {
-		return "", getArgoIntErr
-	}
-	if argoIntegration == nil {
-		return "", fmt.Errorf("no ArgoCD integration found with name %s", connection.Deployment.IntegrationName)
+	argoIntegration, err := oc.getArgoIntegration(ctx, connection)
+	if err != nil {
+		return err
 	}
 
 	if appCreateErr := oc.doArgoAppCreation(ctx, templateData, connection, argoIntegration); appCreateErr != nil {
-		return "", appCreateErr
+		return appCreateErr
 	}
 
 	if err := oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name); err != nil {
-		return "", err
+		return err
 	}
 
-	// Return the ID generated during template creation
-	return templateData.ValidatorRunID, nil
+	return nil
+}
+
+func (oc *OctantConnection) getArgoIntegration(ctx context.Context, connection OctantConnectionData) (*integration.ArgoCDIntegrationData, error) {
+	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
+		ctx,
+		connection.Deployment.IntegrationName,
+	)
+	if getArgoIntErr != nil {
+		return nil, getArgoIntErr
+	}
+	if argoIntegration == nil {
+		return nil, fmt.Errorf("no ArgoCD integration found with name %s", connection.Deployment.IntegrationName)
+	}
+	return argoIntegration, nil
 }
 
 func (oc *OctantConnection) doArgoAppSync(
 	ctx context.Context,
-	templateData *ArgoTemplateData,
+	templateData *ArgoConnectionTemplateData,
 	connection OctantConnectionData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 	name string,
@@ -78,17 +84,7 @@ func (oc *OctantConnection) doArgoAppSync(
 		manifestsSlice = append(manifestsSlice, string(manifest))
 	}
 
-	syncPayload := argoSyncPayload{
-		Revision: "HEAD",
-		Prune:    false,
-		DryRun:   false,
-		Strategy: argoSyncStrategy{
-			Apply: argoSyncApply{
-				Force: false,
-			},
-		},
-		Manifests: manifestsSlice,
-	}
+	syncPayload := oc.makeArgoSyncPayload(manifestsSlice)
 
 	syncPayloadJSON, err := json.Marshal(syncPayload)
 	if err != nil {
@@ -115,9 +111,81 @@ func (oc *OctantConnection) doArgoAppSync(
 	return nil
 }
 
+func (oc *OctantConnection) sideloadValidatorForConnection(
+	ctx context.Context,
+	connection OctantConnectionData,
+	connectionName string,
+	namespace string,
+) (string, error) {
+	// TODO: This is wonky today; we are pushing a new sync on the same app as the connection, but with just the
+	//       validator. This should work because prune = false (argo won't remove those other "orphaned" resources). The
+	//       entire sideload behavior has this ephemerality problem... but feels weird to push new manifests on top of
+	//       the old ones like this. Clean this up for the git integration.
+
+	argoIntegration, err := oc.getArgoIntegration(ctx, connection)
+	if err != nil {
+		return "", err
+	}
+
+	templateData := &ArgoValidatorTemplateData{
+		ConnectionName: connectionName,
+		Namespace:      namespace,
+		ValidatorRunID: getRunId(),
+	}
+
+	manifest, err := renderValidatorManifestForConnection(templateData, JSONOutputFormat)
+	if err != nil {
+		return "", err
+	}
+
+	manifestsSlice := []string{
+		string(manifest),
+	}
+
+	syncPayload := oc.makeArgoSyncPayload(manifestsSlice)
+
+	syncPayloadJSON, err := json.Marshal(syncPayload)
+	if err != nil {
+		return "", err
+	}
+	syncURL := fmt.Sprintf("%s/api/v1/applications/%s/sync", argoIntegration.APIUrl, connectionName)
+	syncReq, err := http.NewRequestWithContext(ctx, http.MethodPost, syncURL, bytes.NewReader(syncPayloadJSON))
+	if err != nil {
+		return "", err
+	}
+	syncReq.Header.Set("Content-Type", "application/json")
+	syncReq.Header.Set("Authorization", "Bearer "+argoIntegration.AccountToken)
+	syncResp, err := oc.httpClient.Do(syncReq)
+	if err != nil {
+		// TODO: Handle this error better
+		return "", err
+	}
+	defer func() {
+		_ = syncResp.Body.Close()
+	}()
+	if syncResp.StatusCode != http.StatusOK {
+		return "", handleArgoErrorResponse(syncResp, connection)
+	}
+	return templateData.ValidatorRunID, nil
+}
+
+func (oc *OctantConnection) makeArgoSyncPayload(manifestsSlice []string) argoSyncPayload {
+	return argoSyncPayload{
+		Revision: "HEAD",
+		Prune:    false,
+		DryRun:   false,
+		Strategy: argoSyncStrategy{
+			Apply: argoSyncApply{
+				Force: true,
+			},
+		},
+		Manifests: manifestsSlice,
+	}
+}
+
 func (oc *OctantConnection) doArgoAppCreation(
 	ctx context.Context,
-	templateData *ArgoTemplateData,
+	templateData *ArgoConnectionTemplateData,
 	connection OctantConnectionData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
@@ -154,7 +222,6 @@ func (oc *OctantConnection) deleteArgoApp(
 ) error {
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
 		ctx,
-		namespace,
 		connection.Deployment.IntegrationName,
 	)
 	if getArgoIntErr != nil {
@@ -163,6 +230,43 @@ func (oc *OctantConnection) deleteArgoApp(
 
 	query := "?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
 	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s%s", argoIntegration.APIUrl, name, query)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+	// Despite no body being required, ArgoCD requires a JSON content type to process Delete
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+argoIntegration.AccountToken)
+	resp, err := oc.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != http.StatusOK {
+		return handleArgoErrorResponse(resp, connection)
+	}
+	return nil
+}
+
+func (oc *OctantConnection) deleteValidatorResource(
+	ctx context.Context,
+	name string,
+	namespace string,
+	connection OctantConnectionData,
+) error {
+	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
+		ctx,
+		connection.Deployment.IntegrationName,
+	)
+	if getArgoIntErr != nil {
+		return getArgoIntErr
+	}
+
+	// TODO: This is gnarly; we're reaching in and deleting a specific resource on the app. CLEAN THIS UP.
+	query := fmt.Sprintf("?namespace=%s&resourceName=%s-telemetry-validator&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation")
+	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s/resource%s", argoIntegration.APIUrl, name, query)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
 	if err != nil {
 		return err

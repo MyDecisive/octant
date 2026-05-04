@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mydecisive/octant/internal/config"
 	"slices"
 	"time"
 
@@ -39,6 +40,7 @@ type OctantConnection struct {
 	argoClient        integration.Integration[integration.ArgoCDIntegrationData]
 	datadogClient     integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics metrics.ConnectionStatus
+	configuration     *config.Configuration
 	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
 	// taskSets      map[DeploymentType]DeploymentTaskSet
 }
@@ -49,6 +51,7 @@ func NewOctantConnection(
 	argoClient integration.Integration[integration.ArgoCDIntegrationData],
 	datadogClient integration.Integration[integration.DataDogIntegrationData],
 	connectionMetrics metrics.ConnectionStatus,
+	configuration *config.Configuration,
 ) *OctantConnection {
 	return &OctantConnection{
 		httpClient:        httpClient,
@@ -56,6 +59,7 @@ func NewOctantConnection(
 		argoClient:        argoClient,
 		datadogClient:     datadogClient,
 		connectionMetrics: connectionMetrics,
+		configuration:     configuration,
 	}
 }
 
@@ -207,57 +211,54 @@ func (oc *OctantConnection) SaveConnection(
 	ctx context.Context,
 	connection OctantConnectionData,
 	namespace, connectionName string,
-) (string, error) {
+) error {
 	if connection.Deployment == nil {
-		return "", errors.New("no deployment object found on octant connection; unable to create connection")
+		return errors.New("no deployment object found on octant connection; unable to create connection")
 	}
 
 	if !slices.Contains(
 		[]DeploymentType{ArgoManifestsDeploymentType, ArgoSideloadDeploymentType},
 		connection.Deployment.Type,
 	) {
-		return "", fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
+		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
 	cm, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
-			return "", fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
+			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 		}
 		if err := oc.createConnection(ctx, connection, namespace, connectionName); err != nil {
-			return "", err
+			return err
 		}
 	} else {
 		if err := oc.updateConnection(ctx, cm, connection, namespace, connectionName); err != nil {
-			return "", err
+			return err
 		}
 	}
 
-	var runID string
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		runID, err = oc.pushArgoApp(ctx, namespace, connectionName, connection)
+		err = oc.sideloadConnectionApp(ctx, namespace, connectionName, connection)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 
-	// Will return "" if not ArgoSideload
-	return runID, nil
+	return nil
 }
 
-func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, namespace, connectionName string) (string, error) {
-	conn, err := oc.GetConnectionByName(ctx, namespace, connectionName)
+func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, namespace string, connectionName string) (string, error) {
+	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
 	if err != nil {
 		return "", fmt.Errorf("getting connection: %w", err)
 	}
-	if conn == nil {
+	if connection == nil {
 		return "", fmt.Errorf("connection '%s' not found", connectionName)
 	}
 
-	if conn.Deployment != nil && conn.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.pushArgoApp(ctx, namespace, connectionName, *conn)
+	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
+		return oc.sideloadValidatorForConnection(ctx, *connection, connectionName, namespace)
 	}
 
-	// Return empty string for meaningless contexts
 	return "", nil
 }
