@@ -149,7 +149,7 @@ func (mp *MetricProvider) GetSpans(
 
 		result[i] = &budgetv1alpha.Span{
 			Name:        r.Name,
-			Breath:      r.Breadth,
+			Breadth:     r.Breadth,
 			Depth:       r.Depth,
 			Invocations: r.Invocation,
 			Cost:        cost,

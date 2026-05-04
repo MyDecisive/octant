@@ -53,6 +53,8 @@ github.com/MyDecisive/octant-contracts/go v0.4.8-alpha h1:2g8vs+XPZpFtl5MUl0fBnX
 github.com/MyDecisive/octant-contracts/go v0.4.8-alpha/go.mod h1:ZNywjzXHShVR2wd7AehKUMk/WEEMoB8CZxoGNL1yPqE=
 github.com/MyDecisive/octant-contracts/go v0.4.9-alpha h1:s33gL3HV83oBDoaFcDfGt+bg7/Mxme5oS5qNWouQoKA=
 github.com/MyDecisive/octant-contracts/go v0.4.9-alpha/go.mod h1:ZNywjzXHShVR2wd7AehKUMk/WEEMoB8CZxoGNL1yPqE=
+github.com/MyDecisive/octant-contracts/go v0.4.10-alpha h1:J9K9cwzal6JQbidnGYATqtBykR4OkzgIXJZ4nvJzrmU=
+github.com/MyDecisive/octant-contracts/go v0.4.10-alpha/go.mod h1:ZNywjzXHShVR2wd7AehKUMk/WEEMoB8CZxoGNL1yPqE=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/ProtonMail/go-crypto v1.1.6 h1:ZcV+Ropw6Qn0AX9brlQLAUXfqLBc7Bl+f/DmNxpLfdw=
 github.com/ProtonMail/go-crypto v1.1.6/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
