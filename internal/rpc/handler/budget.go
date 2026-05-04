@@ -67,7 +67,7 @@ func (bh *BudgetHandler) Log( // nolint: dupl //no its not
 		return nil, connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
 		logger.Error("connection does not support log type", zap.Error(err))
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("log telemetry type not available"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("log telemetry type not available"))
 	}
 
 	data, nextPage, errGet := bh.provider.GetLogs(ctx, budgetdata.MetricDataInput{
@@ -107,7 +107,7 @@ func (bh *BudgetHandler) Trace( // nolint: dupl //no its not
 		return nil, connect.NewError(connect.CodeInternal, err)
 	} else if !ok {
 		logger.Error("connection does not support trace type", zap.Error(err))
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New("trace telemetry type not available"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("trace telemetry type not available"))
 	}
 
 	data, nextPage, err := bh.provider.GetSpans(ctx, budgetdata.MetricDataInput{
