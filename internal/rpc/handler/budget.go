@@ -140,8 +140,8 @@ func (bh *BudgetHandler) isAllowed(
 		return false, err
 	}
 
-  if con == nil {
-      return false, nil  // or errors.New("connection not found")
-  }
+	if con == nil {
+		return false, nil
+	}
 	return lo.Contains(con.TelemetryTypes, mlt), nil
 }

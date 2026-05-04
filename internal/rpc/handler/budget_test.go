@@ -275,6 +275,27 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
 	})
 
+	t.Run("err no connection", func(t *testing.T) {
+		t.Parallel()
+
+		mockProvider := budgetmock.NewMockMetricDataProvider(t)
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			task.GetNamespace(),
+			task.GetConnectionName(),
+		).Return(nil, nil).Once()
+
+		target := NewBudgetHandler(mockConn, mockProvider)
+
+		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
+		assert.Nil(t, actual)
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
+	})
+
 	t.Run("err get connection", func(t *testing.T) {
 		t.Parallel()
 
