@@ -43,16 +43,16 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 				Received: raw.LogReceived,
 				Sent:     raw.LogSend,
 				Filtered: raw.LogReceived - raw.LogSend,
-				CostRate: c.Budget.DefaultLogCostRate,
-				Cost:     float64(raw.LogSend) * float64(c.Budget.DefaultLogCostRate),
+				CostRate: float32(c.Budget.DefaultLogCostRate),
+				Cost:     raw.LogSend * c.Budget.DefaultLogCostRate,
 				Pct:      55.56,
 			},
 			Trace: &budgetv1alpha.Overall_Metric{
 				Received: raw.SpanReceived,
 				Sent:     raw.SpanSend,
 				Filtered: raw.SpanReceived - raw.SpanSend,
-				CostRate: c.Budget.DefaultTraceCostRate,
-				Cost:     float64(raw.SpanSend) * float64(c.Budget.DefaultTraceCostRate),
+				CostRate: float32(c.Budget.DefaultTraceCostRate),
+				Cost:     raw.SpanSend * c.Budget.DefaultTraceCostRate,
 				Pct:      44.44,
 			},
 		}
@@ -60,7 +60,7 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 		logPct, err := strconv.ParseFloat(fmt.Sprintf("%.2f", (expected.GetLog().GetCost()/expected.GetCost())*100), 64)
 		require.NoError(t, err)
 		expected.Log.Pct = float32(logPct)
-		expected.Trace.Pct = float32(100) - float32(logPct)
+		expected.Trace.Pct = float32(100) - expected.GetLog().GetPct()
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
 		mockRetriever.EXPECT().GetOverall(mock.Anything, timeframe, namespace).Return(&raw, nil).Once()
@@ -97,7 +97,7 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 			DefaultTraceCostRate: 2,
 		},
 	}
-	total := 20
+	total := float64(20)
 
 	next := faker.Word()
 
@@ -117,14 +117,14 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 		expected := &budgetv1alpha.Log{
 			Name: raw.Name,
 			Sent: raw.Amount,
-			Cost: float64(raw.Amount) * float64(c.Budget.DefaultLogCostRate),
+			Cost: raw.Amount * c.Budget.DefaultLogCostRate,
 		}
-		pct, err := strconv.ParseFloat(fmt.Sprintf("%.2f", (float64(raw.Amount)/float64(total))*100), 64)
+		pct, err := strconv.ParseFloat(fmt.Sprintf("%.2f", (raw.Amount/total)*100), 64)
 		require.NoError(t, err)
 		expected.Pct = float32(pct)
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
+		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(total, nil).Once()
 		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{raw}, next, nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
@@ -145,7 +145,7 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
+		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(total, nil).Once()
 		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return([]budgetdata.Log{}, "", nil).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
@@ -183,7 +183,7 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 		}
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
-		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(int64(total), nil).Once()
+		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(total, nil).Once()
 		mockRetriever.EXPECT().GetLogs(mock.Anything, input).Return(nil, "", assert.AnError).Once()
 
 		target := NewMetricProvider(c, mockRetriever)
@@ -223,7 +223,7 @@ func TestMetricProvider_GetSpans(t *testing.T) {
 
 		expected := &budgetv1alpha.Span{
 			Name:        raw.Name,
-			Breath:      raw.Breath,
+			Breath:      raw.Breadth,
 			Depth:       raw.Depth,
 			Invocations: raw.Invocation,
 			Cost:        float64(raw.Count) * float64(c.Budget.DefaultTraceCostRate),

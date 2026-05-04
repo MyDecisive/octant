@@ -262,22 +262,22 @@ func (_c *MockMetricDataRetriever_GetRootSpans_Call) RunAndReturn(run func(ctx c
 }
 
 // GetTotalLog provides a mock function for the type MockMetricDataRetriever
-func (_mock *MockMetricDataRetriever) GetTotalLog(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error) {
+func (_mock *MockMetricDataRetriever) GetTotalLog(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (float64, error) {
 	ret := _mock.Called(ctx, timeframe, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalLog")
 	}
 
-	var r0 int64
+	var r0 float64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) (int64, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) (float64, error)); ok {
 		return returnFunc(ctx, timeframe, namespace)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) int64); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, budgetv1alpha.Timeframe, string) float64); ok {
 		r0 = returnFunc(ctx, timeframe, namespace)
 	} else {
-		r0 = ret.Get(0).(int64)
+		r0 = ret.Get(0).(float64)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, budgetv1alpha.Timeframe, string) error); ok {
 		r1 = returnFunc(ctx, timeframe, namespace)
@@ -323,12 +323,12 @@ func (_c *MockMetricDataRetriever_GetTotalLog_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) Return(n int64, err error) *MockMetricDataRetriever_GetTotalLog_Call {
-	_c.Call.Return(n, err)
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) Return(f float64, err error) *MockMetricDataRetriever_GetTotalLog_Call {
+	_c.Call.Return(f, err)
 	return _c
 }
 
-func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (int64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
+func (_c *MockMetricDataRetriever_GetTotalLog_Call) RunAndReturn(run func(ctx context.Context, timeframe budgetv1alpha.Timeframe, namespace string) (float64, error)) *MockMetricDataRetriever_GetTotalLog_Call {
 	_c.Call.Return(run)
 	return _c
 }
