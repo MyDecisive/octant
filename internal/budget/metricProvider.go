@@ -173,6 +173,9 @@ func (mp *MetricProvider) logCost(amount int64) (float64, error) {
 // pct calculates the percentage base on a/b
 // and then returns the formatted percentage number.
 func (mp *MetricProvider) pct(a, b float64) (float64, error) {
+     if b == 0 {
+        return 0
+    }
 	return mp.truncate((a / b) * pctConstant)
 }
 
