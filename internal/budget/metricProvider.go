@@ -77,7 +77,7 @@ func (mp *MetricProvider) GetOverall(
 			Received: raw.LogReceived,
 			Sent:     raw.LogSend,
 			Filtered: raw.LogReceived - raw.LogSend,
-			CostRate: mp.config.Budget.DefaultLogCostRate,
+			CostRate: float32(mp.config.Budget.DefaultLogCostRate),
 			Cost:     logCost,
 			Pct:      float32(logPct),
 		},
@@ -85,7 +85,7 @@ func (mp *MetricProvider) GetOverall(
 			Received: raw.SpanReceived,
 			Sent:     raw.SpanSend,
 			Filtered: raw.SpanReceived - raw.SpanSend,
-			CostRate: mp.config.Budget.DefaultTraceCostRate,
+			CostRate: float32(mp.config.Budget.DefaultTraceCostRate),
 			Cost:     traceCost,
 			Pct:      float32(float64(pctConstant) - logPct),
 		},
@@ -114,7 +114,7 @@ func (mp *MetricProvider) GetLogs(
 			return nil, "", err
 		}
 
-		pct, err := mp.pct(float64(rlog.Amount), float64(total))
+		pct, err := mp.pct(rlog.Amount, total)
 		if err != nil {
 			return nil, "", err
 		}
@@ -149,7 +149,7 @@ func (mp *MetricProvider) GetSpans(
 
 		result[i] = &budgetv1alpha.Span{
 			Name:        r.Name,
-			Breath:      r.Breath,
+			Breath:      r.Breadth,
 			Depth:       r.Depth,
 			Invocations: r.Invocation,
 			Cost:        cost,
@@ -159,23 +159,23 @@ func (mp *MetricProvider) GetSpans(
 }
 
 // traceCost returns the trace cost calculated base on the given count.
-func (mp *MetricProvider) traceCost(count int64) (float64, error) {
+func (mp *MetricProvider) traceCost(count float64) (float64, error) {
 	return mp.truncate(
-		float64(count) * float64(mp.config.Budget.DefaultTraceCostRate),
+		count * mp.config.Budget.DefaultTraceCostRate,
 	)
 }
 
 // logCost returns the log cost calculated base on the given log data amount.
-func (mp *MetricProvider) logCost(amount int64) (float64, error) {
-	return mp.truncate(float64(amount) * float64(mp.config.Budget.DefaultLogCostRate))
+func (mp *MetricProvider) logCost(amount float64) (float64, error) {
+	return mp.truncate(amount * mp.config.Budget.DefaultLogCostRate)
 }
 
 // pct calculates the percentage base on a/b
 // and then returns the formatted percentage number.
 func (mp *MetricProvider) pct(a, b float64) (float64, error) {
-     if b == 0 {
-        return 0
-    }
+	if b == 0 {
+		return 0, nil
+	}
 	return mp.truncate((a / b) * pctConstant)
 }
 
