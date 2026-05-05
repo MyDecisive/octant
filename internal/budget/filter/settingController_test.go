@@ -71,6 +71,28 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 		assert.Equal(t, expectedIncludeErr, actual.GetIncludeErr())
 	})
 
+	t.Run("success empty", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsRatioNumber).
+			Return("", nil).
+			Once()
+		mockAccessor.EXPECT().
+			GetVariable(namespace, connection, varLogsPersistErrors).
+			Return("", nil).
+			Once()
+
+		target := NewMDAISettingController(c, mockAccessor, nil)
+
+		actual, err := target.GetFilter(budgetv1alpha.FilterType_FILTER_TYPE_LOG, namespace, connection)
+		require.NoError(t, err)
+
+		assert.Empty(t, actual.GetPctSampled())
+		assert.Empty(t, actual.GetIncludeErr())
+	})
+
 	t.Run("err log lock in use", func(t *testing.T) {
 		t.Parallel()
 
