@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -429,9 +430,16 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 		return nil, fmt.Errorf("getting prometheus client: %w", err)
 	}
 
+	allValidatorMetricsString := strings.Join(
+		[]string{
+			fmt.Sprintf("%s{mdai_connection=%q}", signalParityFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=%q}", signalPolicyFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=%q}", attributeParityFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=%q}", attributePolicyFidelityMetric, connectionName),
+		}, " or ")
 	// This query extracts unique validator_run_id labels associated with the connection's validation metrics over the last 7 days.
 	// You can adjust the time range [7d] or target metric if needed.
-	query := fmt.Sprintf(`count by (validator_run_id) (last_over_time(mdai_fidelity_signal_checks_total{mdai_connection="%s-telemetry-validation"}[7d]))`, connectionName) //
+	query := fmt.Sprintf(`count by (telemetry_validation_run_id) (%s)`, allValidatorMetricsString) //
 
 	vector, err := queryVector(ctx, promClient, query) //
 	if err != nil {
@@ -442,8 +450,7 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 	seen := make(map[string]bool)
 
 	for _, sample := range vector {
-		// Assuming the label is named "validator_run_id" in Prometheus
-		runID := string(sample.Metric["validator_run_id"])
+		runID := string(sample.Metric["telemetry_validation_run_id"])
 		if runID != "" && !seen[runID] {
 			seen[runID] = true
 			runIDs = append(runIDs, runID)
