@@ -207,6 +207,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoTemplateData{
 			AppName:        "test-app",
+			Namespace:      "test-ns",
 			IsArgoSideload: true,
 			ConnectionData: OctantConnectionData{
 				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Traces},
@@ -263,6 +264,15 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 			require.True(t, found, "Pipeline %s should exist", tel)
 			assert.Contains(t, receivers.([]any), "datadog", "Pipeline should include datadog receiver")
 		}
+
+		// Check tracealyzer exporter wiring
+		tracealyzerEndpoint, hasTracealyzerEndpoint := getNestedField(otelConfig, "exporters", "otlp_grpc/tracealyzer", "endpoint")
+		assert.True(t, hasTracealyzerEndpoint, "tracealyzer exporter should be configured")
+		assert.Equal(t, "mdai-tracealyzer.test-ns.svc.cluster.local:4317", tracealyzerEndpoint)
+
+		traceExporters, hasTraceExporters := getNestedField(otelConfig, "service", "pipelines", "traces", "exporters")
+		require.True(t, hasTraceExporters, "Traces pipeline exporters should exist")
+		assert.Contains(t, traceExporters.([]any), "otlp_grpc/tracealyzer", "Traces pipeline should include tracealyzer exporter")
 	})
 
 	t.Run("Minimal Configuration without Pipelines", func(t *testing.T) {
