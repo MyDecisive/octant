@@ -45,7 +45,6 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 				Filtered: raw.LogReceived - raw.LogSend,
 				CostRate: float32(c.Budget.DefaultLogCostRate),
 				Cost:     raw.LogSend * c.Budget.DefaultLogCostRate,
-				Pct:      55.56,
 			},
 			Trace: &budgetv1alpha.Overall_Metric{
 				Received: raw.SpanReceived,
@@ -53,13 +52,10 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 				Filtered: raw.SpanReceived - raw.SpanSend,
 				CostRate: float32(c.Budget.DefaultTraceCostRate),
 				Cost:     raw.SpanSend * c.Budget.DefaultTraceCostRate,
-				Pct:      44.44,
 			},
 		}
 		expected.Cost = expected.GetLog().GetCost() + expected.GetTrace().GetCost()
-		logPct, err := strconv.ParseFloat(fmt.Sprintf("%.2f", (expected.GetLog().GetCost()/expected.GetCost())*100), 64)
-		require.NoError(t, err)
-		expected.Log.Pct = float32(logPct)
+		expected.Log.Pct = float32((expected.GetLog().GetCost() / expected.GetCost()) * 100)
 		expected.Trace.Pct = float32(100) - expected.GetLog().GetPct()
 
 		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
