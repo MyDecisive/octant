@@ -68,7 +68,6 @@ func TestRenderManifestFormats(t *testing.T) {
 				fmt.Sprintf("trace-collector.%s", format),
 				fmt.Sprintf("observer.%s", format),
 				fmt.Sprintf("hub.%s", format),
-				fmt.Sprintf("validator.%s", format),
 				fmt.Sprintf("secret.%s", format),
 			}
 
@@ -437,22 +436,17 @@ func TestRenderValidatorManifest(t *testing.T) {
 	t.Parallel()
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
-		templateData := ArgoConnectionTemplateData{
-			AppName: "test-app",
-			ConnectionData: OctantConnectionData{
-				TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
-			},
-			DatadogIntegrationData: &integration.DataDogIntegrationData{
-				DDUrl: "https://datadoghq.com",
-			},
+		templateData := ArgoValidatorTemplateData{
+			ConnectionName: "test-app",
+			Namespace:      defaultNamespace,
+			ValidatorRunID: "2026-05-05_19-45-46.601132",
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifest, err := renderValidatorManifestForConnection(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
-		validatorBytes := (manifests)["validator.yaml"]
 
 		var validator map[string]any
-		require.NoError(t, yaml.Unmarshal(validatorBytes, &validator))
+		require.NoError(t, yaml.Unmarshal(manifest, &validator))
 
 		spec := validator["spec"].(map[string]any)
 		collectorRef := spec["collectorRef"].(map[string]any)
