@@ -8,6 +8,7 @@ import (
 
 	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
+	"github.com/mydecisive/octant/internal/budget"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
@@ -69,6 +70,11 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		dig.As(new(budgetdata.MetricDataRetriever))); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(
+		budget.NewMetricProvider,
+		dig.As(new(budget.MetricDataProvider))); err != nil {
+		return nil, err
+	}
 
 	// Integration
 	if err := container.Provide(
@@ -121,6 +127,9 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewBudgetTimeframeHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewBudgetHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpc.NewServer); err != nil {
