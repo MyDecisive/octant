@@ -48,10 +48,11 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	*connect.Response[octantv1alpha.GetConnectionStatusResponse],
 	error,
 ) {
+	connScope := request.Msg.GetScope()
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 		request.Msg.GetValidatorRunId(),
 	)
 	if err != nil {
@@ -67,10 +68,10 @@ func (ch *ConnectionHandler) GenerateManifests(
 	stream *connect.ServerStream[octantv1alpha.GenerateManifestsResponse],
 ) error {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
-
+	connScope := request.Msg.GetScope()
 	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
-		Namespace:   request.Msg.GetNamespace(),
-		Connection:  request.Msg.GetConnectionName(),
+		Namespace:   connScope.GetNamespace(),
+		Connection:  connScope.GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),
 		Format:      request.Msg.GetFormat(),
 	})
@@ -126,10 +127,11 @@ func (ch *ConnectionHandler) GetConnection(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.GetConnectionRequest],
 ) (*connect.Response[octantv1alpha.GetConnectionResponse], error) {
+	connScope := request.Msg.GetScope()
 	conn, err := ch.octantConnection.GetConnectionByName(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection: %w", err))
@@ -176,12 +178,12 @@ func (ch *ConnectionHandler) CreateConnection(
 	request *connect.Request[octantv1alpha.CreateConnectionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	connData := convertRequestToConnectionData(request)
-
+	connScope := request.Msg.GetScope()
 	err := ch.octantConnection.SaveConnection(
 		ctx,
 		connData,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
@@ -260,10 +262,11 @@ func (ch *ConnectionHandler) GetConnectionValidatorRuns(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.GetConnectionValidatorRunsRequest],
 ) (*connect.Response[octantv1alpha.GetConnectionValidatorRunsResponse], error) {
+	connScope := request.Msg.GetScope()
 	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection validator runs: %w", err))
@@ -278,10 +281,11 @@ func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.CreateConnectionValidatorRunRequest],
 ) (*connect.Response[octantv1alpha.CreateConnectionValidatorRunResponse], error) {
+	connScope := request.Msg.GetScope()
 	runID, err := ch.octantConnection.PutConnectionValidatorRun(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate validator run: %w", err))
@@ -296,10 +300,11 @@ func (ch *ConnectionHandler) DeleteConnection(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.DeleteConnectionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
+	connScope := request.Msg.GetScope()
 	err := ch.octantConnection.DeleteConnection(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
@@ -312,10 +317,11 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest],
 ) (*connect.Response[emptypb.Empty], error) {
+	connScope := request.Msg.GetScope()
 	err := ch.octantConnection.DeleteConnectionValidator(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
