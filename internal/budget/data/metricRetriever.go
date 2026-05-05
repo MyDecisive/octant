@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	toGB        = 1073741824.0
-	toMilEvents = 1000000.0
+	toGB  = 1073741824.0
+	toMil = 1000000.0
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
 )
@@ -104,7 +104,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		ReceivedSpanRootCountTotal,
 		ReceivedSpanRootCountTotal.GreptimeValue,
 		ReceivedSpanRootCountTotal.GreptimeTimestamp,
-		toMilEvents,
+		toMil,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("span received:%w", err)
@@ -117,7 +117,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		SentSpanCountTotal,
 		SentSpanCountTotal.GreptimeValue,
 		SentSpanCountTotal.GreptimeTimestamp,
-		toMilEvents,
+		toMil,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("span sent:%w", err)
@@ -211,11 +211,11 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	}
 	stmt := SELECT(
 		table.RootID.AS("root_span.name"),
-		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMilEvents))).AS("root_span.count"),
+		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMil))).AS("root_span.count"),
 		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.BreadthSketch.Name())).AS("root_span.breadth"),
 		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.DepthSketch.Name())).AS("root_span.depth"),
 		RawFloat(
-			fmt.Sprintf(uddsketchCalcFormatter, table.DurationSketch.Name())).DIV(Float(toMilEvents)).
+			fmt.Sprintf(uddsketchCalcFormatter, table.DurationSketch.Name())).DIV(Float(toMil)).
 			AS("root_span.invocation"),
 	).FROM(table).
 		WHERE(where).
