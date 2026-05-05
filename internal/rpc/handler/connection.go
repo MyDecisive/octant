@@ -190,7 +190,9 @@ func (ch *ConnectionHandler) CreateConnection(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func convertRequestToConnectionData(request *connect.Request[octantv1alpha.CreateConnectionRequest]) connection.OctantConnectionData {
+func convertRequestToConnectionData(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) connection.OctantConnectionData {
 	destinations := extractDestinationsFromRequest(request)
 	dataTypes := extractDataTypesFromRequest(request)
 	deployment := extractDeploymentFromRequest(request)
@@ -203,7 +205,9 @@ func convertRequestToConnectionData(request *connect.Request[octantv1alpha.Creat
 	return connData
 }
 
-func extractDeploymentFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) *connection.Deployment {
+func extractDeploymentFromRequest(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) *connection.Deployment {
 	var deploymentType connection.DeploymentType
 	switch request.Msg.GetDeployment().GetType() {
 	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
@@ -235,7 +239,9 @@ func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.CreateCo
 	return telemetries
 }
 
-func extractDestinationsFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []connection.OctantConnectionDestination {
+func extractDestinationsFromRequest(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) []connection.OctantConnectionDestination {
 	var destinations []connection.OctantConnectionDestination
 	for _, d := range request.Msg.GetDestinations() {
 		destType := "unknown"
@@ -302,7 +308,10 @@ func (ch *ConnectionHandler) DeleteConnection(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func (ch *ConnectionHandler) DeleteConnectionValidator(ctx context.Context, request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest]) (*connect.Response[emptypb.Empty], error) {
+func (ch *ConnectionHandler) DeleteConnectionValidator(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest],
+) (*connect.Response[emptypb.Empty], error) {
 	err := ch.octantConnection.DeleteConnectionValidator(
 		ctx,
 		request.Msg.GetNamespace(),

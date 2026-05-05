@@ -93,7 +93,7 @@ func NewPrometheusConnectionStatus(promClientFactory PromClientFactory) *Prometh
 	}
 }
 
-// GetConnectionStatus reads OTEL Collectoor and validator metrics to ensure a MDAI Connection is working.
+// GetConnectionStatus reads OTEL Collector and validator metrics to ensure a MDAI Connection is working.
 func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 	ctx context.Context,
 	namespace string,
@@ -446,9 +446,6 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 			fmt.Sprintf("%s{mdai_connection=%q}", attributeParityFidelityMetric, connectionName),
 			fmt.Sprintf("%s{mdai_connection=%q}", attributePolicyFidelityMetric, connectionName),
 		}, " or ")
-	// This query extracts unique validator_run_id labels associated with the connection's
-	// validation metrics over the last 7 days.
-	// You can adjust the time range [7d] or target metric if needed.
 	query := fmt.Sprintf(`count by (telemetry_validation_run_id) (%s)`, allValidatorMetricsString)
 
 	vector, err := queryVector(ctx, promClient, query)

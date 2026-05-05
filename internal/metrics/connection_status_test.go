@@ -24,7 +24,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		factory.EXPECT().GetPromClient("test-ns").Return(nil, assert.AnError)
 
 		cs := NewPrometheusConnectionStatus(factory)
-		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs}, defaultValidationID)
+		resp, err := cs.GetConnectionStatus(
+			t.Context(),
+			"test-ns",
+			"test-conn",
+			[]telemetry.MLT{telemetry.Logs},
+			defaultValidationID,
+		)
 
 		require.ErrorIs(t, err, assert.AnError)
 		require.Nil(t, resp)
@@ -44,7 +50,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
 
 		cs := NewPrometheusConnectionStatus(factory)
-		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs}, defaultValidationID)
+		resp, err := cs.GetConnectionStatus(
+			t.Context(),
+			"test-ns",
+			"test-conn",
+			[]telemetry.MLT{telemetry.Logs},
+			defaultValidationID,
+		)
 
 		require.ErrorContains(t, err, "querying telemetry ingress status")
 		require.Nil(t, resp)
@@ -74,7 +86,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
 
 		cs := NewPrometheusConnectionStatus(factory)
-		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs}, defaultValidationID)
+		resp, err := cs.GetConnectionStatus(
+			t.Context(),
+			"test-ns",
+			"test-conn",
+			[]telemetry.MLT{telemetry.Logs},
+			defaultValidationID,
+		)
 
 		require.ErrorContains(t, err, "querying telemetry egress status")
 		require.Nil(t, resp)
@@ -104,7 +122,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
 
 		cs := NewPrometheusConnectionStatus(factory)
-		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs}, defaultValidationID)
+		resp, err := cs.GetConnectionStatus(
+			t.Context(),
+			"test-ns",
+			"test-conn",
+			[]telemetry.MLT{telemetry.Logs},
+			defaultValidationID,
+		)
 
 		require.ErrorContains(t, err, "verifying data integrity")
 		require.ErrorIs(t, err, assert.AnError)
@@ -145,7 +169,13 @@ func TestGetConnectionStatus(t *testing.T) {
 		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
 
 		cs := NewPrometheusConnectionStatus(factory)
-		resp, err := cs.GetConnectionStatus(t.Context(), "test-ns", "test-conn", []telemetry.MLT{telemetry.Logs}, defaultValidationID)
+		resp, err := cs.GetConnectionStatus(
+			t.Context(),
+			"test-ns",
+			"test-conn",
+			[]telemetry.MLT{telemetry.Logs},
+			defaultValidationID,
+		)
 
 		require.NoError(t, err)
 		require.NotNil(t, resp)
