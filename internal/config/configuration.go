@@ -44,15 +44,23 @@ type RPC struct {
 
 // Budget contains configuration specifically for budget applet.
 type Budget struct {
+	MDAIGatewayURLOverride string `yaml:"mdaiGatewayUrlOverride" env:"OCTANT_MDAI_GATEWAY_URL"`
 	DefaultMDAIGatewayName string `yaml:"defaultMdaiGateway" env:"OCTANT_DEFAULT_MDAI_GATEWAY" env-default:"mdai-gateway"`
 	// FilterSettingUpdateTimeout (in seconds) controls how long
 	// Octant waits for filter setting update to be applied.
 	FilterSettingUpdateTimeout int `yaml:"filterSettingUpdateTimeout" env:"OCTANT_FILTER_SETTING_UPDATE_TIMEOUT" env-default:"60"` // nolint:lll
 	// FilterSettingUpdateInterval (in seconds) controls how often
 	//  Octant check if the filter setting update have been applied or not.
-	FilterSettingUpdateInterval int     `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
-	DefaultLogCostRate          float64 `env:"OCTANT_DEFAULT_LOG_COST_RATE" env-default:"2.50"`
-	DefaultTraceCostRate        float64 `env:"OCTANT_DEFAULT_TRACE_COST_RATE" env-default:"2.50"`
+	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
+
+	DefaultLogCostRate   float64 `env:"OCTANT_DEFAULT_LOG_COST_RATE" env-default:"2.50"`
+	DefaultTraceCostRate float64 `env:"OCTANT_DEFAULT_TRACE_COST_RATE" env-default:"2.50"`
+
+	GreptimeDBURLOverride string `yaml:"greptimedbUrlOverride" env:"OCTANT_GREPTIMEDB_URL"`
+	DefaultGreptimeDBName string `yaml:"defaultGreptimedb" env:"OCTANT_DEFAULT_GREPTIMEDB" env-default:"mdai-greptimedb"` // nolint:lll
+	// GreptimeDBMaxConnTimeout (in minutes) configures greptime DB max connection timeout.
+	GreptimeDBMaxConnTimeout int `yaml:"greptimedbMaxConnTimeout" env:"OCTANT_GREPTIMEDB_MAX_CONN_TIMEOUT" env-default:"3"` // nolint:lll
+	GreptimeDBMaxConn        int `yaml:"greptimedbMaxConn" env:"OCTANT_GREPTIMEDB_MAX_CONN" env-default:"10"`               // nolint:lll
 }
 
 type Metrics struct {
