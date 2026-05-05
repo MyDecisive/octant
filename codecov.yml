@@ -11,5 +11,5 @@ ignore:
   - "internal/test"
   - "internal/mock"
   - "internal/registry"
-  - "internal/budget/data/db/public"
+  - "internal/budget/data/db"
   - "internal/rpc/server.go"

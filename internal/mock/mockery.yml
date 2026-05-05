@@ -38,6 +38,11 @@ packages:
     interfaces:
       VariableAccessor:
       MetricDataRetriever:
+  github.com/mydecisive/octant/internal/budget/data/db:
+    config:
+      pkgname: 'budget{{.SrcPackageName}}mock'
+    interfaces:
+      DatabaseAccessBuilder:
   github.com/mydecisive/octant/internal/budget/filter:
     interfaces:
       SettingController:
