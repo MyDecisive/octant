@@ -2,9 +2,9 @@ package integration
 
 import (
 	"encoding/json"
-	"github.com/mydecisive/octant/internal/config"
 	"testing"
 
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"

@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mydecisive/octant/internal/config"
 	"slices"
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -69,7 +69,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 	ctx context.Context,
 	namespace string,
 	connectionName string,
-	validatorRunId string,
+	validatorRunID string,
 ) (
 	*octantv1alpha.GetConnectionStatusResponse,
 	error,
@@ -82,7 +82,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
 	}
 
-	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes, validatorRunId)
+	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes, validatorRunID)
 }
 
 func (oc *OctantConnection) GetConnectionByName(
@@ -132,7 +132,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		if deleteErr := oc.deleteArgoApp(ctx, connectionName, namespace, connection); deleteErr != nil {
+		if deleteErr := oc.deleteArgoApp(ctx, connectionName, connection); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -144,48 +144,6 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 	}
 
 	return nil
-}
-
-// createConnection creates a new connection configmap.
-func (oc *OctantConnection) createConnection(
-	ctx context.Context,
-	connection OctantConnectionData,
-	namespace, connectionName string,
-) error {
-	connection.Created = time.Now()
-	jsonData, err := json.Marshal(connection)
-	if err != nil {
-		return fmt.Errorf("failed to marshal connection data: %w", err)
-	}
-	return createConnectionConfigMap(
-		ctx,
-		oc.k8sClient,
-		namespace,
-		connectionsConfigmapName,
-		connectionName,
-		string(jsonData),
-	)
-}
-
-// updateConnection updates the existing connection configmap with the new data.
-func (oc *OctantConnection) updateConnection(
-	ctx context.Context,
-	cm *corev1.ConfigMap,
-	connection OctantConnectionData,
-	namespace, connectionName string,
-) error {
-	jsonData, err := json.Marshal(connection)
-	if err != nil {
-		return fmt.Errorf("failed to marshal connection data: %w", err)
-	}
-	return updateConfigMapWithConnection(
-		ctx,
-		oc.k8sClient,
-		namespace,
-		cm,
-		connectionName,
-		string(jsonData),
-	)
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string) ([]string, error) {
@@ -229,12 +187,12 @@ func (oc *OctantConnection) SaveConnection(
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 		}
-		if err := oc.createConnection(ctx, connection, namespace, connectionName); err != nil {
-			return err
+		if createErr := oc.createConnection(ctx, connection, namespace, connectionName); createErr != nil {
+			return createErr
 		}
 	} else {
-		if err := oc.updateConnection(ctx, cm, connection, namespace, connectionName); err != nil {
-			return err
+		if updateErr := oc.updateConnection(ctx, cm, connection, namespace, connectionName); updateErr != nil {
+			return updateErr
 		}
 	}
 
@@ -293,4 +251,46 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, names
 	}
 
 	return nil
+}
+
+// createConnection creates a new connection configmap.
+func (oc *OctantConnection) createConnection(
+	ctx context.Context,
+	connection OctantConnectionData,
+	namespace, connectionName string,
+) error {
+	connection.Created = time.Now()
+	jsonData, err := json.Marshal(connection)
+	if err != nil {
+		return fmt.Errorf("failed to marshal connection data: %w", err)
+	}
+	return createConnectionConfigMap(
+		ctx,
+		oc.k8sClient,
+		namespace,
+		connectionsConfigmapName,
+		connectionName,
+		string(jsonData),
+	)
+}
+
+// updateConnection updates the existing connection configmap with the new data.
+func (oc *OctantConnection) updateConnection(
+	ctx context.Context,
+	cm *corev1.ConfigMap,
+	connection OctantConnectionData,
+	namespace, connectionName string,
+) error {
+	jsonData, err := json.Marshal(connection)
+	if err != nil {
+		return fmt.Errorf("failed to marshal connection data: %w", err)
+	}
+	return updateConfigMapWithConnection(
+		ctx,
+		oc.k8sClient,
+		namespace,
+		cm,
+		connectionName,
+		string(jsonData),
+	)
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mydecisive/octant/internal/telemetry"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"io"
 
 	"connectrpc.com/connect"
@@ -13,7 +11,9 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -107,6 +107,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 		}
 	}
 }
+
 func (ch *ConnectionHandler) GetConnections(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.GetConnectionsRequest],

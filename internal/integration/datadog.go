@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mydecisive/octant/internal/config"
 	"strings"
 
+	"github.com/mydecisive/octant/internal/config"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,10 +35,10 @@ type DataDogIntegration struct {
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
-func NewDataDogIntegration(k8sClient kubernetes.Interface, config *config.Configuration) *DataDogIntegration {
+func NewDataDogIntegration(k8sClient kubernetes.Interface, configuration *config.Configuration) *DataDogIntegration {
 	return &DataDogIntegration{
 		K8sClient:     k8sClient,
-		configuration: config,
+		configuration: configuration,
 	}
 }
 

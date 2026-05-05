@@ -64,7 +64,7 @@ const (
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
 
-func getRunId() string {
+func getRunID() string {
 	return time.Now().UTC().Format("2006-01-02_15-04-05.999999")
 }
 
@@ -120,9 +120,12 @@ func CreateExportableArgoManifests(
 	validatorTemplateData := ArgoValidatorTemplateData{
 		ConnectionName: name,
 		Namespace:      namespace,
-		ValidatorRunID: getRunId(),
+		ValidatorRunID: getRunID(),
 	}
 	validatorManifest, err := renderValidatorManifestForConnection(&validatorTemplateData, format)
+	if err != nil {
+		return nil, err
+	}
 	manifests[getFilename("validator", format)] = validatorManifest
 	appManifest, err := renderArgoAppManifest(templateData, format)
 	if err != nil {

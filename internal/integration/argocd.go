@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mydecisive/octant/internal/config"
 
+	"github.com/mydecisive/octant/internal/config"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -26,10 +26,10 @@ type ArgoCDIntegration struct {
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
 // NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
-func NewArgoCDIntegration(k8sClient kubernetes.Interface, config *config.Configuration) *ArgoCDIntegration {
+func NewArgoCDIntegration(k8sClient kubernetes.Interface, configuration *config.Configuration) *ArgoCDIntegration {
 	return &ArgoCDIntegration{
 		K8sClient:     k8sClient,
-		configuration: config,
+		configuration: configuration,
 	}
 }
 

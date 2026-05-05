@@ -46,11 +46,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 		return appCreateErr
 	}
 
-	if err := oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name); err != nil {
-		return err
-	}
-
-	return nil
+	return oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name)
 }
 
 func (oc *OctantConnection) getArgoIntegration(ctx context.Context, connection OctantConnectionData) (*integration.ArgoCDIntegrationData, error) {
@@ -84,7 +80,7 @@ func (oc *OctantConnection) doArgoAppSync(
 		manifestsSlice = append(manifestsSlice, string(manifest))
 	}
 
-	syncPayload := oc.makeArgoSyncPayload(manifestsSlice)
+	syncPayload := makeArgoSyncPayload(manifestsSlice)
 
 	syncPayloadJSON, err := json.Marshal(syncPayload)
 	if err != nil {
@@ -130,7 +126,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	templateData := &ArgoValidatorTemplateData{
 		ConnectionName: connectionName,
 		Namespace:      namespace,
-		ValidatorRunID: getRunId(),
+		ValidatorRunID: getRunID(),
 	}
 
 	manifest, err := renderValidatorManifestForConnection(templateData, JSONOutputFormat)
@@ -142,7 +138,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		string(manifest),
 	}
 
-	syncPayload := oc.makeArgoSyncPayload(manifestsSlice)
+	syncPayload := makeArgoSyncPayload(manifestsSlice)
 
 	syncPayloadJSON, err := json.Marshal(syncPayload)
 	if err != nil {
@@ -169,7 +165,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	return templateData.ValidatorRunID, nil
 }
 
-func (oc *OctantConnection) makeArgoSyncPayload(manifestsSlice []string) argoSyncPayload {
+func makeArgoSyncPayload(manifestsSlice []string) argoSyncPayload {
 	return argoSyncPayload{
 		Revision: "HEAD",
 		Prune:    false,
@@ -214,12 +210,7 @@ func (oc *OctantConnection) doArgoAppCreation(
 	return nil
 }
 
-func (oc *OctantConnection) deleteArgoApp(
-	ctx context.Context,
-	name string,
-	namespace string,
-	connection OctantConnectionData,
-) error {
+func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, connection OctantConnectionData) error {
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
 		ctx,
 		connection.Deployment.IntegrationName,

@@ -34,7 +34,7 @@ func TestDeleteArgoApp(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 	require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestDeleteArgoApp_Error_IntegrationFetchFailed(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 
@@ -155,7 +155,7 @@ func TestDeleteArgoApp_Error_RequestCreation(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 
@@ -178,7 +178,7 @@ func TestDeleteArgoApp_Error_HTTPDoFailed(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 
@@ -207,7 +207,7 @@ func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 
@@ -235,7 +235,7 @@ func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
 
 	octantConnection := f.build()
 
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", "default", OctantConnectionData{
+	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "argo-test"},
 	})
 
