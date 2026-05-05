@@ -266,13 +266,20 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		}
 
 		// Check tracealyzer exporter wiring
-		tracealyzerEndpoint, hasTracealyzerEndpoint := getNestedField(otelConfig, "exporters", "otlp_grpc/tracealyzer", "endpoint")
+		tracealyzerEndpoint, hasTracealyzerEndpoint := getNestedField(
+			otelConfig, "exporters", "otlp_grpc/tracealyzer", "endpoint",
+		)
 		assert.True(t, hasTracealyzerEndpoint, "tracealyzer exporter should be configured")
 		assert.Equal(t, "mdai-tracealyzer.test-ns.svc.cluster.local:4317", tracealyzerEndpoint)
 
-		traceExporters, hasTraceExporters := getNestedField(otelConfig, "service", "pipelines", "traces", "exporters")
+		traceExporters, hasTraceExporters := getNestedField(
+			otelConfig, "service", "pipelines", "traces", "exporters",
+		)
 		require.True(t, hasTraceExporters, "Traces pipeline exporters should exist")
-		assert.Contains(t, traceExporters.([]any), "otlp_grpc/tracealyzer", "Traces pipeline should include tracealyzer exporter")
+		assert.Contains(t,
+			traceExporters.([]any), "otlp_grpc/tracealyzer",
+			"Traces pipeline should include tracealyzer exporter",
+		)
 	})
 
 	t.Run("Minimal Configuration without Pipelines", func(t *testing.T) {
