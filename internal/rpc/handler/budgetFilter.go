@@ -8,18 +8,26 @@ import (
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha/budgetv1alphaconnect"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/telemetry"
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
 type BudgetFilterHandler struct {
 	budgetv1alphaconnect.UnimplementedFilterServiceHandler
 
-	setting budgetfilter.SettingController
+	connection connection.Connection[connection.OctantConnectionData]
+	setting    budgetfilter.SettingController
 }
 
-func NewBudgetFilterHandler(setting budgetfilter.SettingController) *BudgetFilterHandler {
+func NewBudgetFilterHandler(
+	conn connection.Connection[connection.OctantConnectionData],
+	setting budgetfilter.SettingController,
+) *BudgetFilterHandler {
 	return &BudgetFilterHandler{
-		setting: setting,
+		connection: conn,
+		setting:    setting,
 	}
 }
 
@@ -27,22 +35,38 @@ func (bfh *BudgetFilterHandler) GetFilter(
 	ctx context.Context,
 	req *connect.Request[budgetv1alpha.GetFilterRequest],
 ) (*connect.Response[budgetv1alpha.GetFilterResponse], error) {
-	logger := zap.L().With(zap.String("operation", budgetv1alphaconnect.FilterServiceGetFilterProcedure))
+	logger := zap.L().With(
+		zap.String("operation", budgetv1alphaconnect.FilterServiceGetFilterProcedure),
+		zap.String("type", req.Msg.GetType().String()),
+		zap.String("namespace", req.Msg.GetNamespace()),
+		zap.String("connection", req.Msg.GetConnectionName()),
+	)
+
+	if ok, err := bfh.isAllowed(
+		ctx,
+		req.Msg.GetNamespace(),
+		req.Msg.GetConnectionName(),
+		req.Msg.GetType(),
+	); err != nil {
+		logger.Error("failed to get connection data", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	} else if !ok {
+		logger.Error("connection does not support given type", zap.Error(err))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("telemetry type not available"))
+	}
+
 	filter, err := bfh.setting.GetFilter(req.Msg.GetType(), req.Msg.GetNamespace(), req.Msg.GetConnectionName())
 	if err != nil {
 		logger.Error("failed to get filters", zap.Error(err))
 		code := connect.CodeUnknown
-		if errors.Is(err, budgetfilter.ErrInvalid) {
-			code = connect.CodeInvalidArgument
-		}
-		if errors.Is(err, budgetfilter.ErrFormat) {
-			code = connect.CodeInternal
-		}
-		if errors.Is(err, budgetfilter.ErrNotFound) {
-			code = connect.CodeNotFound
-		}
+		// nolint: gocritic // checking error type must use errors.Is
 		if errors.Is(err, budgetfilter.ErrStillUpdating) {
 			code = connect.CodeUnavailable
+		} else if errors.Is(err, budgetfilter.ErrInvalid) {
+			code = connect.CodeInvalidArgument
+		} else if errors.Is(err, budgetfilter.ErrFormat) ||
+			errors.Is(err, budgetfilter.ErrNotFound) {
+			code = connect.CodeInternal
 		}
 		return nil, connect.NewError(code, err)
 	}
@@ -57,7 +81,26 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 	req *connect.Request[budgetv1alpha.UpdateFilterRequest],
 	stream *connect.ServerStream[budgetv1alpha.UpdateFilterResponse],
 ) error {
-	logger := zap.L().With(zap.String("operation", budgetv1alphaconnect.FilterServiceUpdateFilterProcedure))
+	logger := zap.L().With(
+		zap.String("operation", budgetv1alphaconnect.FilterServiceUpdateFilterProcedure),
+		zap.String("type", req.Msg.GetData().GetType().String()),
+		zap.String("namespace", req.Msg.GetNamespace()),
+		zap.String("connection", req.Msg.GetConnectionName()),
+	)
+
+	if ok, err := bfh.isAllowed(
+		ctx,
+		req.Msg.GetNamespace(),
+		req.Msg.GetConnectionName(),
+		req.Msg.GetData().GetType(),
+	); err != nil {
+		logger.Error("failed to get connection data", zap.Error(err))
+		return connect.NewError(connect.CodeInternal, err)
+	} else if !ok {
+		logger.Error("connection does not support given type", zap.Error(err))
+		return connect.NewError(connect.CodeNotFound, errors.New("telemetry type not available"))
+	}
+
 	results := make(chan budgetfilter.UpdateFilterResult)
 
 	go func() {
@@ -74,16 +117,14 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 
 		if result.Err != nil {
 			logger.Error("failed to update filters", zap.Error(result.Err))
-			if errors.Is(result.Err, budgetfilter.ErrInvalid) {
-				return connect.NewError(connect.CodeInvalidArgument, budgetfilter.ErrInvalid)
-			}
+			// nolint: gocritic // checking error type must use errors.Is
 			if errors.Is(result.Err, budgetfilter.ErrStillUpdating) {
 				return connect.NewError(connect.CodeUnavailable, budgetfilter.ErrStillUpdating)
-			}
-			if errors.Is(result.Err, budgetfilter.ErrUpdateValue) {
+			} else if errors.Is(result.Err, budgetfilter.ErrInvalid) {
+				return connect.NewError(connect.CodeInvalidArgument, budgetfilter.ErrInvalid)
+			} else if errors.Is(result.Err, budgetfilter.ErrUpdateValue) {
 				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateValue)
-			}
-			if errors.Is(result.Err, budgetfilter.ErrUpdateCollector) {
+			} else if errors.Is(result.Err, budgetfilter.ErrUpdateCollector) {
 				return connect.NewError(connect.CodeInternal, budgetfilter.ErrUpdateCollector)
 			}
 			return connect.NewError(connect.CodeUnknown, result.Err)
@@ -98,4 +139,27 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 	}
 
 	return nil
+}
+
+// isAllowed returns true if the given connection allows the given MLT type.
+func (bfh *BudgetFilterHandler) isAllowed(
+	ctx context.Context,
+	namespace string,
+	conn string,
+	mlt budgetv1alpha.FilterType,
+) (bool, error) {
+	con, err := bfh.connection.GetConnectionByName(ctx, namespace, conn)
+	if err != nil {
+		return false, err
+	}
+	if con == nil {
+		return false, nil
+	}
+
+	mltType := telemetry.Logs
+	if mlt == budgetv1alpha.FilterType_FILTER_TYPE_TRACE {
+		mltType = telemetry.Traces
+	}
+
+	return lo.Contains(con.TelemetryTypes, mltType), nil
 }

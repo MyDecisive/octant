@@ -196,21 +196,27 @@ func (sc *MDAISettingController) get(input settingInput) (*budgetv1alpha.Filter,
 	if err != nil {
 		return nil, fmt.Errorf("%s:%w:%w", input.ratioVarName, ErrNotFound, err)
 	}
-	num, err := strconv.ParseUint(numStr, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("%s:%w:%w", input.ratioVarName, ErrFormat, err)
+
+	if numStr != "" {
+		num, errNum := strconv.ParseUint(numStr, 10, 32)
+		if errNum != nil {
+			return nil, fmt.Errorf("%s:%w:%w", input.ratioVarName, ErrFormat, errNum)
+		}
+		filter.PctSampled = uint32(num)
 	}
-	filter.PctSampled = uint32(num)
 
 	boolStr, err := sc.accessor.GetVariable(input.namespace, input.connection, input.errorVarName)
 	if err != nil {
 		return nil, fmt.Errorf("%s:%w:%w", input.errorVarName, ErrNotFound, err)
 	}
-	persistErr, err := strconv.ParseBool(boolStr)
-	if err != nil {
-		return nil, fmt.Errorf("%s:%w:%w", input.errorVarName, ErrFormat, err)
+
+	if boolStr != "" {
+		persistErr, errBool := strconv.ParseBool(boolStr)
+		if errBool != nil {
+			return nil, fmt.Errorf("%s:%w:%w", input.errorVarName, ErrFormat, errBool)
+		}
+		filter.IncludeErr = persistErr
 	}
-	filter.IncludeErr = persistErr
 
 	return filter, nil
 }
@@ -271,7 +277,7 @@ func (sc *MDAISettingController) update(
 		}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			out <- UpdateFilterResult{
-				Err: ErrTimeout,
+				Err: fmt.Errorf("%w:%w", ErrUpdateCollector, ErrTimeout),
 			}
 			return
 		}

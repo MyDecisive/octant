@@ -31,6 +31,9 @@ packages:
   github.com/mydecisive/octant/internal/wrapper:
     interfaces:
       HTTPClient:
+  github.com/mydecisive/octant/internal/budget:
+    interfaces:
+      MetricDataProvider:
   github.com/mydecisive/octant/internal/budget/data:
     interfaces:
       VariableAccessor:
