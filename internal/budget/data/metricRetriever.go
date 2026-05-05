@@ -10,7 +10,6 @@ import (
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	. "github.com/mydecisive/octant/internal/budget/data/db/public/table" //nolint
 	"github.com/mydecisive/octant/internal/config"
-	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -170,7 +169,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
 	if input.Search != "" {
-		where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
+		where = where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
 	}
 	stmt := SELECT(
 		table.Service.AS("log.name"),
@@ -208,21 +207,22 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
 	if input.Search != "" {
-		where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
+		where = where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
 	}
 	stmt := SELECT(
 		table.RootID.AS("root_span.name"),
 		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMilEvents))).AS("root_span.count"),
 		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.BreadthSketch.Name())).AS("root_span.breadth"),
 		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.DepthSketch.Name())).AS("root_span.depth"),
-		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.DurationSketch.Name())).AS("root_span.invocation"),
+		RawFloat(
+			fmt.Sprintf(uddsketchCalcFormatter, table.DurationSketch.Name())).DIV(Float(toMilEvents)).
+			AS("root_span.invocation"),
 	).FROM(table).
 		WHERE(where).
 		GROUP_BY(table.RootID).
 		ORDER_BY(Raw("`root_span.count` DESC")).
 		LIMIT(int64(input.Size + 1))
 
-	zap.L().Info(stmt.DebugSql())
 	var result []RootSpan
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
 		return nil, "", err
