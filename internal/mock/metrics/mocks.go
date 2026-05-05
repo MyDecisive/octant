@@ -120,6 +120,80 @@ func (_c *MockConnectionStatus_GetConnectionStatus_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// GetConnectionValidatorRuns provides a mock function for the type MockConnectionStatus
+func (_mock *MockConnectionStatus) GetConnectionValidatorRuns(ctx context.Context, namespace string, connectionName string) ([]string, error) {
+	ret := _mock.Called(ctx, namespace, connectionName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetConnectionValidatorRuns")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]string, error)); ok {
+		return returnFunc(ctx, namespace, connectionName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []string); ok {
+		r0 = returnFunc(ctx, namespace, connectionName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, namespace, connectionName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockConnectionStatus_GetConnectionValidatorRuns_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConnectionValidatorRuns'
+type MockConnectionStatus_GetConnectionValidatorRuns_Call struct {
+	*mock.Call
+}
+
+// GetConnectionValidatorRuns is a helper method to define mock.On call
+//   - ctx context.Context
+//   - namespace string
+//   - connectionName string
+func (_e *MockConnectionStatus_Expecter) GetConnectionValidatorRuns(ctx interface{}, namespace interface{}, connectionName interface{}) *MockConnectionStatus_GetConnectionValidatorRuns_Call {
+	return &MockConnectionStatus_GetConnectionValidatorRuns_Call{Call: _e.mock.On("GetConnectionValidatorRuns", ctx, namespace, connectionName)}
+}
+
+func (_c *MockConnectionStatus_GetConnectionValidatorRuns_Call) Run(run func(ctx context.Context, namespace string, connectionName string)) *MockConnectionStatus_GetConnectionValidatorRuns_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockConnectionStatus_GetConnectionValidatorRuns_Call) Return(strings []string, err error) *MockConnectionStatus_GetConnectionValidatorRuns_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockConnectionStatus_GetConnectionValidatorRuns_Call) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string) ([]string, error)) *MockConnectionStatus_GetConnectionValidatorRuns_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockPromClientFactory creates a new instance of MockPromClientFactory. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockPromClientFactory(t interface {

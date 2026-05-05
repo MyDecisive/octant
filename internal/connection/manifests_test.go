@@ -627,7 +627,7 @@ func TestCreateTemplateData(t *testing.T) {
 		}
 
 		f.datadogMock.EXPECT().
-			GetIntegrationByName(mock.Anything, "default", "broken-integration").
+			GetIntegrationByName(mock.Anything, "broken-integration").
 			Return(nil, errors.New("injected api failure")).
 			Once()
 
@@ -652,7 +652,7 @@ func TestCreateTemplateData(t *testing.T) {
 		}
 
 		f.datadogMock.EXPECT().
-			GetIntegrationByName(mock.Anything, "default", "broken-integration").
+			GetIntegrationByName(mock.Anything, "broken-integration").
 			Return(&integration.DataDogIntegrationData{}, nil).
 			Once()
 

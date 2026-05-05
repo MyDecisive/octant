@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/mydecisive/octant/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,6 +58,7 @@ type octantTestFixture struct {
 	datadogMock      *integrationmock.MockIntegration[integration.DataDogIntegrationData]
 	httpClient       *http.Client
 	connectionStatus *metricsmock.MockConnectionStatus
+	configuration    *config.Configuration
 }
 
 // setupFixture initializes a default set of dependencies for OctantConnection.
@@ -69,6 +71,7 @@ func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 		datadogMock:      integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
 		httpClient:       http.DefaultClient, // Default safe client; tests can override with httptest server clients
 		connectionStatus: metricsmock.NewMockConnectionStatus(t),
+		configuration:    &config.Configuration{},
 	}
 }
 
@@ -80,6 +83,7 @@ func (f *octantTestFixture) build() *OctantConnection {
 		f.argoMock,
 		f.datadogMock,
 		f.connectionStatus,
+		f.configuration,
 	)
 }
 
@@ -207,12 +211,12 @@ func TestSaveConnection(t *testing.T) {
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
 	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Deployment.IntegrationName).
+		GetIntegrationByName(mock.Anything, newConnection.Deployment.IntegrationName).
 		Return(&integration.ArgoCDIntegrationData{
 			APIUrl: ts.URL,
 		}, nil)
 	f.datadogMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, newConnection.Destinations[0].IntegrationName).
+		GetIntegrationByName(mock.Anything, newConnection.Destinations[0].IntegrationName).
 		Return(&integration.DataDogIntegrationData{}, nil)
 
 	octantConnection := f.build()
@@ -324,12 +328,12 @@ func TestSaveConnection_Error_ArgoPushFailed(t *testing.T) {
 	})
 	f.httpClient = ts.Client()
 	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, connection.Deployment.IntegrationName).
+		GetIntegrationByName(mock.Anything, connection.Deployment.IntegrationName).
 		Return(&integration.ArgoCDIntegrationData{
 			APIUrl: ts.URL,
 		}, nil)
 	f.datadogMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, connection.Destinations[0].IntegrationName).
+		GetIntegrationByName(mock.Anything, connection.Destinations[0].IntegrationName).
 		Return(&integration.DataDogIntegrationData{}, nil)
 
 	octantConnection := f.build()
@@ -362,7 +366,7 @@ func TestDeleteConnection(t *testing.T) {
 	})
 	f.httpClient = ts.Client()
 	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, defaultNamespace, existingConnection.Deployment.IntegrationName).
+		GetIntegrationByName(mock.Anything, existingConnection.Deployment.IntegrationName).
 		Return(&integration.ArgoCDIntegrationData{
 			APIUrl: ts.URL,
 		}, nil)
@@ -461,7 +465,6 @@ func TestDeleteConnection_Error_ArgoDeleteFailed(t *testing.T) {
 	f.argoMock.EXPECT().
 		GetIntegrationByName(
 			mock.Anything,
-			defaultNamespace,
 			connection.Deployment.IntegrationName).
 		Return(&integration.ArgoCDIntegrationData{
 			APIUrl: ts.URL,
