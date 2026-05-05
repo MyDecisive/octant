@@ -41,8 +41,8 @@ func (_m *MockConnectionStatus) EXPECT() *MockConnectionStatus_Expecter {
 }
 
 // GetConnectionStatus provides a mock function for the type MockConnectionStatus
-func (_mock *MockConnectionStatus) GetConnectionStatus(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT) (*octantv1alpha.GetConnectionStatusResponse, error) {
-	ret := _mock.Called(ctx, namespace, connectionName, telemetryTypes)
+func (_mock *MockConnectionStatus) GetConnectionStatus(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT, validatorRunId string) (*octantv1alpha.GetConnectionStatusResponse, error) {
+	ret := _mock.Called(ctx, namespace, connectionName, telemetryTypes, validatorRunId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConnectionStatus")
@@ -50,18 +50,18 @@ func (_mock *MockConnectionStatus) GetConnectionStatus(ctx context.Context, name
 
 	var r0 *octantv1alpha.GetConnectionStatusResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []telemetry.MLT) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
-		return returnFunc(ctx, namespace, connectionName, telemetryTypes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []telemetry.MLT, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
+		return returnFunc(ctx, namespace, connectionName, telemetryTypes, validatorRunId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []telemetry.MLT) *octantv1alpha.GetConnectionStatusResponse); ok {
-		r0 = returnFunc(ctx, namespace, connectionName, telemetryTypes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []telemetry.MLT, string) *octantv1alpha.GetConnectionStatusResponse); ok {
+		r0 = returnFunc(ctx, namespace, connectionName, telemetryTypes, validatorRunId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*octantv1alpha.GetConnectionStatusResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, []telemetry.MLT) error); ok {
-		r1 = returnFunc(ctx, namespace, connectionName, telemetryTypes)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, []telemetry.MLT, string) error); ok {
+		r1 = returnFunc(ctx, namespace, connectionName, telemetryTypes, validatorRunId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -78,11 +78,12 @@ type MockConnectionStatus_GetConnectionStatus_Call struct {
 //   - namespace string
 //   - connectionName string
 //   - telemetryTypes []telemetry.MLT
-func (_e *MockConnectionStatus_Expecter) GetConnectionStatus(ctx interface{}, namespace interface{}, connectionName interface{}, telemetryTypes interface{}) *MockConnectionStatus_GetConnectionStatus_Call {
-	return &MockConnectionStatus_GetConnectionStatus_Call{Call: _e.mock.On("GetConnectionStatus", ctx, namespace, connectionName, telemetryTypes)}
+//   - validatorRunId string
+func (_e *MockConnectionStatus_Expecter) GetConnectionStatus(ctx interface{}, namespace interface{}, connectionName interface{}, telemetryTypes interface{}, validatorRunId interface{}) *MockConnectionStatus_GetConnectionStatus_Call {
+	return &MockConnectionStatus_GetConnectionStatus_Call{Call: _e.mock.On("GetConnectionStatus", ctx, namespace, connectionName, telemetryTypes, validatorRunId)}
 }
 
-func (_c *MockConnectionStatus_GetConnectionStatus_Call) Run(run func(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT)) *MockConnectionStatus_GetConnectionStatus_Call {
+func (_c *MockConnectionStatus_GetConnectionStatus_Call) Run(run func(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT, validatorRunId string)) *MockConnectionStatus_GetConnectionStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -100,11 +101,16 @@ func (_c *MockConnectionStatus_GetConnectionStatus_Call) Run(run func(ctx contex
 		if args[3] != nil {
 			arg3 = args[3].([]telemetry.MLT)
 		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -115,7 +121,7 @@ func (_c *MockConnectionStatus_GetConnectionStatus_Call) Return(getConnectionSta
 	return _c
 }
 
-func (_c *MockConnectionStatus_GetConnectionStatus_Call) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnectionStatus_GetConnectionStatus_Call {
+func (_c *MockConnectionStatus_GetConnectionStatus_Call) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string, telemetryTypes []telemetry.MLT, validatorRunId string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnectionStatus_GetConnectionStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

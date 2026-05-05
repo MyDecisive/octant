@@ -52,6 +52,7 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 		ctx,
 		request.Msg.GetNamespace(),
 		request.Msg.GetConnectionName(),
+		request.Msg.GetValidatorRunId(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

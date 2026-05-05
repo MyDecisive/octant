@@ -69,6 +69,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 	ctx context.Context,
 	namespace string,
 	connectionName string,
+	validatorRunId string,
 ) (
 	*octantv1alpha.GetConnectionStatusResponse,
 	error,
@@ -81,7 +82,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
 	}
 
-	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes)
+	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes, validatorRunId)
 }
 
 func (oc *OctantConnection) GetConnectionByName(

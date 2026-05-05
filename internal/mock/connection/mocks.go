@@ -241,8 +241,8 @@ func (_c *MockConnection_GetConnectionByName_Call[T]) RunAndReturn(run func(ctx 
 }
 
 // GetConnectionStatus provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, namespace string, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error) {
-	ret := _mock.Called(ctx, namespace, connectionName)
+func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, namespace string, connectionName string, validatorRunId string) (*octantv1alpha.GetConnectionStatusResponse, error) {
+	ret := _mock.Called(ctx, namespace, connectionName, validatorRunId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConnectionStatus")
@@ -250,18 +250,18 @@ func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, namespa
 
 	var r0 *octantv1alpha.GetConnectionStatusResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
-		return returnFunc(ctx, namespace, connectionName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
+		return returnFunc(ctx, namespace, connectionName, validatorRunId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *octantv1alpha.GetConnectionStatusResponse); ok {
-		r0 = returnFunc(ctx, namespace, connectionName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) *octantv1alpha.GetConnectionStatusResponse); ok {
+		r0 = returnFunc(ctx, namespace, connectionName, validatorRunId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*octantv1alpha.GetConnectionStatusResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, namespace, connectionName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, namespace, connectionName, validatorRunId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -277,11 +277,12 @@ type MockConnection_GetConnectionStatus_Call[T any] struct {
 //   - ctx context.Context
 //   - namespace string
 //   - connectionName string
-func (_e *MockConnection_Expecter[T]) GetConnectionStatus(ctx interface{}, namespace interface{}, connectionName interface{}) *MockConnection_GetConnectionStatus_Call[T] {
-	return &MockConnection_GetConnectionStatus_Call[T]{Call: _e.mock.On("GetConnectionStatus", ctx, namespace, connectionName)}
+//   - validatorRunId string
+func (_e *MockConnection_Expecter[T]) GetConnectionStatus(ctx interface{}, namespace interface{}, connectionName interface{}, validatorRunId interface{}) *MockConnection_GetConnectionStatus_Call[T] {
+	return &MockConnection_GetConnectionStatus_Call[T]{Call: _e.mock.On("GetConnectionStatus", ctx, namespace, connectionName, validatorRunId)}
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.Context, namespace string, connectionName string)) *MockConnection_GetConnectionStatus_Call[T] {
+func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.Context, namespace string, connectionName string, validatorRunId string)) *MockConnection_GetConnectionStatus_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -295,10 +296,15 @@ func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.C
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -309,7 +315,7 @@ func (_c *MockConnection_GetConnectionStatus_Call[T]) Return(getConnectionStatus
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnection_GetConnectionStatus_Call[T] {
+func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string, validatorRunId string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnection_GetConnectionStatus_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

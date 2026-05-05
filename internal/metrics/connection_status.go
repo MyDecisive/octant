@@ -74,6 +74,7 @@ type ConnectionStatus interface {
 		namespace string,
 		connectionName string,
 		telemetryTypes []telemetry.MLT,
+		validatorRunId string,
 	) (*octantv1alpha.GetConnectionStatusResponse, error)
 	GetConnectionValidatorRuns(
 		ctx context.Context,
@@ -98,6 +99,7 @@ func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 	namespace string,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
+	validatorRunId string,
 ) (*octantv1alpha.GetConnectionStatusResponse, error) {
 	promClient, err := cs.promClientFactory.GetPromClient(namespace)
 	if err != nil {
@@ -114,7 +116,7 @@ func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
 	}
 
-	dataIntegrity, validationResults, err := verifyDataFidelity(ctx, promClient, connectionName, telemetryTypes)
+	dataIntegrity, validationResults, err := verifyDataFidelity(ctx, promClient, connectionName, telemetryTypes, validatorRunId)
 	if err != nil {
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
@@ -134,32 +136,33 @@ func verifyDataFidelity(
 	promClient promv1.API,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
+	validatorRunId string,
 ) (bool, *octantv1alpha.ValidationResultsBySignal, error) {
 	dataIntegrity := true
 
 	attrParity, err := checkAttributeFidelity(
-		ctx, promClient, connectionName, telemetryTypes, attributeParityFidelityMetric,
+		ctx, promClient, connectionName, telemetryTypes, validatorRunId, attributeParityFidelityMetric,
 	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute parity fidelity: %w", err)
 	}
 
 	attrPolicy, err := checkAttributeFidelity(
-		ctx, promClient, connectionName, telemetryTypes, attributePolicyFidelityMetric,
+		ctx, promClient, connectionName, telemetryTypes, validatorRunId, attributePolicyFidelityMetric,
 	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking attribute policy fidelity: %w", err)
 	}
 
 	signalParity, err := checkSignalFidelity(
-		ctx, promClient, connectionName, telemetryTypes, signalParityFidelityMetric,
+		ctx, promClient, connectionName, telemetryTypes, validatorRunId, signalParityFidelityMetric,
 	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal parity fidelity: %w", err)
 	}
 
 	signalPolicy, err := checkSignalFidelity(
-		ctx, promClient, connectionName, telemetryTypes, signalPolicyFidelityMetric,
+		ctx, promClient, connectionName, telemetryTypes, validatorRunId, signalPolicyFidelityMetric,
 	)
 	if err != nil {
 		return false, nil, fmt.Errorf("checking signal policy fidelity: %w", err)
@@ -243,6 +246,7 @@ func checkAttributeFidelity(
 	promClient promv1.API,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
+	validatorRunId string,
 	metricName fidelityMetric,
 ) (map[telemetry.MLT]map[string]bool, error) {
 	attrs := make(map[telemetry.MLT]map[string]bool)
@@ -250,7 +254,7 @@ func checkAttributeFidelity(
 		attrs[t] = make(map[string]bool)
 	}
 
-	query := buildValidationQuery(metricName, connectionName)
+	query := buildValidationQuery(metricName, connectionName, validatorRunId)
 	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
 		return nil, err
@@ -289,6 +293,7 @@ func checkSignalFidelity(
 	promClient promv1.API,
 	connectionName string,
 	telemetryTypes []telemetry.MLT,
+	validatorRunId string,
 	metricName fidelityMetric,
 ) (map[telemetry.MLT]bool, error) {
 	signals := make(map[telemetry.MLT]bool)
@@ -299,7 +304,7 @@ func checkSignalFidelity(
 		failsSeen[t] = false
 	}
 
-	query := buildValidationQuery(metricName, connectionName)
+	query := buildValidationQuery(metricName, connectionName, validatorRunId)
 	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
 		return nil, err
@@ -383,11 +388,12 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 	)
 }
 
-func buildValidationQuery(metricName fidelityMetric, connectionName string) string {
+func buildValidationQuery(metricName fidelityMetric, connectionName string, validatorRunId string) string {
 	return fmt.Sprintf(
-		`increase(%s{mdai_connection="%s-telemetry-validation"}[10m])`,
+		`increase(%s{mdai_connection="%s-telemetry-validation", telemetry_validation_run_id=%q}[10m])`,
 		metricName,
 		connectionName,
+		validatorRunId,
 	)
 }
 

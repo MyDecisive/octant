@@ -21,6 +21,7 @@ type Connection[T any] interface {
 		ctx context.Context,
 		namespace string,
 		connectionName string,
+		validatorRunId string,
 	) (
 		*octantv1alpha.GetConnectionStatusResponse,
 		error,
