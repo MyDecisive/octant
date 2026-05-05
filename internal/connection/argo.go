@@ -32,6 +32,8 @@ func (oc *OctantConnection) sideloadConnectionApp(
 	namespace, name string,
 	connection OctantConnectionData,
 ) error {
+	// TODO: Port all this functionality over to the argocd.Client!
+
 	templateData, err := oc.createTemplateData(ctx, namespace, name, connection)
 	if err != nil {
 		return err
@@ -73,6 +75,8 @@ func (oc *OctantConnection) doArgoAppSync(
 	argoIntegration *integration.ArgoCDIntegrationData,
 	name string,
 ) error {
+	// TODO: Port all this functionality over to the argocd.Client!
+
 	manifests, err := renderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -116,6 +120,8 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	connectionName string,
 	namespace string,
 ) (string, error) {
+	// TODO: Port all this functionality over to the argocd.Client!
+
 	// TODO: This is wonky today; we are pushing a new sync on the same app as the connection, but with just the
 	//       validator. This should work because prune = false (argo won't remove those other "orphaned" resources). The
 	//       entire sideload behavior has this ephemerality problem... but feels weird to push new manifests on top of
@@ -188,6 +194,8 @@ func (oc *OctantConnection) doArgoAppCreation(
 	connection OctantConnectionData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
+	// TODO: If possible, use the functionality from argocd.Client
+
 	appJSON, err := renderArgoAppManifest(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
@@ -214,6 +222,8 @@ func (oc *OctantConnection) doArgoAppCreation(
 }
 
 func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, connection OctantConnectionData) error {
+	// TODO: Port functionality over to argocd.Client!
+
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
 		ctx,
 		connection.Deployment.IntegrationName,
@@ -250,6 +260,8 @@ func (oc *OctantConnection) deleteValidatorResource(
 	namespace string,
 	connection OctantConnectionData,
 ) error {
+	// TODO: Port functionality over to argocd.Client!
+
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
 		ctx,
 		connection.Deployment.IntegrationName,
