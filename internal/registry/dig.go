@@ -9,6 +9,7 @@ import (
 	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
+	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
@@ -56,6 +57,16 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(
 		budgetfilter.NewMDAISettingController,
 		dig.As(new(budgetfilter.SettingController))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		budgetdb.NewGreptimeDBBuilder,
+		dig.As(new(budgetdb.DatabaseAccessBuilder))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		budgetdata.NewGreptimeDataRetriever,
+		dig.As(new(budgetdata.MetricDataRetriever))); err != nil {
 		return nil, err
 	}
 
