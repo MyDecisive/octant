@@ -9,8 +9,6 @@ import (
 	. "github.com/go-jet/jet/v2/mysql" //nolint
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	. "github.com/mydecisive/octant/internal/budget/data/db/public/table" //nolint
-	"github.com/mydecisive/octant/internal/config"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -42,21 +40,15 @@ type MetricDataRetriever interface {
 var _ MetricDataRetriever = &GreptimeDataRetriever{}
 
 type GreptimeDataRetriever struct {
-	config    *config.Configuration
-	k8sClient kubernetes.Interface
-	builder   budgetdb.DatabaseAccessBuilder
+	builder budgetdb.DatabaseAccessBuilder
 }
 
 // NewGreptimeDataRetriever creates a new instance of GreptimeDataRetriever.
 func NewGreptimeDataRetriever(
-	con *config.Configuration,
-	k8sClient kubernetes.Interface,
 	builder budgetdb.DatabaseAccessBuilder,
 ) *GreptimeDataRetriever {
 	return &GreptimeDataRetriever{
-		config:    con,
-		k8sClient: k8sClient,
-		builder:   builder,
+		builder: builder,
 	}
 }
 
