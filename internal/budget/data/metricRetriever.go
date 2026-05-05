@@ -19,9 +19,9 @@ const (
 )
 
 const (
-	dayInHR       = 24   // 1 day
-	monthInHR     = 730  // 30 days (i.e., closest approx. to a month)
-	lastMonthInHR = 1460 // 60 days (i.e., closest approx. to 2 month)
+	DayInHR       = 24   // 1 day
+	MonthInHR     = 730  // 30 days (i.e., closest approx. to a month)
+	LastMonthInHR = 1460 // 60 days (i.e., closest approx. to 2 month)
 )
 
 // MetricDataRetriever is used to retrieve metric data from the data store.
@@ -264,10 +264,10 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	switch timeframe {
 	case budgetv1alpha.Timeframe_TIMEFRAME_24HR:
-		return dayInHR
+		return DayInHR
 	case budgetv1alpha.Timeframe_TIMEFRAME_MTD:
-		return monthInHR
+		return MonthInHR
 	default:
-		return lastMonthInHR
+		return LastMonthInHR
 	}
 }
