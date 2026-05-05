@@ -19,9 +19,8 @@ const (
 	greptimeDBSecretUserKey     = "GREPTIME_USER"         // nolint:gosec // no, its not a cred
 	greptimeDBSecretPasswordKey = "GREPTIME_PASSWD"       // nolint:gosec // no, its not a cred
 	greptimeDBSecretDBKey       = "GREPTIME_DATABASE"     // nolint:gosec // no, its not a cred
-	// TODO: change this to GREPTIME_MYSQL_PORT.
-	greptimeDBSecretPortKey    = "GREPTIME_PORT" // nolint:gosec // no, its not a cred
-	greptimedbRootURLFormatter = "%s.%s.svc.cluster.local"
+	greptimeDBSecretPortKey     = "GREPTIME_MYSQL_PORT"   // nolint:gosec // no, its not a cred
+	greptimedbRootURLFormatter  = "%s.%s.svc.cluster.local"
 )
 
 var mustExists = []string{ //nolint:gochecknoglobals
@@ -55,11 +54,10 @@ func NewGreptimeDB(
 		return nil, err
 	}
 
-	host := "localhost"
-	// host := con.Budget.GreptimeDBURLOverride
-	// if host == "" {
-	// 	host = fmt.Sprintf(greptimedbRootURLFormatter, con.Budget.DefaultGreptimeDBName, namespace)
-	// }
+	host := con.Budget.GreptimeDBURLOverride
+	if host == "" {
+		host = fmt.Sprintf(greptimedbRootURLFormatter, con.Budget.DefaultGreptimeDBName, namespace)
+	}
 
 	for _, key := range mustExists {
 		if _, exists := secret.Data[key]; !exists {
@@ -69,8 +67,7 @@ func NewGreptimeDB(
 
 	dsn := fmt.Sprintf("tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		host,
-		// string(secret.Data[greptimeDBSecretPortKey]),
-		"4002",
+		string(secret.Data[greptimeDBSecretPortKey]),
 		string(secret.Data[greptimeDBSecretDBKey]),
 	)
 	dsn = fmt.Sprintf("%s:%s@%s",
