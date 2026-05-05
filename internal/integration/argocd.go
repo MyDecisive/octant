@@ -38,7 +38,11 @@ func NewArgoCDIntegration(k8sClient kubernetes.Interface, configuration *config.
 func (aci *ArgoCDIntegration) GetIntegrations(
 	ctx context.Context,
 ) (map[string]ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -63,7 +67,11 @@ func (aci *ArgoCDIntegration) GetIntegrations(
 func (aci *ArgoCDIntegration) GetIntegrationByName(
 	ctx context.Context, name string,
 ) (*ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -93,7 +101,11 @@ func (aci *ArgoCDIntegration) SetIntegration(
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 	namespace := aci.configuration.CurrentNamespace
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
@@ -108,7 +120,11 @@ func (aci *ArgoCDIntegration) SetIntegration(
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.
 func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
 	namespace := aci.configuration.CurrentNamespace
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil

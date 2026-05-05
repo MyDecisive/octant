@@ -82,7 +82,13 @@ func (oc *OctantConnection) GetConnectionStatus(
 		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
 	}
 
-	return oc.connectionMetrics.GetConnectionStatus(ctx, namespace, connectionName, connection.TelemetryTypes, validatorRunID)
+	return oc.connectionMetrics.GetConnectionStatus(
+		ctx,
+		namespace,
+		connectionName,
+		connection.TelemetryTypes,
+		validatorRunID,
+	)
 }
 
 func (oc *OctantConnection) GetConnectionByName(
@@ -162,7 +168,10 @@ func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string
 	return names, nil
 }
 
-func (oc *OctantConnection) GetConnectionValidatorRuns(ctx context.Context, namespace, connectionName string) ([]string, error) {
+func (oc *OctantConnection) GetConnectionValidatorRuns(
+	ctx context.Context,
+	namespace, connectionName string,
+) ([]string, error) {
 	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, namespace, connectionName)
 }
 
@@ -206,7 +215,11 @@ func (oc *OctantConnection) SaveConnection(
 	return nil
 }
 
-func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, namespace string, connectionName string) (string, error) {
+func (oc *OctantConnection) PutConnectionValidatorRun(
+	ctx context.Context,
+	namespace string,
+	connectionName string,
+) (string, error) {
 	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
 	if err != nil {
 		return "", fmt.Errorf("getting connection: %w", err)

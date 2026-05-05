@@ -49,7 +49,10 @@ func (oc *OctantConnection) sideloadConnectionApp(
 	return oc.doArgoAppSync(ctx, templateData, connection, argoIntegration, name)
 }
 
-func (oc *OctantConnection) getArgoIntegration(ctx context.Context, connection OctantConnectionData) (*integration.ArgoCDIntegrationData, error) {
+func (oc *OctantConnection) getArgoIntegration(
+	ctx context.Context,
+	connection OctantConnectionData,
+) (*integration.ArgoCDIntegrationData, error) {
 	argoIntegration, getArgoIntErr := oc.argoClient.GetIntegrationByName(
 		ctx,
 		connection.Deployment.IntegrationName,
@@ -256,7 +259,10 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	// TODO: This is gnarly; we're reaching in and deleting a specific resource on the app. CLEAN THIS UP.
-	query := fmt.Sprintf("?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation", namespace, name)
+	query := fmt.Sprintf(
+		"?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation",
+		namespace, name,
+	)
 	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s/resource%s", argoIntegration.APIUrl, name, query)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
 	if err != nil {
@@ -300,6 +306,10 @@ func handleArgoErrorResponse(resp *http.Response, connection OctantConnectionDat
 			bodyStr,
 		)
 	default:
-		return fmt.Errorf("got unexpected response code from ArgoCD API: Status %d, Body: %s", resp.StatusCode, bodyStr)
+		return fmt.Errorf(
+			"got unexpected response code from ArgoCD API: Status %d, Body: %s",
+			resp.StatusCode,
+			bodyStr,
+		)
 	}
 }

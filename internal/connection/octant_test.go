@@ -522,9 +522,13 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 		},
 	})
 
-	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
-		telemetry.Logs,
-	}, defaultValidationID).Return(&octantv1alpha.GetConnectionStatusResponse{
+	f.connectionStatus.EXPECT().GetConnectionStatus(
+		mock.Anything,
+		defaultNamespace,
+		"team-a",
+		[]telemetry.MLT{telemetry.Logs},
+		defaultValidationID,
+	).Return(&octantv1alpha.GetConnectionStatusResponse{
 		ReceivingData:     true,
 		SendingData:       true,
 		DataIntegrity:     true,
@@ -533,7 +537,12 @@ func TestGetConnectionStatus_Success(t *testing.T) {
 
 	octantConnection := f.build()
 
-	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a", defaultValidationID)
+	status, err := octantConnection.GetConnectionStatus(
+		context.Background(),
+		defaultNamespace,
+		"team-a",
+		defaultValidationID,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -558,13 +567,22 @@ func TestGetConnectionStatus_Error_PrometheusFailed(t *testing.T) {
 		},
 	})
 
-	f.connectionStatus.EXPECT().GetConnectionStatus(mock.Anything, defaultNamespace, "team-a", []telemetry.MLT{
-		telemetry.Logs,
-	}, defaultValidationID).Return(nil, errors.New("querying telemetry"))
+	f.connectionStatus.EXPECT().GetConnectionStatus(
+		mock.Anything,
+		defaultNamespace,
+		"team-a",
+		[]telemetry.MLT{telemetry.Logs},
+		defaultValidationID,
+	).Return(nil, errors.New("querying telemetry"))
 
 	octantConnection := f.build()
 
-	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a", defaultValidationID)
+	status, err := octantConnection.GetConnectionStatus(
+		context.Background(),
+		defaultNamespace,
+		"team-a",
+		defaultValidationID,
+	)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "querying telemetry")
@@ -582,7 +600,12 @@ func TestGetConnectionStatus_Error_K8sGetFailed(t *testing.T) {
 		return true, nil, errors.New("k8s api failure")
 	})
 
-	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "team-a", defaultValidationID)
+	status, err := octantConnection.GetConnectionStatus(
+		context.Background(),
+		defaultNamespace,
+		"team-a",
+		defaultValidationID,
+	)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "getting connection")
@@ -596,7 +619,12 @@ func TestGetConnectionStatus_NotFound_ReturnsError(t *testing.T) {
 	f := setupFixture(t) // Empty fixture, ConfigMap doesn't exist
 	octantConnection := f.build()
 
-	status, err := octantConnection.GetConnectionStatus(context.Background(), defaultNamespace, "missing-team", defaultValidationID)
+	status, err := octantConnection.GetConnectionStatus(
+		context.Background(),
+		defaultNamespace,
+		"missing-team",
+		defaultValidationID,
+	)
 
 	require.Error(t, err)
 	assert.Nil(t, status)

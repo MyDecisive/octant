@@ -116,7 +116,9 @@ func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 		return nil, fmt.Errorf("querying telemetry egress status: %w", err)
 	}
 
-	dataIntegrity, validationResults, err := verifyDataFidelity(ctx, promClient, connectionName, telemetryTypes, validatorRunID)
+	dataIntegrity, validationResults, err := verifyDataFidelity(
+		ctx, promClient, connectionName, telemetryTypes, validatorRunID,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
@@ -129,8 +131,8 @@ func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 	}, nil
 }
 
-// verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar to data going
-// out of the connection.
+// verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar
+// to data going out of the connection.
 func verifyDataFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -201,8 +203,8 @@ func verifyDataFidelity(
 	return dataIntegrity, &results, nil
 }
 
-// isTelemetryFlowing reads OTEL Collector metrics to ensure that the connection collector is receiving/sending
-// telemetry.
+// isTelemetryFlowing reads OTEL Collector metrics to ensure that the connection collector is
+// receiving/sending telemetry.
 func isTelemetryFlowing(
 	ctx context.Context,
 	promClient promv1.API,
@@ -239,8 +241,8 @@ func isTelemetryFlowing(
 	return true, nil
 }
 
-// checkAttributeFidelity inspects attribute fidelity metric results and assigns a true/false for pass/fail per
-// attribute.
+// checkAttributeFidelity inspects attribute fidelity metric results and assigns a true/false
+// for pass/fail per attribute.
 func checkAttributeFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -287,7 +289,8 @@ func checkAttributeFidelity(
 	return attrs, nil
 }
 
-// checkSignalFidelity inspects signal fidelity metric results and assigns a true/false for pass/fail per MLT.
+// checkSignalFidelity inspects signal fidelity metric results and assigns a true/false for
+// pass/fail per MLT.
 func checkSignalFidelity(
 	ctx context.Context,
 	promClient promv1.API,
@@ -431,7 +434,7 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 	namespace string,
 	connectionName string,
 ) ([]string, error) {
-	promClient, err := cs.promClientFactory.GetPromClient(namespace) // [cite: 1]
+	promClient, err := cs.promClientFactory.GetPromClient(namespace)
 	if err != nil {
 		return nil, fmt.Errorf("getting prometheus client: %w", err)
 	}
@@ -443,11 +446,12 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 			fmt.Sprintf("%s{mdai_connection=%q}", attributeParityFidelityMetric, connectionName),
 			fmt.Sprintf("%s{mdai_connection=%q}", attributePolicyFidelityMetric, connectionName),
 		}, " or ")
-	// This query extracts unique validator_run_id labels associated with the connection's validation metrics over the last 7 days.
+	// This query extracts unique validator_run_id labels associated with the connection's
+	// validation metrics over the last 7 days.
 	// You can adjust the time range [7d] or target metric if needed.
-	query := fmt.Sprintf(`count by (telemetry_validation_run_id) (%s)`, allValidatorMetricsString) //
+	query := fmt.Sprintf(`count by (telemetry_validation_run_id) (%s)`, allValidatorMetricsString)
 
-	vector, err := queryVector(ctx, promClient, query) //
+	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query prometheus for validator runs: %w", err)
 	}
