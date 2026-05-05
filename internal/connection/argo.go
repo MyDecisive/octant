@@ -265,7 +265,7 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	// TODO: This is gnarly; we're reaching in and deleting a specific resource on the app. CLEAN THIS UP.
-	query := fmt.Sprintf("?namespace=%s&resourceName=%s-telemetry-validator&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation")
+	query := fmt.Sprintf("?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation", namespace, name)
 	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s/resource%s", argoIntegration.APIUrl, name, query)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
 	if err != nil {

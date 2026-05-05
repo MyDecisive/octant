@@ -27,6 +27,7 @@ type Connection[T any] interface {
 	)
 	GetConnectionValidatorRuns(ctx context.Context, namespace, connectionName string) ([]string, error)
 	PutConnectionValidatorRun(ctx context.Context, namespace, connectionName string) (string, error)
+	DeleteConnectionValidator(ctx context.Context, namespace, connectionName string) error
 }
 
 func updateConfigMapWithConnection(

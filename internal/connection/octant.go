@@ -262,3 +262,34 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, names
 
 	return "", nil
 }
+
+func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, namespace, connectionName string) error {
+	cm, getCMErr := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	if getCMErr != nil {
+		if k8serrors.IsNotFound(getCMErr) {
+			return nil
+		}
+		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
+	}
+
+	if cm.Data == nil {
+		return nil
+	}
+	if _, exists := cm.Data[connectionName]; !exists {
+		return nil
+	}
+
+	var connection OctantConnectionData
+	if err := json.Unmarshal([]byte(cm.Data[connectionName]), &connection); err != nil {
+		return fmt.Errorf("failed to unmarshal connection data: %w", err)
+	}
+
+	// TODO: This should be refactored to a more robust deployment-based task system
+	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
+		if deleteErr := oc.deleteValidatorResource(ctx, connectionName, namespace, connection); deleteErr != nil {
+			return deleteErr
+		}
+	}
+
+	return nil
+}

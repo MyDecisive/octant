@@ -299,3 +299,16 @@ func (ch *ConnectionHandler) DeleteConnection(
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
+
+func (ch *ConnectionHandler) DeleteConnectionValidator(ctx context.Context, request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest]) (*connect.Response[emptypb.Empty], error) {
+	err := ch.octantConnection.DeleteConnectionValidator(
+		ctx,
+		request.Msg.GetNamespace(),
+		request.Msg.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
