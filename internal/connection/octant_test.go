@@ -629,3 +629,90 @@ func TestGetConnectionStatus_NotFound_ReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, status)
 }
+
+func TestPutConnectionValidatorRun(t *testing.T) {
+	t.Parallel()
+
+	t.Run("error - connection not found", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t) // Empty fixture, ConfigMap doesn't exist
+		octantConnection := f.build()
+
+		runID, err := octantConnection.PutConnectionValidatorRun(context.Background(), defaultNamespace, "missing-team")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+		assert.Empty(t, runID)
+	})
+
+	t.Run("success - non-sideload deployment skips execution", func(t *testing.T) {
+		t.Parallel()
+		validConnection := OctantConnectionData{
+			Deployment: &Deployment{
+				Type: ArgoManifestsDeploymentType,
+			},
+		}
+		validConnectionBytes, err := json.Marshal(validConnection)
+		require.NoError(t, err)
+
+		f := setupFixture(t, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+			Data: map[string]string{
+				"team-a": string(validConnectionBytes),
+			},
+		})
+		octantConnection := f.build()
+
+		runID, err := octantConnection.PutConnectionValidatorRun(context.Background(), defaultNamespace, "team-a")
+		require.NoError(t, err)
+		assert.Empty(t, runID) // Returns empty string for non-sideload
+	})
+}
+
+func TestDeleteConnectionValidator(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - gracefully handles missing configmap", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t)
+		octantConnection := f.build()
+
+		err := octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
+		require.NoError(t, err)
+	})
+
+	t.Run("success - gracefully handles missing connection key", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+			Data: map[string]string{
+				"other-team": `{"sourceType": "datadog"}`,
+			},
+		})
+		octantConnection := f.build()
+
+		err := octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
+		require.NoError(t, err)
+	})
+
+	t.Run("success - skips deletion for non-sideload deployments", func(t *testing.T) {
+		t.Parallel()
+		validConnection := OctantConnectionData{
+			Deployment: &Deployment{
+				Type: ArgoManifestsDeploymentType,
+			},
+		}
+		validConnectionBytes, err := json.Marshal(validConnection)
+		require.NoError(t, err)
+
+		f := setupFixture(t, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+			Data: map[string]string{
+				"team-a": string(validConnectionBytes),
+			},
+		})
+		octantConnection := f.build()
+
+		err = octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
+		require.NoError(t, err)
+	})
+}

@@ -780,3 +780,67 @@ func TestBuildQuery(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 }
+
+func TestGetConnectionValidatorRuns(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - returns unique run IDs and ignores empty/duplicates", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+
+		vector := model.Vector{
+			{Metric: model.Metric{"telemetry_validation_run_id": "run-123"}},
+			{Metric: model.Metric{"telemetry_validation_run_id": "run-123"}}, // Duplicate should be ignored
+			{Metric: model.Metric{"telemetry_validation_run_id": "run-456"}},
+			{Metric: model.Metric{"other_label": "no-run-id-here"}}, // Missing ID should be ignored
+		}
+
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.MatchedBy(func(q string) bool {
+				return strings.Contains(q, "count by (telemetry_validation_run_id)")
+			}), mock.Anything).
+			Return(vector, nil, nil).
+			Times(1)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		runs, err := cs.GetConnectionValidatorRuns(t.Context(), "test-ns", "test-conn")
+
+		require.NoError(t, err)
+		assert.Len(t, runs, 2)
+		assert.ElementsMatch(t, []string{"run-123", "run-456"}, runs)
+	})
+
+	t.Run("error - prometheus client failure", func(t *testing.T) {
+		t.Parallel()
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(nil, assert.AnError)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		runs, err := cs.GetConnectionValidatorRuns(t.Context(), "test-ns", "test-conn")
+
+		require.ErrorContains(t, err, "getting prometheus client")
+		require.ErrorIs(t, err, assert.AnError)
+		require.Nil(t, runs)
+	})
+
+	t.Run("error - prometheus query failure", func(t *testing.T) {
+		t.Parallel()
+		mockPromAPI := v1mock.NewMockAPI(t)
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, nil, assert.AnError).
+			Times(1)
+
+		factory := metricsmock.NewMockPromClientFactory(t)
+		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
+
+		cs := NewPrometheusConnectionStatus(factory)
+		runs, err := cs.GetConnectionValidatorRuns(t.Context(), "test-ns", "test-conn")
+
+		require.ErrorContains(t, err, "failed to query prometheus for validator runs")
+		require.Nil(t, runs)
+	})
+}

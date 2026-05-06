@@ -2,6 +2,7 @@ package rpchandler
 
 import (
 	"bytes"
+	"github.com/mydecisive/octant/internal/connection"
 	"net/http/httptest"
 	"testing"
 
@@ -75,5 +76,70 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		}))
 		stream.Receive()
 		assert.Error(t, stream.Err())
+	})
+}
+
+func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GetConnectionValidatorRunIds - success", func(t *testing.T) {
+		t.Parallel()
+		expectedRuns := []string{"run-1", "run-2"}
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			GetConnectionValidatorRuns(mock.Anything, "test-ns", "test-conn").
+			Return(expectedRuns, nil)
+
+		target := NewConnectionHandler(nil, mockConn, nil)
+		resp, err := target.GetConnectionValidatorRunIds(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionValidatorRunIdsRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "test-conn",
+			},
+		}))
+
+		require.NoError(t, err)
+		assert.Equal(t, expectedRuns, resp.Msg.GetValidatorRunIds())
+	})
+
+	t.Run("CreateConnectionValidatorRun - success", func(t *testing.T) {
+		t.Parallel()
+		expectedRunID := "new-run-id-123"
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			PutConnectionValidatorRun(mock.Anything, "test-ns", "test-conn").
+			Return(expectedRunID, nil)
+
+		target := NewConnectionHandler(nil, mockConn, nil)
+		resp, err := target.CreateConnectionValidatorRun(t.Context(), connect.NewRequest(&octantv1alpha.CreateConnectionValidatorRunRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "test-conn",
+			},
+		}))
+
+		require.NoError(t, err)
+		assert.Equal(t, expectedRunID, resp.Msg.GetValidatorRunId())
+	})
+
+	t.Run("DeleteConnectionValidator - success", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			DeleteConnectionValidator(mock.Anything, "test-ns", "test-conn").
+			Return(nil)
+
+		target := NewConnectionHandler(nil, mockConn, nil)
+		_, err := target.DeleteConnectionValidator(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionValidatorRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "test-conn",
+			},
+		}))
+
+		require.NoError(t, err)
 	})
 }
