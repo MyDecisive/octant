@@ -240,7 +240,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.Equal(t, "test-app", connectionName)
 		serviceName, hasServiceName := getNestedField(otelConfig, "service", "telemetry", "resource", "service.name")
 		assert.True(t, hasServiceName, "Service name should be configured")
-		assert.Equal(t, "test-app-lb-collector", serviceName)
+		assert.Equal(t, "test-app-sampling-lb-collector", serviceName)
 
 		metricsReaders, hasMetricsReaders := getNestedField(otelConfig, "service", "telemetry", "metrics", "readers")
 		assert.True(t, hasMetricsReaders, "Metrics reader should be configured")

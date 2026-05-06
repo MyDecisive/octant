@@ -9,10 +9,13 @@ require (
 	connectrpc.com/grpcreflect v1.3.0
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
-	github.com/MyDecisive/octant-contracts/go v0.4.10-alpha
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/MyDecisive/octant-contracts/go v0.4.11-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/argoproj/gitops-engine v0.7.1-0.20250908182407-97ad5b59a627
 	github.com/go-faker/faker/v4 v4.7.0
+	github.com/go-jet/jet/v2 v2.14.1
+	github.com/go-sql-driver/mysql v1.9.3
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mydecisive/mdai-data-core v0.3.1
 	github.com/prometheus/client_golang v1.23.2
@@ -40,6 +43,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cyphar.com/go-pathrs v0.2.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
