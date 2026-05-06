@@ -68,6 +68,94 @@ func TestMetricProvider_GetOverall(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
+	t.Run("success empty", func(t *testing.T) {
+		t.Parallel()
+
+		expected := &budgetv1alpha.Overall{
+			Log: &budgetv1alpha.Overall_Metric{
+				CostRate: float32(c.Budget.DefaultLogCostRate),
+			},
+			Trace: &budgetv1alpha.Overall_Metric{
+				CostRate: float32(c.Budget.DefaultTraceCostRate),
+			},
+		}
+
+		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
+		mockRetriever.EXPECT().GetOverall(mock.Anything, timeframe, namespace).Return(&budgetdata.Overall{}, nil).Once()
+
+		target := NewMetricProvider(c, mockRetriever)
+		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
+		require.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("success no logs", func(t *testing.T) {
+		t.Parallel()
+
+		raw := budgetdata.Overall{
+			SpanReceived: 20,
+			SpanSend:     10,
+		}
+
+		expected := &budgetv1alpha.Overall{
+			Log: &budgetv1alpha.Overall_Metric{
+				CostRate: float32(c.Budget.DefaultLogCostRate),
+			},
+			Trace: &budgetv1alpha.Overall_Metric{
+				Received: raw.SpanReceived,
+				Sent:     raw.SpanSend,
+				Filtered: raw.SpanReceived - raw.SpanSend,
+				CostRate: float32(c.Budget.DefaultTraceCostRate),
+				Cost:     raw.SpanSend * c.Budget.DefaultTraceCostRate,
+				Pct:      100,
+			},
+		}
+		expected.Cost = expected.GetTrace().GetCost()
+
+		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
+		mockRetriever.EXPECT().GetOverall(mock.Anything, timeframe, namespace).Return(&raw, nil).Once()
+
+		target := NewMetricProvider(c, mockRetriever)
+		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
+		require.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("success no trace", func(t *testing.T) {
+		t.Parallel()
+
+		raw := budgetdata.Overall{
+			LogReceived: 20,
+			LogSend:     10,
+		}
+
+		expected := &budgetv1alpha.Overall{
+			Log: &budgetv1alpha.Overall_Metric{
+				Received: raw.LogReceived,
+				Sent:     raw.LogSend,
+				Filtered: raw.LogReceived - raw.LogSend,
+				CostRate: float32(c.Budget.DefaultLogCostRate),
+				Cost:     raw.LogSend * c.Budget.DefaultLogCostRate,
+				Pct:      100,
+			},
+			Trace: &budgetv1alpha.Overall_Metric{
+				CostRate: float32(c.Budget.DefaultTraceCostRate),
+			},
+		}
+		expected.Cost = expected.GetLog().GetCost()
+
+		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
+		mockRetriever.EXPECT().GetOverall(mock.Anything, timeframe, namespace).Return(&raw, nil).Once()
+
+		target := NewMetricProvider(c, mockRetriever)
+		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
+		require.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
 	t.Run("err", func(t *testing.T) {
 		t.Parallel()
 

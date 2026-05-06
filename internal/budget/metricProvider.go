@@ -54,31 +54,36 @@ func (mp *MetricProvider) GetOverall(
 		return nil, err
 	}
 
-	logCost := mp.logCost(raw.LogSend)
-	traceCost := mp.traceCost(raw.SpanSend)
-	totalCost := logCost + traceCost
-
-	logPct := mp.pct(logCost, totalCost)
-
-	return &budgetv1alpha.Overall{
-		Cost: totalCost,
+	result := &budgetv1alpha.Overall{
 		Log: &budgetv1alpha.Overall_Metric{
 			Received: raw.LogReceived,
 			Sent:     raw.LogSend,
 			Filtered: raw.LogReceived - raw.LogSend,
 			CostRate: float32(mp.config.Budget.DefaultLogCostRate),
-			Cost:     logCost,
-			Pct:      float32(logPct),
+			Cost:     mp.logCost(raw.LogSend),
 		},
 		Trace: &budgetv1alpha.Overall_Metric{
 			Received: raw.SpanReceived,
 			Sent:     raw.SpanSend,
 			Filtered: raw.SpanReceived - raw.SpanSend,
 			CostRate: float32(mp.config.Budget.DefaultTraceCostRate),
-			Cost:     traceCost,
-			Pct:      float32(float64(pctConstant) - logPct),
+			Cost:     mp.traceCost(raw.SpanSend),
 		},
-	}, nil
+	}
+	result.Cost = result.GetLog().GetCost() + result.GetTrace().GetCost()
+	result.Log.Pct = float32(mp.pct(result.GetLog().GetCost(), result.GetCost()))
+	if result.GetTrace().GetCost() > 0 {
+		result.Trace.Pct = float32(pctConstant - result.GetLog().GetPct())
+	}
+
+	if result.GetLog().GetFiltered() < 0 {
+		result.Log.Filtered = 0
+	}
+	if result.GetTrace().GetFiltered() < 0 {
+		result.Trace.Filtered = 0
+	}
+
+	return result, nil
 }
 
 // GetLogs retrieves the log metric from the data store and then

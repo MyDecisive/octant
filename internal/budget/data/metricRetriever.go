@@ -9,6 +9,7 @@ import (
 	. "github.com/go-jet/jet/v2/mysql" //nolint
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	. "github.com/mydecisive/octant/internal/budget/data/db/public/table" //nolint
+	"go.uber.org/zap"
 )
 
 const (
@@ -73,7 +74,8 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		toGB,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("log received:%w", err)
+		zap.L().Warn("Encountered errors while retrieving total log data amount received", zap.Error(err))
+		logRec = 0
 	}
 
 	logSent, err := gdr.getTotal(
@@ -86,7 +88,8 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		toGB,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("log sent:%w", err)
+		zap.L().Warn("Encountered errors while retrieving total log data amount sent", zap.Error(err))
+		logSent = 0
 	}
 
 	spanRec, err := gdr.getTotal(
@@ -99,7 +102,8 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		toMil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("span received:%w", err)
+		zap.L().Warn("Encountered errors while retrieving total received span counts", zap.Error(err))
+		spanRec = 0
 	}
 
 	spanSent, err := gdr.getTotal(
@@ -112,7 +116,8 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		toMil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("span sent:%w", err)
+		zap.L().Warn("Encountered errors while retrieving total sent span counts", zap.Error(err))
+		spanSent = 0
 	}
 
 	return &Overall{
@@ -255,10 +260,9 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
 ) BoolExpression {
-	return CAST(timestampCol).AS_TIME().
-		GT_EQ(
-			CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_TIME(),
-		)
+	return CAST(timestampCol).AS_FLOAT().GT_EQ(
+		CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
+	)
 }
 
 func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {

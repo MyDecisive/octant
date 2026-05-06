@@ -18,10 +18,10 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE CAST(bytes_received_by_service_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 730 HOUR) AS TIME);" //nolint:lll
-	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 730 HOUR) AS TIME);"            //nolint:lll
-	expectedSpanRecSQL := "SELECT SUM(received_span_root_count_total.greptime_value / ?) FROM public.received_span_root_count_total WHERE CAST(received_span_root_count_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 730 HOUR) AS TIME);"   //nolint:lll
-	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE CAST(sent_span_count_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 730 HOUR) AS TIME);"                             //nolint:lll
+	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE CAST(bytes_received_by_service_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT);" //nolint:lll
+	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT);"            //nolint:lll
+	expectedSpanRecSQL := "SELECT SUM(received_span_root_count_total.greptime_value / ?) FROM public.received_span_root_count_total WHERE CAST(received_span_root_count_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT);"   //nolint:lll
+	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE CAST(sent_span_count_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT);"                             //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -64,10 +64,8 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
-	t.Run("err span sent", func(t *testing.T) {
+	t.Run("success no data", func(t *testing.T) {
 		t.Parallel()
-		var expected *Overall
-		require.NoError(t, faker.FakeData(&expected))
 
 		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		require.NoError(t, err)
@@ -80,114 +78,21 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 		}, nil).Once()
 
 		dbmock.ExpectQuery(expectedLogRecSQL).
-			WithArgs(toGB).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.LogReceived))
+			WithArgs(toGB).WillReturnError(assert.AnError)
 
 		dbmock.ExpectQuery(expectedLogSentSQL).
-			WithArgs(toGB).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.LogSend))
+			WithArgs(toGB).WillReturnError(assert.AnError)
 
 		dbmock.ExpectQuery(expectedSpanRecSQL).
-			WithArgs(toMil).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.SpanReceived))
+			WithArgs(toMil).WillReturnError(assert.AnError)
 
 		dbmock.ExpectQuery(expectedSpanSentSQL).
 			WithArgs(toMil).WillReturnError(assert.AnError)
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
-		assert.Nil(t, actual)
-		assert.ErrorContains(t, err, "span sent")
-	})
-
-	t.Run("err span received", func(t *testing.T) {
-		t.Parallel()
-		var expected *Overall
-		require.NoError(t, faker.FakeData(&expected))
-
-		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		require.NoError(t, err)
-		defer fakedb.Close() //nolint:errcheck
-
-		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
-		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
-			Namespace: namespace,
-			DB:        fakedb,
-		}, nil).Once()
-
-		dbmock.ExpectQuery(expectedLogRecSQL).
-			WithArgs(toGB).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.LogReceived))
-
-		dbmock.ExpectQuery(expectedLogSentSQL).
-			WithArgs(toGB).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.LogSend))
-
-		dbmock.ExpectQuery(expectedSpanRecSQL).
-			WithArgs(toMil).WillReturnError(assert.AnError)
-
-		target := NewGreptimeDataRetriever(mockBuilder)
-		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
-		assert.Nil(t, actual)
-		assert.ErrorContains(t, err, "span received")
-	})
-
-	t.Run("err log sent", func(t *testing.T) {
-		t.Parallel()
-		var expected *Overall
-		require.NoError(t, faker.FakeData(&expected))
-
-		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-		require.NoError(t, err)
-		defer fakedb.Close() //nolint:errcheck
-
-		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
-		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
-			Namespace: namespace,
-			DB:        fakedb,
-		}, nil).Once()
-
-		dbmock.ExpectQuery(expectedLogRecSQL).
-			WithArgs(toGB).
-			WillReturnRows(sqlmock.NewRows([]string{"total"}).
-				AddRow(expected.LogReceived))
-
-		dbmock.ExpectQuery(expectedLogSentSQL).
-			WithArgs(toGB).
-			WillReturnError(assert.AnError)
-
-		target := NewGreptimeDataRetriever(mockBuilder)
-		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
-		assert.Nil(t, actual)
-		assert.ErrorContains(t, err, "log sent")
-	})
-
-	t.Run("err log received", func(t *testing.T) {
-		t.Parallel()
-
-		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-		require.NoError(t, err)
-		defer fakedb.Close() //nolint:errcheck
-
-		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
-		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
-			Namespace: namespace,
-			DB:        fakedb,
-		}, nil).Once()
-
-		dbmock.ExpectQuery(expectedLogRecSQL).
-			WithArgs(toGB).
-			WillReturnError(assert.AnError)
-
-		target := NewGreptimeDataRetriever(mockBuilder)
-		actual, err := target.GetOverall(t.Context(), timeframe, namespace)
-		assert.Nil(t, actual)
-		assert.ErrorContains(t, err, "log received")
+		assert.Equal(t, &Overall{}, actual)
 	})
 
 	t.Run("err build", func(t *testing.T) {
@@ -208,7 +113,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 730 HOUR) AS TIME);" //nolint:lll
+	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT);" //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -275,7 +180,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 1460 HOUR) AS TIME) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -368,7 +273,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS TIME) >= CAST((NOW() - INTERVAL 1460 HOUR) AS TIME)) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) >= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))
@@ -442,7 +347,7 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE CAST(trace_root_topology_1m.time_window AS TIME) >= CAST((NOW() - INTERVAL 24 HOUR) AS TIME) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
+	expectedSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE CAST(trace_root_topology_1m.time_window AS FLOAT) >= CAST((NOW() - INTERVAL 24 HOUR) AS FLOAT) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -547,7 +452,7 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE (CAST(trace_root_topology_1m.time_window AS TIME) >= CAST((NOW() - INTERVAL 1460 HOUR) AS TIME)) AND (trace_root_topology_1m.root_id LIKE ?) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE (CAST(trace_root_topology_1m.time_window AS FLOAT) >= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (trace_root_topology_1m.root_id LIKE ?) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
 
 		var expected RootSpan
 		require.NoError(t, faker.FakeData(&expected))
