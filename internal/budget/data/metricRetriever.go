@@ -17,6 +17,7 @@ const (
 	toMil = 1000000.0
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
+	showTableFormatter     = "SHOW TABLES LIKE '%s'"
 )
 
 const (
@@ -35,6 +36,10 @@ type MetricDataRetriever interface {
 	GetLogs(ctx context.Context, input MetricDataInput) ([]Log, string, error)
 	// GetRootSpans returns the list of root span data that matches the given inputs.
 	GetRootSpans(ctx context.Context, input MetricDataInput) ([]RootSpan, string, error)
+	// RootSpansExist returns true if root span table exists.
+	RootSpansExist(ctx context.Context, namespace string) (bool, error)
+	// LogsExist returns true if log table exists.
+	LogsExist(ctx context.Context, namespace string) (bool, error)
 }
 
 // Ensure GreptimeDataRetriever implements MetricDataRetriever.
@@ -141,15 +146,6 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 		return -1, err
 	}
 
-	ok, err := gdr.tableExists(ctx, conn.DB, table)
-	if err != nil {
-		return -1, err
-	}
-
-	if !ok {
-		return 0, nil
-	}
-
 	return gdr.getTotal(
 		ctx,
 		conn.DB,
@@ -211,15 +207,6 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 		return nil, "", err
 	}
 
-	ok, err := gdr.tableExists(ctx, conn.DB, table)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if !ok {
-		return []RootSpan{}, "", nil
-	}
-
 	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
 	if input.Search != "" {
 		where = where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
@@ -248,6 +235,26 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 		result = result[:len(result)-1]
 	}
 	return result, next, nil
+}
+
+// RootSpansExist returns true if root span table exists.
+func (gdr *GreptimeDataRetriever) RootSpansExist(ctx context.Context, namespace string) (bool, error) {
+	conn, err := gdr.builder.Build(ctx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return gdr.tableExists(ctx, conn.DB, TraceRootTopology1m)
+}
+
+// LogsExist returns true if log table exists.
+func (gdr *GreptimeDataRetriever) LogsExist(ctx context.Context, namespace string) (bool, error) {
+	conn, err := gdr.builder.Build(ctx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return gdr.tableExists(ctx, conn.DB, BytesSentByServiceTotal)
 }
 
 // getTotal returns total sum of the valueCol divided by the divisor.
@@ -280,7 +287,7 @@ func (*GreptimeDataRetriever) tableExists(
 	db *sql.DB,
 	table Table,
 ) (bool, error) {
-	stmt := RawStatement(fmt.Sprintf("SHOW TABLES LIKE '%s'", table.TableName()))
+	stmt := RawStatement(fmt.Sprintf(showTableFormatter, table.TableName()))
 
 	var res []string
 	if err := stmt.QueryContext(ctx, db, &res); err != nil {
