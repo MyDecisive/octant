@@ -3,6 +3,7 @@ package rpchandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"connectrpc.com/connect"
@@ -10,7 +11,9 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -45,10 +48,12 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	*connect.Response[octantv1alpha.GetConnectionStatusResponse],
 	error,
 ) {
+	connScope := request.Msg.GetScope()
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
-		request.Msg.GetScope().GetNamespace(),
-		request.Msg.GetScope().GetConnectionName(),
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+		request.Msg.GetValidatorRunId(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -63,10 +68,10 @@ func (ch *ConnectionHandler) GenerateManifests(
 	stream *connect.ServerStream[octantv1alpha.GenerateManifestsResponse],
 ) error {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
-
+	connScope := request.Msg.GetScope()
 	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
-		Namespace:   request.Msg.GetScope().GetNamespace(),
-		Connection:  request.Msg.GetScope().GetConnectionName(),
+		Namespace:   connScope.GetNamespace(),
+		Connection:  connScope.GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),
 		Format:      request.Msg.GetFormat(),
 	})
@@ -102,4 +107,259 @@ func (ch *ConnectionHandler) GenerateManifests(
 			return connect.NewError(connect.CodeInternal, errors.New("streaming"))
 		}
 	}
+}
+
+func (ch *ConnectionHandler) GetConnections(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GetConnectionsRequest],
+) (*connect.Response[octantv1alpha.GetConnectionsResponse], error) {
+	names, err := ch.octantConnection.GetConnections(ctx, request.Msg.GetNamespace())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connections: %w", err))
+	}
+
+	return connect.NewResponse(&octantv1alpha.GetConnectionsResponse{
+		ConnectionNames: names,
+	}), nil
+}
+
+func (ch *ConnectionHandler) GetConnection(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GetConnectionRequest],
+) (*connect.Response[octantv1alpha.GetConnectionResponse], error) {
+	connScope := request.Msg.GetScope()
+	conn, err := ch.octantConnection.GetConnectionByName(
+		ctx,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection: %w", err))
+	}
+	if conn == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("connection not found"))
+	}
+
+	return connect.NewResponse(convertConnectionDataToGetConnectionResponse(conn)), nil
+}
+
+func (ch *ConnectionHandler) CreateConnection(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) (*connect.Response[emptypb.Empty], error) {
+	connData := convertRequestToConnectionData(request)
+	connScope := request.Msg.GetScope()
+	err := ch.octantConnection.SaveConnection(
+		ctx,
+		connData,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll // this fulfills a contract; cannot name like the linter wants
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.GetConnectionValidatorRunIdsRequest],
+) (*connect.Response[octantv1alpha.GetConnectionValidatorRunIdsResponse], error) {
+	connScope := request.Msg.GetScope()
+	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
+		ctx,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection validator runs: %w", err))
+	}
+
+	return connect.NewResponse(&octantv1alpha.GetConnectionValidatorRunIdsResponse{
+		ValidatorRunIds: runs,
+	}), nil
+}
+
+func (ch *ConnectionHandler) CreateConnectionValidatorRun(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.CreateConnectionValidatorRunRequest],
+) (*connect.Response[octantv1alpha.CreateConnectionValidatorRunResponse], error) {
+	connScope := request.Msg.GetScope()
+	runID, err := ch.octantConnection.PutConnectionValidatorRun(
+		ctx,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate validator run: %w", err))
+	}
+
+	return connect.NewResponse(&octantv1alpha.CreateConnectionValidatorRunResponse{
+		ValidatorRunId: runID,
+	}), nil
+}
+
+func (ch *ConnectionHandler) DeleteConnection(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.DeleteConnectionRequest],
+) (*connect.Response[emptypb.Empty], error) {
+	connScope := request.Msg.GetScope()
+	err := ch.octantConnection.DeleteConnection(
+		ctx,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+func (ch *ConnectionHandler) DeleteConnectionValidator(
+	ctx context.Context,
+	request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest],
+) (*connect.Response[emptypb.Empty], error) {
+	connScope := request.Msg.GetScope()
+	err := ch.octantConnection.DeleteConnectionValidator(
+		ctx,
+		connScope.GetNamespace(),
+		connScope.GetConnectionName(),
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+func convertRequestToConnectionData(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) connection.OctantConnectionData {
+	destinations := extractDestinationsFromRequest(request)
+	dataTypes := extractDataTypesFromRequest(request)
+	deployment := extractDeploymentFromRequest(request)
+	connData := connection.OctantConnectionData{
+		SourceType:     "octant",
+		Destinations:   destinations,
+		TelemetryTypes: dataTypes,
+		Deployment:     deployment,
+	}
+	return connData
+}
+
+func extractDeploymentFromRequest(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) *connection.Deployment {
+	var deploymentType connection.DeploymentType
+	switch request.Msg.GetDeployment().GetType() {
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
+		deploymentType = connection.ArgoSideloadDeploymentType
+	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST:
+		deploymentType = connection.ArgoManifestsDeploymentType
+	default:
+		deploymentType = ""
+	}
+	deployment := &connection.Deployment{
+		Type:            deploymentType,
+		IntegrationName: request.Msg.GetDeployment().GetIntegrationName(),
+	}
+	return deployment
+}
+
+func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []telemetry.MLT {
+	var telemetries []telemetry.MLT
+	for _, t := range request.Msg.GetTelemetryTypes() {
+		switch t {
+		case octantv1alpha.MLTType_MLT_TYPE_METRIC:
+			telemetries = append(telemetries, telemetry.Metrics)
+		case octantv1alpha.MLTType_MLT_TYPE_TRACE:
+			telemetries = append(telemetries, telemetry.Traces)
+		case octantv1alpha.MLTType_MLT_TYPE_LOG:
+			telemetries = append(telemetries, telemetry.Logs)
+		}
+	}
+	return telemetries
+}
+
+func extractDestinationsFromRequest(
+	request *connect.Request[octantv1alpha.CreateConnectionRequest],
+) []connection.OctantConnectionDestination {
+	var destinations []connection.OctantConnectionDestination
+	for _, d := range request.Msg.GetDestinations() {
+		destType := "unknown"
+		if d.GetType() == octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG {
+			destType = "datadog"
+		}
+		destinations = append(destinations, connection.OctantConnectionDestination{
+			DestinationType: destType,
+			IntegrationName: d.GetIntegrationName(),
+		})
+	}
+	return destinations
+}
+
+func convertConnectionDataToGetConnectionResponse(
+	conn *connection.OctantConnectionData,
+) *octantv1alpha.GetConnectionResponse {
+	if conn == nil {
+		return nil
+	}
+	return &octantv1alpha.GetConnectionResponse{
+		TelemetryTypes: convertTelemetryTypesToProtoMLT(conn.TelemetryTypes),
+		DeploymentType: convertDeploymentToProtoDeploymentType(conn.Deployment),
+		Destinations:   convertDestinationsToProtoDestionations(conn.Destinations),
+	}
+}
+
+func convertDeploymentToProtoDeploymentType(deployment *connection.Deployment) octantv1alpha.DeploymentType {
+	if deployment == nil {
+		return 0 // Default/unspecified enum value
+	}
+
+	switch deployment.Type {
+	case connection.ArgoSideloadDeploymentType:
+		return octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD
+	case connection.ArgoManifestsDeploymentType:
+		return octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST
+	default:
+		return 0 // Default/unspecified
+	}
+}
+
+func convertTelemetryTypesToProtoMLT(telemetries []telemetry.MLT) []octantv1alpha.MLTType {
+	var mltTypes []octantv1alpha.MLTType
+	for _, t := range telemetries {
+		switch t {
+		case telemetry.Metrics:
+			mltTypes = append(mltTypes, octantv1alpha.MLTType_MLT_TYPE_METRIC)
+		case telemetry.Traces:
+			mltTypes = append(mltTypes, octantv1alpha.MLTType_MLT_TYPE_TRACE)
+		case telemetry.Logs:
+			mltTypes = append(mltTypes, octantv1alpha.MLTType_MLT_TYPE_LOG)
+		}
+	}
+	return mltTypes
+}
+
+func convertDestinationsToProtoDestionations(
+	destinations []connection.OctantConnectionDestination,
+) []*octantv1alpha.TelemetryDestination {
+	var contractDestinations []*octantv1alpha.TelemetryDestination
+	for _, d := range destinations {
+		var destType octantv1alpha.IntegrationType
+		switch d.DestinationType {
+		case "datadog":
+			destType = octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG
+		default:
+			destType = 0 // Default/unspecified
+		}
+
+		contractDestinations = append(contractDestinations, &octantv1alpha.TelemetryDestination{
+			Type:            destType,
+			IntegrationName: d.IntegrationName,
+		})
+	}
+	return contractDestinations
 }

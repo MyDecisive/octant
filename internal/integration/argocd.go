@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/mydecisive/octant/internal/config"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,15 +19,17 @@ type ArgoCDIntegrationData struct {
 }
 
 type ArgoCDIntegration struct {
-	K8sClient kubernetes.Interface
+	K8sClient     kubernetes.Interface
+	configuration *config.Configuration
 }
 
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
 // NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
-func NewArgoCDIntegration(k8sClient kubernetes.Interface) *ArgoCDIntegration {
+func NewArgoCDIntegration(k8sClient kubernetes.Interface, configuration *config.Configuration) *ArgoCDIntegration {
 	return &ArgoCDIntegration{
-		K8sClient: k8sClient,
+		K8sClient:     k8sClient,
+		configuration: configuration,
 	}
 }
 
@@ -34,9 +37,12 @@ func NewArgoCDIntegration(k8sClient kubernetes.Interface) *ArgoCDIntegration {
 // in the provided namespace for the "mdai-argocd-integration" secret.
 func (aci *ArgoCDIntegration) GetIntegrations(
 	ctx context.Context,
-	namespace string,
 ) (map[string]ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -59,10 +65,13 @@ func (aci *ArgoCDIntegration) GetIntegrations(
 // GetIntegrationByName retrieves the existing
 // integration in the provided namespace for the "mdai-argocd-integration" secret, if it exists.
 func (aci *ArgoCDIntegration) GetIntegrationByName(
-	ctx context.Context,
-	namespace, name string,
+	ctx context.Context, name string,
 ) (*ArgoCDIntegrationData, error) {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	secret, err := aci.K8sClient.CoreV1().Secrets(aci.configuration.CurrentNamespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -84,15 +93,19 @@ func (aci *ArgoCDIntegration) GetIntegrationByName(
 // SetIntegration adds or updates the "mdai-argocd-integration" secret for the provided namespace.
 func (aci *ArgoCDIntegration) SetIntegration(
 	ctx context.Context,
-	namespace, integrationName string,
+	integrationName string,
 	integrationData ArgoCDIntegrationData,
 ) error {
 	jsonData, err := json.Marshal(integrationData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
-
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+	namespace := aci.configuration.CurrentNamespace
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
@@ -105,8 +118,13 @@ func (aci *ArgoCDIntegration) SetIntegration(
 }
 
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.
-func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, namespace, integrationName string) error {
-	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(ctx, argocdSecretName, metav1.GetOptions{})
+func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
+	namespace := aci.configuration.CurrentNamespace
+	secret, err := aci.K8sClient.CoreV1().Secrets(namespace).Get(
+		ctx,
+		argocdSecretName,
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil

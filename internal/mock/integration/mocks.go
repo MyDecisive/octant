@@ -38,16 +38,16 @@ func (_m *MockIntegration[T]) EXPECT() *MockIntegration_Expecter[T] {
 }
 
 // DeleteIntegration provides a mock function for the type MockIntegration
-func (_mock *MockIntegration[T]) DeleteIntegration(ctx context.Context, namespace string, integrationName string) error {
-	ret := _mock.Called(ctx, namespace, integrationName)
+func (_mock *MockIntegration[T]) DeleteIntegration(ctx context.Context, integrationName string) error {
+	ret := _mock.Called(ctx, integrationName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteIntegration")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, namespace, integrationName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, integrationName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -61,13 +61,12 @@ type MockIntegration_DeleteIntegration_Call[T any] struct {
 
 // DeleteIntegration is a helper method to define mock.On call
 //   - ctx context.Context
-//   - namespace string
 //   - integrationName string
-func (_e *MockIntegration_Expecter[T]) DeleteIntegration(ctx interface{}, namespace interface{}, integrationName interface{}) *MockIntegration_DeleteIntegration_Call[T] {
-	return &MockIntegration_DeleteIntegration_Call[T]{Call: _e.mock.On("DeleteIntegration", ctx, namespace, integrationName)}
+func (_e *MockIntegration_Expecter[T]) DeleteIntegration(ctx interface{}, integrationName interface{}) *MockIntegration_DeleteIntegration_Call[T] {
+	return &MockIntegration_DeleteIntegration_Call[T]{Call: _e.mock.On("DeleteIntegration", ctx, integrationName)}
 }
 
-func (_c *MockIntegration_DeleteIntegration_Call[T]) Run(run func(ctx context.Context, namespace string, integrationName string)) *MockIntegration_DeleteIntegration_Call[T] {
+func (_c *MockIntegration_DeleteIntegration_Call[T]) Run(run func(ctx context.Context, integrationName string)) *MockIntegration_DeleteIntegration_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -77,14 +76,9 @@ func (_c *MockIntegration_DeleteIntegration_Call[T]) Run(run func(ctx context.Co
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -95,14 +89,14 @@ func (_c *MockIntegration_DeleteIntegration_Call[T]) Return(err error) *MockInte
 	return _c
 }
 
-func (_c *MockIntegration_DeleteIntegration_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, integrationName string) error) *MockIntegration_DeleteIntegration_Call[T] {
+func (_c *MockIntegration_DeleteIntegration_Call[T]) RunAndReturn(run func(ctx context.Context, integrationName string) error) *MockIntegration_DeleteIntegration_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIntegrationByName provides a mock function for the type MockIntegration
-func (_mock *MockIntegration[T]) GetIntegrationByName(ctx context.Context, namespace string, name string) (*T, error) {
-	ret := _mock.Called(ctx, namespace, name)
+func (_mock *MockIntegration[T]) GetIntegrationByName(ctx context.Context, name string) (*T, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIntegrationByName")
@@ -110,18 +104,18 @@ func (_mock *MockIntegration[T]) GetIntegrationByName(ctx context.Context, names
 
 	var r0 *T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*T, error)); ok {
-		return returnFunc(ctx, namespace, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*T, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *T); ok {
-		r0 = returnFunc(ctx, namespace, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *T); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, namespace, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -135,13 +129,12 @@ type MockIntegration_GetIntegrationByName_Call[T any] struct {
 
 // GetIntegrationByName is a helper method to define mock.On call
 //   - ctx context.Context
-//   - namespace string
 //   - name string
-func (_e *MockIntegration_Expecter[T]) GetIntegrationByName(ctx interface{}, namespace interface{}, name interface{}) *MockIntegration_GetIntegrationByName_Call[T] {
-	return &MockIntegration_GetIntegrationByName_Call[T]{Call: _e.mock.On("GetIntegrationByName", ctx, namespace, name)}
+func (_e *MockIntegration_Expecter[T]) GetIntegrationByName(ctx interface{}, name interface{}) *MockIntegration_GetIntegrationByName_Call[T] {
+	return &MockIntegration_GetIntegrationByName_Call[T]{Call: _e.mock.On("GetIntegrationByName", ctx, name)}
 }
 
-func (_c *MockIntegration_GetIntegrationByName_Call[T]) Run(run func(ctx context.Context, namespace string, name string)) *MockIntegration_GetIntegrationByName_Call[T] {
+func (_c *MockIntegration_GetIntegrationByName_Call[T]) Run(run func(ctx context.Context, name string)) *MockIntegration_GetIntegrationByName_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -151,14 +144,9 @@ func (_c *MockIntegration_GetIntegrationByName_Call[T]) Run(run func(ctx context
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -169,14 +157,14 @@ func (_c *MockIntegration_GetIntegrationByName_Call[T]) Return(v *T, err error) 
 	return _c
 }
 
-func (_c *MockIntegration_GetIntegrationByName_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, name string) (*T, error)) *MockIntegration_GetIntegrationByName_Call[T] {
+func (_c *MockIntegration_GetIntegrationByName_Call[T]) RunAndReturn(run func(ctx context.Context, name string) (*T, error)) *MockIntegration_GetIntegrationByName_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIntegrations provides a mock function for the type MockIntegration
-func (_mock *MockIntegration[T]) GetIntegrations(ctx context.Context, namespace string) (map[string]T, error) {
-	ret := _mock.Called(ctx, namespace)
+func (_mock *MockIntegration[T]) GetIntegrations(ctx context.Context) (map[string]T, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIntegrations")
@@ -184,18 +172,18 @@ func (_mock *MockIntegration[T]) GetIntegrations(ctx context.Context, namespace 
 
 	var r0 map[string]T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (map[string]T, error)); ok {
-		return returnFunc(ctx, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (map[string]T, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) map[string]T); ok {
-		r0 = returnFunc(ctx, namespace)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) map[string]T); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, namespace)
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -209,24 +197,18 @@ type MockIntegration_GetIntegrations_Call[T any] struct {
 
 // GetIntegrations is a helper method to define mock.On call
 //   - ctx context.Context
-//   - namespace string
-func (_e *MockIntegration_Expecter[T]) GetIntegrations(ctx interface{}, namespace interface{}) *MockIntegration_GetIntegrations_Call[T] {
-	return &MockIntegration_GetIntegrations_Call[T]{Call: _e.mock.On("GetIntegrations", ctx, namespace)}
+func (_e *MockIntegration_Expecter[T]) GetIntegrations(ctx interface{}) *MockIntegration_GetIntegrations_Call[T] {
+	return &MockIntegration_GetIntegrations_Call[T]{Call: _e.mock.On("GetIntegrations", ctx)}
 }
 
-func (_c *MockIntegration_GetIntegrations_Call[T]) Run(run func(ctx context.Context, namespace string)) *MockIntegration_GetIntegrations_Call[T] {
+func (_c *MockIntegration_GetIntegrations_Call[T]) Run(run func(ctx context.Context)) *MockIntegration_GetIntegrations_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
 		run(
 			arg0,
-			arg1,
 		)
 	})
 	return _c
@@ -237,22 +219,22 @@ func (_c *MockIntegration_GetIntegrations_Call[T]) Return(stringToV map[string]T
 	return _c
 }
 
-func (_c *MockIntegration_GetIntegrations_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string) (map[string]T, error)) *MockIntegration_GetIntegrations_Call[T] {
+func (_c *MockIntegration_GetIntegrations_Call[T]) RunAndReturn(run func(ctx context.Context) (map[string]T, error)) *MockIntegration_GetIntegrations_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetIntegration provides a mock function for the type MockIntegration
-func (_mock *MockIntegration[T]) SetIntegration(ctx context.Context, namespace string, integrationName string, integrationData T) error {
-	ret := _mock.Called(ctx, namespace, integrationName, integrationData)
+func (_mock *MockIntegration[T]) SetIntegration(ctx context.Context, integrationName string, integrationData T) error {
+	ret := _mock.Called(ctx, integrationName, integrationData)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetIntegration")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, T) error); ok {
-		r0 = returnFunc(ctx, namespace, integrationName, integrationData)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, T) error); ok {
+		r0 = returnFunc(ctx, integrationName, integrationData)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -266,14 +248,13 @@ type MockIntegration_SetIntegration_Call[T any] struct {
 
 // SetIntegration is a helper method to define mock.On call
 //   - ctx context.Context
-//   - namespace string
 //   - integrationName string
 //   - integrationData T
-func (_e *MockIntegration_Expecter[T]) SetIntegration(ctx interface{}, namespace interface{}, integrationName interface{}, integrationData interface{}) *MockIntegration_SetIntegration_Call[T] {
-	return &MockIntegration_SetIntegration_Call[T]{Call: _e.mock.On("SetIntegration", ctx, namespace, integrationName, integrationData)}
+func (_e *MockIntegration_Expecter[T]) SetIntegration(ctx interface{}, integrationName interface{}, integrationData interface{}) *MockIntegration_SetIntegration_Call[T] {
+	return &MockIntegration_SetIntegration_Call[T]{Call: _e.mock.On("SetIntegration", ctx, integrationName, integrationData)}
 }
 
-func (_c *MockIntegration_SetIntegration_Call[T]) Run(run func(ctx context.Context, namespace string, integrationName string, integrationData T)) *MockIntegration_SetIntegration_Call[T] {
+func (_c *MockIntegration_SetIntegration_Call[T]) Run(run func(ctx context.Context, integrationName string, integrationData T)) *MockIntegration_SetIntegration_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -283,19 +264,14 @@ func (_c *MockIntegration_SetIntegration_Call[T]) Run(run func(ctx context.Conte
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
+		var arg2 T
 		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 T
-		if args[3] != nil {
-			arg3 = args[3].(T)
+			arg2 = args[2].(T)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -306,7 +282,7 @@ func (_c *MockIntegration_SetIntegration_Call[T]) Return(err error) *MockIntegra
 	return _c
 }
 
-func (_c *MockIntegration_SetIntegration_Call[T]) RunAndReturn(run func(ctx context.Context, namespace string, integrationName string, integrationData T) error) *MockIntegration_SetIntegration_Call[T] {
+func (_c *MockIntegration_SetIntegration_Call[T]) RunAndReturn(run func(ctx context.Context, integrationName string, integrationData T) error) *MockIntegration_SetIntegration_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

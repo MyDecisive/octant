@@ -29,7 +29,7 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).
+			GetIntegrations(testifymock.Anything).
 			Return(map[string]integration.DataDogIntegrationData{
 				expected: {},
 			}, nil)
@@ -48,7 +48,7 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			GetIntegrations(testifymock.Anything, configuration.CurrentNamespace).
+			GetIntegrations(testifymock.Anything).
 			Return(nil, assert.AnError)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
@@ -75,7 +75,7 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).
+			SetIntegration(testifymock.Anything, task.GetName(), testifymock.Anything).
 			Return(nil)
 
 		target := NewDatadogHandler(configuration, mockIntegration)
@@ -90,7 +90,7 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			SetIntegration(testifymock.Anything, configuration.CurrentNamespace, task.GetName(), testifymock.Anything).
+			SetIntegration(testifymock.Anything, task.GetName(), testifymock.Anything).
 			Return(assert.AnError)
 
 		target := NewDatadogHandler(configuration, mockIntegration)

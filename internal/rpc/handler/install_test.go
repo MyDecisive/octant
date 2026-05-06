@@ -42,7 +42,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, assert.AnError).
 					Once()
 
@@ -67,7 +67,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, nil).
 					Once()
 
@@ -103,7 +103,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
@@ -151,7 +151,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
@@ -199,7 +199,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
@@ -274,7 +274,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, assert.AnError).
 					Once()
 				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
@@ -294,7 +294,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, nil).
 					Once()
 				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
@@ -314,7 +314,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(argoIntegrationData, nil).
 					Once()
 
@@ -339,7 +339,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(argoIntegrationData, nil).
 					Once()
 
@@ -371,7 +371,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(argoIntegrationData, nil).
 					Once()
 
@@ -408,7 +408,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 			setupInstallHandler: func() *InstallHandler {
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, defaultNamespace, "coolConnection").
+					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(argoIntegrationData, nil).
 					Once()
 

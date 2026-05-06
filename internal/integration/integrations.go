@@ -10,10 +10,10 @@ import (
 )
 
 type Integration[T any] interface {
-	GetIntegrations(ctx context.Context, namespace string) (map[string]T, error)
-	GetIntegrationByName(ctx context.Context, namespace, name string) (*T, error)
-	SetIntegration(ctx context.Context, namespace, integrationName string, integrationData T) error
-	DeleteIntegration(ctx context.Context, namespace, integrationName string) error
+	GetIntegrations(ctx context.Context) (map[string]T, error)
+	GetIntegrationByName(ctx context.Context, name string) (*T, error)
+	SetIntegration(ctx context.Context, integrationName string, integrationData T) error
+	DeleteIntegration(ctx context.Context, integrationName string) error
 }
 
 func updateSecretWithIntegration(
