@@ -7,6 +7,7 @@ import (
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha/budgetv1alphaconnect"
 	"github.com/mydecisive/octant/internal/budget"
+	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	"github.com/mydecisive/octant/internal/connection"
 	"go.uber.org/zap"
 )
@@ -15,11 +16,16 @@ type BudgetTimeframeHandler struct {
 	budgetv1alphaconnect.UnimplementedTimeframeServiceHandler
 
 	connection connection.Connection[connection.OctantConnectionData]
+	retriever  budgetdata.MetricDataRetriever
 }
 
-func NewBudgetTimeframeHandler(con connection.Connection[connection.OctantConnectionData]) *BudgetTimeframeHandler {
+func NewBudgetTimeframeHandler(
+	con connection.Connection[connection.OctantConnectionData],
+	retriever budgetdata.MetricDataRetriever,
+) *BudgetTimeframeHandler {
 	return &BudgetTimeframeHandler{
 		connection: con,
+		retriever:  retriever,
 	}
 }
 
@@ -68,8 +74,22 @@ func (bth *BudgetTimeframeHandler) TimeframeStatus(
 			},
 		},
 	}
+
+	if ok, err := bth.retriever.RootSpansExist(ctx, req.Msg.GetNamespace()); err != nil {
+		logger.Warn("Unable to retrieve root span table status", zap.Error(err))
+	} else if ok {
+		statuses.Trace = true
+	}
+
+	if ok, err := bth.retriever.LogsExist(ctx, req.Msg.GetNamespace()); err != nil {
+		logger.Warn("Unable to retrieve logs table status", zap.Error(err))
+	} else if ok {
+		statuses.Log = true
+	}
+
 	for i := range int(budget.ValidTimeframe(con.Created)) {
 		statuses.Statuses[i].Status = budgetv1alpha.TimeframeStatusResponse_CODE_OK
 	}
+
 	return connect.NewResponse(statuses), nil
 }

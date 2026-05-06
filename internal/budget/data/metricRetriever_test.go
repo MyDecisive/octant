@@ -520,3 +520,167 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestGreptimeDataRetriever_RootSpansExist(t *testing.T) {
+	t.Parallel()
+
+	namespace := faker.Word()
+	expectedSQL := "SHOW TABLES LIKE 'trace_root_topology_1m';"
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WillReturnRows(sqlmock.NewRows([]string{faker.Word()}).AddRow(faker.Word()))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.RootSpansExist(t.Context(), namespace)
+		require.NoError(t, err)
+		assert.True(t, actual)
+	})
+
+	t.Run("success no table", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WillReturnRows(sqlmock.NewRows([]string{faker.Word()}))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.RootSpansExist(t.Context(), namespace)
+		require.NoError(t, err)
+		assert.False(t, actual)
+	})
+
+	t.Run("err query", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnError(assert.AnError)
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.RootSpansExist(t.Context(), namespace)
+		assert.False(t, actual)
+		assert.Error(t, err)
+	})
+
+	t.Run("err builder", func(t *testing.T) {
+		t.Parallel()
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(nil, assert.AnError).Once()
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.RootSpansExist(t.Context(), namespace)
+		assert.False(t, actual)
+		assert.Error(t, err)
+	})
+}
+
+func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
+	t.Parallel()
+
+	namespace := faker.Word()
+	expectedSQL := "SHOW TABLES LIKE 'bytes_sent_by_service_total';"
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WillReturnRows(sqlmock.NewRows([]string{faker.Word()}).AddRow(faker.Word()))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.LogsExist(t.Context(), namespace)
+		require.NoError(t, err)
+		assert.True(t, actual)
+	})
+
+	t.Run("success no table", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WillReturnRows(sqlmock.NewRows([]string{faker.Word()}))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.LogsExist(t.Context(), namespace)
+		require.NoError(t, err)
+		assert.False(t, actual)
+	})
+
+	t.Run("err query", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnError(assert.AnError)
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.LogsExist(t.Context(), namespace)
+		assert.False(t, actual)
+		assert.Error(t, err)
+	})
+
+	t.Run("err builder", func(t *testing.T) {
+		t.Parallel()
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(nil, assert.AnError).Once()
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.LogsExist(t.Context(), namespace)
+		assert.False(t, actual)
+		assert.Error(t, err)
+	})
+}
