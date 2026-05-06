@@ -1,0 +1,68 @@
+global:
+  greptime:
+#   use 'public' unless mentioned database is explicitly created in GreptimeDB
+    databaseName: public
+    nameOverride: ""
+    fullnameOverride: mdai-greptimedb
+
+greptimedb-standalone:
+  enabled: false
+  extraVolumeMounts:
+    - mountPath: /etc/greptimedb/auth
+      name: auth
+      readOnly: true
+  extraVolumes:
+    - name: auth
+      secret:
+        defaultMode: 420
+        secretName: greptimedb-users-auth
+  env:
+    GREPTIMEDB_STANDALONE__USER_PROVIDER: "static_user_provider:file:/etc/greptimedb/auth/passwd"
+  ## AWS start
+  # objectStorage:
+  #   s3:
+  #     bucket: mdai-greptime-object-storage
+  #     endpoint: s3.us-east-2.amazonaws.com
+  #     region: us-east-2
+  #     root: ""
+  # persistence:
+  #   storageClass: gp2
+  #   size: 20Gi
+  # serviceAccount:
+  #   annotations:
+  #     eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/mdai-greptime-irsa-role
+  #   create: true
+  #   name: greptimedb-standalone
+## AWS end
+
+
+kubeprometheusstack:
+  prometheus:
+    prometheusSpec:
+      retention: 3h
+      remoteRead:
+        - url: 'http://{{ .Values.global.greptime.fullnameOverride | default "mdai-greptimedb" }}.{{ .Release.Namespace }}.svc.cluster.local:4000/v1/prometheus/read?db={{ .Values.global.greptime.databaseName | default "public" }}'
+          basicAuth:
+            username:
+              name: greptimedb-users-auth
+              key: GREPTIME_USER
+            password:
+              name: greptimedb-users-auth
+              key: GREPTIME_PASSWD
+          requiredMatchers:
+            greptime_remote: "true"
+      remoteWrite:
+        - url: 'http://{{ .Values.global.greptime.fullnameOverride | default "mdai-greptimedb" }}.{{ .Release.Namespace }}.svc.cluster.local:4000/v1/prometheus/write?db={{ .Values.global.greptime.databaseName | default "public" }}'
+          basicAuth:
+            username:
+              name: greptimedb-users-auth
+              key: GREPTIME_USER
+            password:
+              name: greptimedb-users-auth
+              key: GREPTIME_PASSWD
+          writeRelabelConfigs:
+            - sourceLabels: [ job, __name__ ]
+              regex: '(mdai-observer-scrape|mdai-observer-otel-scrape|hub-monitor-scrape|otel-collector);.*|.*;(kube_pod_.*|container_.*|node_.*|kube_node_.*|process_.*)'
+              action: keep
+            - targetLabel: greptime_remote
+              replacement: "true"

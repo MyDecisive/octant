@@ -1,0 +1,95 @@
+mdai-tracealyzer:
+  replicaCount: 1
+
+  image:
+    repository: public.ecr.aws/decisiveai/mdai-tracealyzer
+    pullPolicy: IfNotPresent
+    tag: "0.1.0"
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: mdai-tracealyzer
+
+  serviceAccount:
+    create: true
+    automount: true
+    annotations: {}
+    name: ""
+
+  podAnnotations: {}
+  podLabels: {}
+
+  service:
+    type: ClusterIP
+    ports:
+      otlpGrpc: 4317
+      otlpHttp: 4318
+      metrics: 9090
+
+  serviceMonitor:
+    enabled: true
+    namespace: ""
+    labels: {}
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+    honorLabels: false
+    relabelings: []
+    metricRelabelings: []
+
+  config:
+    ingestion:
+      otlpGrpcEndpoint: "0.0.0.0:4317"
+      otlpHttpEndpoint: "0.0.0.0:4318"
+    buffer:
+      valkeyDb: 0
+      quietPeriod: "60s"
+      maxTtl: "10m"
+      sweepInterval: "5s"
+      # sweepWorkerPoolSize: 4  # defaults to runtime.NumCPU() when unset
+    emitter:
+      greptimedbEndpoint: "mdai-greptimedb.mdai.svc.cluster.local:4001"
+      greptimedbSqlEndpoint: "mdai-greptimedb.mdai.svc.cluster.local:4003"
+      greptimedbDatabase: "public"
+      tableTtl: "14d"
+      timeout: "10s"
+      maxRetries: 5
+      initialBackoff: "10s"
+      batchSize: 100
+      flushInterval: "1s"
+      queueCapacity: 1000
+    service:
+      logLevel: "info"
+      metricsEndpoint: "0.0.0.0:9090"
+      shutdownGrace: "30s"
+
+  secrets:
+    valkeySecretName: "valkey-secret"
+    greptimedbAuth:
+      existingSecret: "greptimedb-users-auth"
+      key: passwd
+
+  migrationJob:
+    enabled: true
+    backoffLimit: 10
+    ttlSecondsAfterFinished: 600
+    annotations: {}
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  terminationGracePeriodSeconds: 30

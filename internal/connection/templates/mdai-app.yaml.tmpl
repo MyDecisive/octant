@@ -14,10 +14,8 @@ spec:
     helm:
       valueFiles:
       - $values/argocd/mdai/chart/values.yaml
-  - repoURL: https://github.com/MyDecisive/example-argocd.git
-    targetRevision: HEAD
-    path: argocd/mdai/chart
-    ref: values
+      - $values/argocd/mdai/chart/graptimedb-values.yaml
+      - $values/argocd/mdai/chart/tracealyzer-values.yaml
   destination:
     name: "in-cluster"
     namespace: {{ .Namespace }}

@@ -1,0 +1,10 @@
+nats:
+  config:
+    cluster:
+      replicas: 2
+
+greptimedb-standalone:
+  enabled: true
+
+mdai-tracealyzer:
+  enabled: true
