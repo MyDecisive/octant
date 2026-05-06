@@ -10,13 +10,13 @@ metadata:
   name: {{ .Values.serviceAccount.name }}-integration-secret-manager
   namespace: {{ .Release.Namespace }}
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create"]
+  - apiGroups: [ "" ]
+    resources: [ "secrets" ]
+    verbs: [ "create" ]
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames: {{ toYaml .Values.serviceAccount.integrationSecretNames | nindent 6 }}
-    verbs: ["get", "update", "patch"]
+    verbs: [ "get", "update", "patch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -30,16 +30,16 @@ subjects:
 roleRef:
   kind: Role
   name: {{ .Values.serviceAccount.name }}-integration-secret-manager
-  apiGroup: rbac.authorization.k8s.io
+  apiGroup: ""
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ .Values.serviceAccount.name }}-configmap-informer
 rules:
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["create"]
+  - apiGroups: [ "" ]
+    resources: [ "configmaps" ]
+    verbs: [ "create" ]
   - apiGroups: [ "" ]
     resources: [ "configmaps" ]
     resourceNames: [ "mdai-octant-connections" ]
@@ -54,6 +54,6 @@ subjects:
     name: {{ .Values.serviceAccount.name }}
     namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: ClusterRole
+  kind: Role
   name: {{ .Values.serviceAccount.name }}-configmap-informer
-  apiGroup: rbac.authorization.k8s.io
+  apiGroup: ""

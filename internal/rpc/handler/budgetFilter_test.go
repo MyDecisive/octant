@@ -12,7 +12,10 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/connection"
 	budgetfiltermock "github.com/mydecisive/octant/internal/mock/budgetfilter"
+	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -22,7 +25,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 	t.Parallel()
 
 	namespace := faker.Word()
-	connection := faker.Word()
+	conn := faker.Word()
 
 	var task *octantv1alpha.SaveDatadogIntegrationRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
@@ -34,15 +37,25 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		var expected *budgetv1alpha.Filter
 		require.NoError(t, faker.FakeData(&expected, options.WithRandomMapAndSliceMaxSize(1)))
-		mockCtrl := budgetfiltermock.NewMockSettingController(t)
-		mockCtrl.EXPECT().GetFilter(filterType, namespace, connection).Return(expected, nil)
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
+		}, nil).Once()
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(expected, nil)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 		}))
 		require.NoError(t, err)
 
@@ -56,15 +69,24 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
 
-		mockCtrl := budgetfiltermock.NewMockSettingController(t)
-		mockCtrl.EXPECT().GetFilter(filterType, namespace, connection).Return(nil, budgetfilter.ErrInvalid)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrInvalid)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 		}))
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
@@ -77,15 +99,24 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
 
-		mockCtrl := budgetfiltermock.NewMockSettingController(t)
-		mockCtrl.EXPECT().GetFilter(filterType, namespace, connection).Return(nil, budgetfilter.ErrFormat)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrFormat)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 		}))
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
@@ -98,20 +129,29 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
 
-		mockCtrl := budgetfiltermock.NewMockSettingController(t)
-		mockCtrl.EXPECT().GetFilter(filterType, namespace, connection).Return(nil, budgetfilter.ErrNotFound)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrNotFound)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 		}))
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
 		require.ErrorAs(t, err, &connectErr)
-		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
+		assert.Equal(t, connect.CodeInternal, connectErr.Code())
 	})
 
 	t.Run("err still updating", func(t *testing.T) {
@@ -119,20 +159,85 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
 
-		mockCtrl := budgetfiltermock.NewMockSettingController(t)
-		mockCtrl.EXPECT().GetFilter(filterType, namespace, connection).Return(nil, budgetfilter.ErrStillUpdating)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrStillUpdating)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 		}))
 		assert.Nil(t, actual)
 		var connectErr *connect.Error
 		require.ErrorAs(t, err, &connectErr)
 		assert.Equal(t, connect.CodeUnavailable, connectErr.Code())
+	})
+
+	t.Run("err no connection", func(t *testing.T) {
+		t.Parallel()
+
+		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(nil, nil).Once()
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+
+		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
+			Type:           filterType,
+			Namespace:      namespace,
+			ConnectionName: conn,
+		}))
+		assert.Nil(t, actual)
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
+	})
+
+	t.Run("err wrong type", func(t *testing.T) {
+		t.Parallel()
+
+		filterType := budgetv1alpha.FilterType_FILTER_TYPE_TRACE
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
+		}, nil).Once()
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+
+		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
+			Type:           filterType,
+			Namespace:      namespace,
+			ConnectionName: conn,
+		}))
+		assert.Nil(t, actual)
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
 	})
 }
 
@@ -140,7 +245,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 	t.Parallel()
 
 	namespace := faker.Word()
-	connection := faker.Word()
+	conn := faker.Word()
 	input := &budgetv1alpha.Filter{
 		Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
 		PctSampled: 10,
@@ -154,7 +259,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockCtrl.EXPECT().UpdateFilter(
 			mock.Anything,
 			namespace,
-			connection,
+			conn,
 			mock.Anything,
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, _ *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
@@ -164,7 +269,16 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -175,7 +289,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 			Data:           input,
 		}))
 		require.NoError(t, err)
@@ -188,11 +302,20 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 	t.Run("err invalid", func(t *testing.T) {
 		t.Parallel()
 
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
+
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().UpdateFilter(
 			mock.Anything,
 			namespace,
-			connection,
+			conn,
 			mock.Anything,
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, _ *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
@@ -202,7 +325,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -213,7 +336,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 			Data:           input,
 		}))
 		require.NoError(t, err)
@@ -228,11 +351,20 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 	t.Run("err still updating", func(t *testing.T) {
 		t.Parallel()
 
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
+
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().UpdateFilter(
 			mock.Anything,
 			namespace,
-			connection,
+			conn,
 			mock.Anything,
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, _ *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
@@ -242,7 +374,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -253,7 +385,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 			Data:           input,
 		}))
 		require.NoError(t, err)
@@ -268,11 +400,20 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 	t.Run("err update values", func(t *testing.T) {
 		t.Parallel()
 
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
+
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().UpdateFilter(
 			mock.Anything,
 			namespace,
-			connection,
+			conn,
 			mock.Anything,
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, _ *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
@@ -282,7 +423,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -293,7 +434,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 			Data:           input,
 		}))
 		require.NoError(t, err)
@@ -309,11 +450,20 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 	t.Run("err update values", func(t *testing.T) {
 		t.Parallel()
 
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
+		}, nil).Once()
+
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().UpdateFilter(
 			mock.Anything,
 			namespace,
-			connection,
+			conn,
 			mock.Anything,
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, _ *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
@@ -323,7 +473,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockCtrl)
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -334,7 +484,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
 			Namespace:      namespace,
-			ConnectionName: connection,
+			ConnectionName: conn,
 			Data:           input,
 		}))
 		require.NoError(t, err)
@@ -345,5 +495,77 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		require.ErrorAs(t, stream.Err(), &connectErr)
 		assert.Equal(t, connect.CodeInternal, connectErr.Code())
 		assert.Contains(t, connectErr.Error(), budgetfilter.ErrUpdateCollector.Error())
+	})
+
+	t.Run("err wrong type", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(&connection.OctantConnectionData{
+			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
+		}, nil).Once()
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
+
+		testServer := httptest.NewUnstartedServer(handler)
+		testServer.EnableHTTP2 = true
+		testServer.StartTLS()
+		t.Cleanup(testServer.Close)
+
+		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
+		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
+			Namespace:      namespace,
+			ConnectionName: conn,
+			Data:           input,
+		}))
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		stream.Receive()
+		var connectErr *connect.Error
+		require.ErrorAs(t, stream.Err(), &connectErr)
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
+	})
+
+	t.Run("err no connection", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().GetConnectionByName(
+			mock.Anything,
+			namespace,
+			conn,
+		).Return(nil, nil).Once()
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+
+		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
+
+		testServer := httptest.NewUnstartedServer(handler)
+		testServer.EnableHTTP2 = true
+		testServer.StartTLS()
+		t.Cleanup(testServer.Close)
+
+		client := budgetv1alphaconnect.NewFilterServiceClient(testServer.Client(), testServer.URL)
+		stream, err := client.UpdateFilter(t.Context(), connect.NewRequest(&budgetv1alpha.UpdateFilterRequest{
+			Namespace:      namespace,
+			ConnectionName: conn,
+			Data:           input,
+		}))
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		stream.Receive()
+		var connectErr *connect.Error
+		require.ErrorAs(t, stream.Err(), &connectErr)
+		assert.Equal(t, connect.CodeNotFound, connectErr.Code())
 	})
 }
