@@ -14,8 +14,12 @@ spec:
     helm:
       valueFiles:
       - $values/argocd/mdai/chart/values.yaml
-      - $values/argocd/mdai/chart/graptimedb-values.yaml
-      - $values/argocd/mdai/chart/tracealyzer-values.yaml
+      - graptimedb-values.yaml
+      - tracealyzer-values.yaml
+  - repoURL: https://github.com/MyDecisive/octant.git
+    targetRevision: HEAD
+    path: argocd/mdai/chart
+    ref: values
   destination:
     name: "in-cluster"
     namespace: {{ .Namespace }}
