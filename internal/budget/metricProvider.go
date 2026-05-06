@@ -2,8 +2,6 @@ package budget
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
@@ -56,40 +54,36 @@ func (mp *MetricProvider) GetOverall(
 		return nil, err
 	}
 
-	logCost, err := mp.logCost(raw.LogSend)
-	if err != nil {
-		return nil, err
-	}
-	traceCost, err := mp.traceCost(raw.SpanSend)
-	if err != nil {
-		return nil, err
-	}
-	totalCost := logCost + traceCost
-
-	logPct, err := mp.pct(logCost, totalCost)
-	if err != nil {
-		return nil, err
-	}
-
-	return &budgetv1alpha.Overall{
-		Cost: totalCost,
+	result := &budgetv1alpha.Overall{
 		Log: &budgetv1alpha.Overall_Metric{
 			Received: raw.LogReceived,
 			Sent:     raw.LogSend,
 			Filtered: raw.LogReceived - raw.LogSend,
 			CostRate: float32(mp.config.Budget.DefaultLogCostRate),
-			Cost:     logCost,
-			Pct:      float32(logPct),
+			Cost:     mp.logCost(raw.LogSend),
 		},
 		Trace: &budgetv1alpha.Overall_Metric{
 			Received: raw.SpanReceived,
 			Sent:     raw.SpanSend,
 			Filtered: raw.SpanReceived - raw.SpanSend,
 			CostRate: float32(mp.config.Budget.DefaultTraceCostRate),
-			Cost:     traceCost,
-			Pct:      float32(float64(pctConstant) - logPct),
+			Cost:     mp.traceCost(raw.SpanSend),
 		},
-	}, nil
+	}
+	result.Cost = result.GetLog().GetCost() + result.GetTrace().GetCost()
+	result.Log.Pct = float32(mp.pct(result.GetLog().GetCost(), result.GetCost()))
+	if result.GetTrace().GetCost() > 0 {
+		result.Trace.Pct = float32(pctConstant - result.GetLog().GetPct())
+	}
+
+	if result.GetLog().GetFiltered() < 0 {
+		result.Log.Filtered = 0
+	}
+	if result.GetTrace().GetFiltered() < 0 {
+		result.Trace.Filtered = 0
+	}
+
+	return result, nil
 }
 
 // GetLogs retrieves the log metric from the data store and then
@@ -109,21 +103,11 @@ func (mp *MetricProvider) GetLogs(
 
 	result := make([]*budgetv1alpha.Log, len(raw))
 	for i, rlog := range raw {
-		cost, err := mp.logCost(rlog.Amount)
-		if err != nil {
-			return nil, "", err
-		}
-
-		pct, err := mp.pct(rlog.Amount, total)
-		if err != nil {
-			return nil, "", err
-		}
-
 		result[i] = &budgetv1alpha.Log{
 			Name: rlog.Name,
 			Sent: rlog.Amount,
-			Pct:  float32(pct),
-			Cost: cost,
+			Pct:  float32(mp.pct(rlog.Amount, total)),
+			Cost: mp.logCost(rlog.Amount),
 		}
 	}
 	return result, nextPage, nil
@@ -142,44 +126,32 @@ func (mp *MetricProvider) GetSpans(
 
 	result := make([]*budgetv1alpha.Span, len(raw))
 	for i, r := range raw {
-		cost, err := mp.traceCost(r.Count)
-		if err != nil {
-			return nil, "", err
-		}
-
 		result[i] = &budgetv1alpha.Span{
 			Name:        r.Name,
 			Breadth:     r.Breadth,
 			Depth:       r.Depth,
 			Invocations: r.Invocation,
-			Cost:        cost,
+			Cost:        mp.traceCost(r.Count),
 		}
 	}
 	return result, nextPage, nil
 }
 
 // traceCost returns the trace cost calculated base on the given count.
-func (mp *MetricProvider) traceCost(count float64) (float64, error) {
-	return mp.truncate(
-		count * mp.config.Budget.DefaultTraceCostRate,
-	)
+func (mp *MetricProvider) traceCost(count float64) float64 {
+	return count * mp.config.Budget.DefaultTraceCostRate
 }
 
 // logCost returns the log cost calculated base on the given log data amount.
-func (mp *MetricProvider) logCost(amount float64) (float64, error) {
-	return mp.truncate(amount * mp.config.Budget.DefaultLogCostRate)
+func (mp *MetricProvider) logCost(amount float64) float64 {
+	return amount * mp.config.Budget.DefaultLogCostRate
 }
 
 // pct calculates the percentage base on a/b
 // and then returns the formatted percentage number.
-func (mp *MetricProvider) pct(a, b float64) (float64, error) {
+func (*MetricProvider) pct(a, b float64) float64 {
 	if b == 0 {
-		return 0, nil
+		return 0
 	}
-	return mp.truncate((a / b) * pctConstant)
-}
-
-// truncate truncates the given float to the nearest 2 decimal place.
-func (*MetricProvider) truncate(cost float64) (float64, error) {
-	return strconv.ParseFloat(fmt.Sprintf("%.2f", cost), 64)
+	return (a / b) * pctConstant
 }
