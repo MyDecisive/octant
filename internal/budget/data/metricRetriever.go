@@ -23,9 +23,9 @@ type Log struct {
 // RootSpan represents a single root span data entry from the data store.
 type RootSpan struct {
 	Name       string
-	Breadth    int64
-	Depth      int64
-	Invocation int64
+	Breadth    float64
+	Depth      float64
+	Invocation float64
 	Count      float64 // Send count in million events
 }
 
