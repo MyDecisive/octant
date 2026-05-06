@@ -21,9 +21,8 @@ func TestBudgetHandler_Overall(t *testing.T) {
 	t.Parallel()
 
 	task := &budgetv1alpha.OverallRequest{
-		Timeframe:      budgetv1alpha.Timeframe_TIMEFRAME_MTD,
-		Namespace:      faker.Word(),
-		ConnectionName: faker.Word(),
+		Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_MTD,
+		Namespace: faker.Word(),
 	}
 
 	t.Run("success", func(t *testing.T) {

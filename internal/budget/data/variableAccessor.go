@@ -34,6 +34,7 @@ type VariableAccessor interface {
 type MDAIGateway struct {
 	client      wrapper.HTTPClient
 	gatewayName string
+	urlOverride string
 }
 
 // Ensure MDAIGateway implements VariableAccessor.
@@ -44,16 +45,13 @@ func NewMDAIGateway(c *config.Configuration, client wrapper.HTTPClient) *MDAIGat
 	return &MDAIGateway{
 		client:      client,
 		gatewayName: c.Budget.DefaultMDAIGatewayName,
+		urlOverride: c.Budget.MDAIGatewayURLOverride,
 	}
 }
 
 // GetVariable returns the value of the given variable from MDAI gateway.
 func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName string) (string, error) {
-	url := fmt.Sprintf(
-		mdaiGatewayRootURLFormatter,
-		mdai.gatewayName,
-		namespace,
-	) + fmt.Sprintf(
+	url := mdai.baseURL(namespace) + fmt.Sprintf(
 		mdaiGatewayGetVarFormatter,
 		hubName,
 		varName,
@@ -92,11 +90,7 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 // UpdateVariable updates the value of the given variable in MDAI gateway.
 // This will return `ErrInvalid` if the operation failed.
 func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varName string, value any) error {
-	url := fmt.Sprintf(
-		mdaiGatewayRootURLFormatter,
-		mdai.gatewayName,
-		namespace,
-	) + fmt.Sprintf(
+	url := mdai.baseURL(namespace) + fmt.Sprintf(
 		mdaiGatewayPostVarFormatter,
 		hubName,
 		varName,
@@ -115,4 +109,18 @@ func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varNam
 		return fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
 	}
 	return nil
+}
+
+// baseUrl returns the base URL.
+// If URL override is given, then that one will be returned.
+func (mdai *MDAIGateway) baseURL(namespace string) string {
+	url := mdai.urlOverride
+	if url == "" {
+		url = fmt.Sprintf(
+			mdaiGatewayRootURLFormatter,
+			mdai.gatewayName,
+			namespace,
+		)
+	}
+	return url
 }

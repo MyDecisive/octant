@@ -32,6 +32,7 @@ type Server struct {
 	connectionHandler      *rpchandler.ConnectionHandler
 	budgetFilterHandler    *rpchandler.BudgetFilterHandler
 	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler
+	budgetHandler          *rpchandler.BudgetHandler
 }
 
 // NewServer create a new Server.
@@ -43,6 +44,7 @@ func NewServer(
 	connectionHandler *rpchandler.ConnectionHandler,
 	budgetFilterHandler *rpchandler.BudgetFilterHandler,
 	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler,
+	budgetHandler *rpchandler.BudgetHandler,
 ) *Server {
 	return &Server{
 		configuration:          configuration,
@@ -52,6 +54,7 @@ func NewServer(
 		connectionHandler:      connectionHandler,
 		budgetFilterHandler:    budgetFilterHandler,
 		budgetTimeframeHandler: budgetTimeframeHandler,
+		budgetHandler:          budgetHandler,
 	}
 }
 
@@ -81,6 +84,7 @@ func (s Server) Start() error {
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
+	mux.Handle(budgetv1alphaconnect.NewBudgetServiceHandler(s.budgetHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
 	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
@@ -100,6 +104,7 @@ func (Server) getServices() []string {
 		octantv1alphaconnect.ConnectionServiceName,
 		budgetv1alphaconnect.FilterServiceName,
 		budgetv1alphaconnect.TimeframeServiceName,
+		budgetv1alphaconnect.BudgetServiceName,
 	}
 }
 

@@ -23,11 +23,12 @@ func Start(rpcServer *rpc.Server) error {
 
 	// Start servers
 	g.Go(func() error {
+		zap.L().Info("starting rpc server")
 		return fmt.Errorf("rpc server: %w", rpcServer.Start())
 	})
 	g.Go(func() error {
+		zap.L().Info("starting web server")
 		return fmt.Errorf("UI server: %w", ui.ListenAndServe())
 	})
-	zap.L().Info("Start all servers")
 	return g.Wait()
 }

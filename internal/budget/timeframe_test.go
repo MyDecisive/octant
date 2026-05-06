@@ -5,6 +5,7 @@ import (
 	"time"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
+	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,17 +24,17 @@ func TestValidTimeframe(t *testing.T) {
 		},
 		{
 			"24h",
-			time.Now().Add(-dayInHR),
+			time.Now().Add(-budgetdata.DayInHR * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_24HR,
 		},
 		{
 			"month to date",
-			time.Now().Add(-monthInHR),
+			time.Now().Add(-budgetdata.MonthInHR * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{
 			"last month",
-			time.Now().Add(-(2 * monthInHR)),
+			time.Now().Add(-budgetdata.LastMonthInHR * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_LM,
 		},
 	}
