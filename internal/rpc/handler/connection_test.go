@@ -37,6 +37,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		stream, err := client.GenerateManifests(t.Context(), connect.NewRequest(&octantv1alpha.GenerateManifestsRequest{
 			Namespace:      faker.Word(),
 			ConnectionName: faker.Word(),
+			MdaiVersion:    "0.9.0-dev",
 			Format:         octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_YAML,
 			DeploymentType: octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST,
 			TelemetryTypes: []octantv1alpha.MLTType{octantv1alpha.MLTType_MLT_TYPE_LOG},
@@ -65,6 +66,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		stream, _ := client.GenerateManifests(t.Context(), connect.NewRequest(&octantv1alpha.GenerateManifestsRequest{
 			Namespace:      faker.Word(),
 			ConnectionName: faker.Word(),
+			MdaiVersion:    "0.9.0-dev",
 			Format:         octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_YAML,
 			DeploymentType: octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST,
 			TelemetryTypes: []octantv1alpha.MLTType{octantv1alpha.MLTType_MLT_TYPE_LOG},

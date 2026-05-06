@@ -57,24 +57,3 @@ func TestConnectionManifestCompressor_ToConnectionData(t *testing.T) {
 		})
 	}
 }
-
-func TestConnectionManifestCompressor_ToConnectionFormat(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		des      string
-		in       octantv1alpha.ManifestOutFormat
-		expected ManifestOutputFormat
-	}{
-		{"json", octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON, JSONOutputFormat},
-		{"yaml", octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_YAML, YAMLOutputFormat},
-	}
-	for _, tt := range tests {
-		t.Run(tt.des, func(t *testing.T) {
-			t.Parallel()
-			target := NewConnectionManifestCompressor()
-			actual := target.toConnectionFormat(tt.in)
-
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
-}
