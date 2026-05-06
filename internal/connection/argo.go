@@ -220,6 +220,7 @@ func (oc *OctantConnection) doArgoAppCreation(
 	}
 	return nil
 }
+
 func buildDeleteAppURL(apiURL string, appName string) string {
 	query := "?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
 	return fmt.Sprintf("%s/api/v1/applications/%s%s", apiURL, appName, query)
@@ -259,11 +260,12 @@ func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, conn
 
 func buildDeleteValidatorResourceURL(apiURL string, appName string, namespace string) string {
 	query := fmt.Sprintf(
-		"?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation",
+		"?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation", // nolint: lll
 		namespace, appName,
 	)
 	return fmt.Sprintf("%s/api/v1/applications/%s/resource%s", apiURL, appName, query)
 }
+
 func (oc *OctantConnection) deleteValidatorResource(
 	ctx context.Context,
 	name string,

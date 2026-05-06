@@ -278,7 +278,7 @@ func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {
 func TestBuildDeleteAppURL(t *testing.T) {
 	t.Parallel()
 
-	expected := "https://argo.example.com/api/v1/applications/my-app?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
+	expected := "https://argo.example.com/api/v1/applications/my-app?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true" // nolint: lll
 	actual := buildDeleteAppURL("https://argo.example.com", "my-app")
 
 	assert.Equal(t, expected, actual)
@@ -296,7 +296,8 @@ func TestSideloadValidatorForConnection_Errors(t *testing.T) {
 
 		oc := f.build()
 		connData := OctantConnectionData{Deployment: &Deployment{IntegrationName: "argo-test"}}
-		runID, err := oc.sideloadValidatorForConnection(context.Background(), connData, "my-test-app", "default")
+		runID, err := oc.sideloadValidatorForConnection(
+			context.Background(), connData, "my-test-app", "default")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "integration error")
@@ -319,7 +320,8 @@ func TestSideloadValidatorForConnection_Errors(t *testing.T) {
 
 		oc := f.build()
 		connData := OctantConnectionData{Deployment: &Deployment{IntegrationName: "argo-test"}}
-		runID, err := oc.sideloadValidatorForConnection(context.Background(), connData, "my-test-app", "default")
+		runID, err := oc.sideloadValidatorForConnection(
+			context.Background(), connData, "my-test-app", "default")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "got unexpected response code from ArgoCD API")
@@ -347,7 +349,7 @@ func TestSideloadValidatorForConnection_Errors(t *testing.T) {
 func TestBuildDeleteValidatorResourceURL(t *testing.T) {
 	t.Parallel()
 
-	expected := "https://argo.example.com/api/v1/applications/my-test-app/resource?namespace=default&resourceName=my-test-app-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation"
+	expected := "https://argo.example.com/api/v1/applications/my-test-app/resource?namespace=default&resourceName=my-test-app-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation" // nolint: lll
 	actual := buildDeleteValidatorResourceURL("https://argo.example.com", "my-test-app", "default")
 
 	assert.Equal(t, expected, actual)
