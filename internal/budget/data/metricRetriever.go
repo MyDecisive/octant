@@ -141,6 +141,15 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 		return -1, err
 	}
 
+	ok, err := gdr.tableExists(ctx, conn.DB, table)
+	if err != nil {
+		return -1, err
+	}
+
+	if !ok {
+		return 0, nil
+	}
+
 	return gdr.getTotal(
 		ctx,
 		conn.DB,
@@ -202,6 +211,15 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 		return nil, "", err
 	}
 
+	ok, err := gdr.tableExists(ctx, conn.DB, table)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if !ok {
+		return []RootSpan{}, "", nil
+	}
+
 	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
 	if input.Search != "" {
 		where = where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
@@ -232,6 +250,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	return result, next, nil
 }
 
+// getTotal returns total sum of the valueCol divided by the divisor.
 func (gdr *GreptimeDataRetriever) getTotal(
 	ctx context.Context,
 	db *sql.DB,
@@ -255,6 +274,24 @@ func (gdr *GreptimeDataRetriever) getTotal(
 	return -1, budgetdb.ErrMissing
 }
 
+// tableExists returns true of the given table exists in greptimedb.
+func (*GreptimeDataRetriever) tableExists(
+	ctx context.Context,
+	db *sql.DB,
+	table Table,
+) (bool, error) {
+	stmt := RawStatement(fmt.Sprintf("SHOW TABLES LIKE '%s'", table.TableName()))
+
+	var res []string
+	if err := stmt.QueryContext(ctx, db, &res); err != nil {
+		return false, err
+	}
+
+	return len(res) > 0, nil
+}
+
+// timeRangeExpression generates a bool expression that can be used
+// to only retrieve data within the given timeframe.
 func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
@@ -264,6 +301,7 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	)
 }
 
+// toHr converts timeframe enum to number of hours.
 func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	switch timeframe {
 	case budgetv1alpha.Timeframe_TIMEFRAME_24HR:
