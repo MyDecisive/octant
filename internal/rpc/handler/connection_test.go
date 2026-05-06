@@ -2,6 +2,7 @@ package rpchandler
 
 import (
 	"bytes"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"net/http/httptest"
 	"testing"
 
@@ -142,4 +143,158 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+}
+
+func TestConnectionHandler_GetConnectionStatus(t *testing.T) {
+	t.Parallel()
+
+	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+	expectedResponse := &octantv1alpha.GetConnectionStatusResponse{
+		ReceivingData: true,
+		SendingData:   true,
+		DataIntegrity: true,
+	}
+
+	mockConn.EXPECT().
+		GetConnectionStatus(mock.Anything, "test-ns", "test-conn", "test-run").
+		Return(expectedResponse, nil)
+
+	target := NewConnectionHandler(nil, mockConn, nil)
+	resp, err := target.GetConnectionStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionStatusRequest{
+		Scope: &octantv1alpha.ConnectionScope{
+			Namespace:      "test-ns",
+			ConnectionName: "test-conn",
+		},
+		ValidatorRunId: "test-run",
+	}))
+
+	require.NoError(t, err)
+	assert.Equal(t, expectedResponse.ReceivingData, resp.Msg.GetReceivingData())
+}
+
+func TestConnectionHandler_GetConnections(t *testing.T) {
+	t.Parallel()
+
+	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+	expectedConns := []string{"conn-a", "conn-b"}
+
+	mockConn.EXPECT().
+		GetConnections(mock.Anything, "test-ns").
+		Return(expectedConns, nil)
+
+	target := NewConnectionHandler(nil, mockConn, nil)
+	resp, err := target.GetConnections(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionsRequest{
+		Namespace: "test-ns",
+	}))
+
+	require.NoError(t, err)
+	assert.ElementsMatch(t, expectedConns, resp.Msg.GetConnectionNames())
+}
+
+func TestConnectionHandler_GetConnection(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockData := &connection.OctantConnectionData{
+			SourceType:     "octant",
+			TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
+			Deployment: &connection.Deployment{
+				Type:            connection.ArgoSideloadDeploymentType,
+				IntegrationName: "my-argo",
+			},
+			Destinations: []connection.OctantConnectionDestination{
+				{DestinationType: "datadog", IntegrationName: "my-dd"},
+			},
+		}
+
+		mockConn.EXPECT().
+			GetConnectionByName(mock.Anything, "test-ns", "test-conn").
+			Return(mockData, nil)
+
+		target := NewConnectionHandler(nil, mockConn, nil)
+		resp, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "test-conn",
+			},
+		}))
+
+		require.NoError(t, err)
+		assert.Contains(t, resp.Msg.GetTelemetryTypes(), octantv1alpha.MLTType_MLT_TYPE_LOG)
+		assert.Equal(t, octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD, resp.Msg.GetDeploymentType())
+		assert.Len(t, resp.Msg.GetDestinations(), 1)
+		assert.Equal(t, octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG, resp.Msg.GetDestinations()[0].GetType())
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			GetConnectionByName(mock.Anything, "test-ns", "missing-conn").
+			Return(nil, nil) // returns nil, nil when not found
+
+		target := NewConnectionHandler(nil, mockConn, nil)
+		_, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "missing-conn",
+			},
+		}))
+
+		require.Error(t, err)
+		assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
+	})
+}
+
+func TestConnectionHandler_CreateConnection(t *testing.T) {
+	t.Parallel()
+
+	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+	mockConn.EXPECT().
+		SaveConnection(mock.Anything, mock.MatchedBy(func(data connection.OctantConnectionData) bool {
+			return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
+				len(data.Destinations) == 1 &&
+				len(data.TelemetryTypes) == 1
+		}), "test-ns", "test-conn").
+		Return(nil)
+
+	target := NewConnectionHandler(nil, mockConn, nil)
+	_, err := target.CreateConnection(t.Context(), connect.NewRequest(&octantv1alpha.CreateConnectionRequest{
+		Scope: &octantv1alpha.ConnectionScope{
+			Namespace:      "test-ns",
+			ConnectionName: "test-conn",
+		},
+		TelemetryTypes: []octantv1alpha.MLTType{octantv1alpha.MLTType_MLT_TYPE_LOG},
+		Deployment: &octantv1alpha.Deployment{
+			Type:            octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD,
+			IntegrationName: "test-argo",
+		},
+		Destinations: []*octantv1alpha.TelemetryDestination{
+			{
+				Type:            octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG,
+				IntegrationName: "test-dd",
+			},
+		},
+	}))
+
+	require.NoError(t, err)
+}
+
+func TestConnectionHandler_DeleteConnection(t *testing.T) {
+	t.Parallel()
+
+	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+	mockConn.EXPECT().
+		DeleteConnection(mock.Anything, "test-ns", "test-conn").
+		Return(nil)
+
+	target := NewConnectionHandler(nil, mockConn, nil)
+	_, err := target.DeleteConnection(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionRequest{
+		Scope: &octantv1alpha.ConnectionScope{
+			Namespace:      "test-ns",
+			ConnectionName: "test-conn",
+		},
+	}))
+
+	require.NoError(t, err)
 }
