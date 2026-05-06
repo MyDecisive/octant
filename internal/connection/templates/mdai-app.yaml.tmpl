@@ -13,8 +13,10 @@ spec:
     targetRevision: {{ .MdaiVersion }}
     helm:
       valueFiles:
-      - $values/argocd/mdai/chart/values.yaml
-  - repoURL: https://github.com/MyDecisive/example-argocd.git
+      - $values/examples/argocd/mdai/chart/values.yaml
+      - graptimedb-values.yaml
+      - tracealyzer-values.yaml
+  - repoURL: https://github.com/MyDecisive/octant.git
     targetRevision: HEAD
     path: argocd/mdai/chart
     ref: values
