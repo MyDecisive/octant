@@ -119,7 +119,7 @@ func (ih *InstallHandler) GetInstallStatus(
 
 	logger.Debug("received install status request")
 
-	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
+	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
