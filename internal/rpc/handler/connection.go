@@ -258,7 +258,7 @@ func extractDestinationsFromRequest(
 	return destinations
 }
 
-func (ch *ConnectionHandler) GetConnectionValidatorRunIds(
+func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll // this fulfills a contract; cannot name like the linter wants
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.GetConnectionValidatorRunIdsRequest],
 ) (*connect.Response[octantv1alpha.GetConnectionValidatorRunIdsResponse], error) {
