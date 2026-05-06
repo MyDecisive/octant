@@ -220,6 +220,10 @@ func (oc *OctantConnection) doArgoAppCreation(
 	}
 	return nil
 }
+func buildDeleteAppURL(apiURL string, appName string) string {
+	query := "?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
+	return fmt.Sprintf("%s/api/v1/applications/%s%s", apiURL, appName, query)
+}
 
 func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, connection OctantConnectionData) error {
 	// TODO: Port functionality over to argocd.Client!
@@ -232,8 +236,7 @@ func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, conn
 		return getArgoIntErr
 	}
 
-	query := "?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
-	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s%s", argoIntegration.APIUrl, name, query)
+	deleteAppURL := buildDeleteAppURL(argoIntegration.APIUrl, name)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
 	if err != nil {
 		return err
@@ -254,6 +257,13 @@ func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, conn
 	return nil
 }
 
+func buildDeleteValidatorResourceURL(apiURL string, appName string, namespace string) string {
+	query := fmt.Sprintf(
+		"?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation",
+		namespace, appName,
+	)
+	return fmt.Sprintf("%s/api/v1/applications/%s/resource%s", apiURL, appName, query)
+}
 func (oc *OctantConnection) deleteValidatorResource(
 	ctx context.Context,
 	name string,
@@ -270,12 +280,7 @@ func (oc *OctantConnection) deleteValidatorResource(
 		return getArgoIntErr
 	}
 
-	// TODO: This is gnarly; we're reaching in and deleting a specific resource on the app. CLEAN THIS UP.
-	query := fmt.Sprintf(
-		"?namespace=%s&resourceName=%s-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation",
-		namespace, name,
-	)
-	deleteAppURL := fmt.Sprintf("%s/api/v1/applications/%s/resource%s", argoIntegration.APIUrl, name, query)
+	deleteAppURL := buildDeleteValidatorResourceURL(argoIntegration.APIUrl, name, namespace)
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
 	if err != nil {
 		return err

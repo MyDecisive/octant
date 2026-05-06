@@ -274,3 +274,81 @@ func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {
 	err := octantConnection.sideloadConnectionApp(context.Background(), "default", "my-test-app", connData)
 	require.Error(t, err)
 }
+
+func TestBuildDeleteAppURL(t *testing.T) {
+	t.Parallel()
+
+	expected := "https://argo.example.com/api/v1/applications/my-app?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
+	actual := buildDeleteAppURL("https://argo.example.com", "my-app")
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestSideloadValidatorForConnection_Errors(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Integration Fetch Fails", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t)
+		f.argoMock.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(nil, errors.New("integration error"))
+
+		oc := f.build()
+		connData := OctantConnectionData{Deployment: &Deployment{IntegrationName: "argo-test"}}
+		runID, err := oc.sideloadValidatorForConnection(context.Background(), connData, "my-test-app", "default")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "integration error")
+		assert.Empty(t, runID)
+	})
+
+	t.Run("Sync Returns Non-200 Error", func(t *testing.T) {
+		t.Parallel()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`internal server error`)) // nolint: errcheck
+		}))
+		defer ts.Close()
+
+		f := setupFixture(t)
+		f.httpClient = ts.Client()
+		f.argoMock.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(&integration.ArgoCDIntegrationData{APIUrl: ts.URL}, nil)
+
+		oc := f.build()
+		connData := OctantConnectionData{Deployment: &Deployment{IntegrationName: "argo-test"}}
+		runID, err := oc.sideloadValidatorForConnection(context.Background(), connData, "my-test-app", "default")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "got unexpected response code from ArgoCD API")
+		assert.Contains(t, err.Error(), "internal server error")
+		assert.Empty(t, runID)
+	})
+
+	t.Run("HTTP Client Transport Failure", func(t *testing.T) {
+		t.Parallel()
+		f := setupFixture(t)
+		// Pointing it to a fundamentally invalid URL forces http.NewRequest / httpClient.Do to fail immediately
+		f.argoMock.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(&integration.ArgoCDIntegrationData{APIUrl: "http://invalid-url-\x00"}, nil)
+
+		oc := f.build()
+		connData := OctantConnectionData{Deployment: &Deployment{IntegrationName: "argo-test"}}
+		runID, err := oc.sideloadValidatorForConnection(context.Background(), connData, "my-test-app", "default")
+
+		require.Error(t, err)
+		assert.Empty(t, runID)
+	})
+}
+
+func TestBuildDeleteValidatorResourceURL(t *testing.T) {
+	t.Parallel()
+
+	expected := "https://argo.example.com/api/v1/applications/my-test-app/resource?namespace=default&resourceName=my-test-app-telemetry-validation&group=hub.mydecisive.ai&version=v1&kind=TelemetryValidation"
+	actual := buildDeleteValidatorResourceURL("https://argo.example.com", "my-test-app", "default")
+
+	assert.Equal(t, expected, actual)
+}
