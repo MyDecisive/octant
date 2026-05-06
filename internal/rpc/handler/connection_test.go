@@ -2,7 +2,6 @@ package rpchandler
 
 import (
 	"bytes"
-	"github.com/mydecisive/octant/internal/connection"
 	"net/http/httptest"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/go-faker/faker/v4"
+	"github.com/mydecisive/octant/internal/connection"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
