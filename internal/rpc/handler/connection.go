@@ -258,10 +258,10 @@ func extractDestinationsFromRequest(
 	return destinations
 }
 
-func (ch *ConnectionHandler) GetConnectionValidatorRuns(
+func (ch *ConnectionHandler) GetConnectionValidatorRunIds(
 	ctx context.Context,
-	request *connect.Request[octantv1alpha.GetConnectionValidatorRunsRequest],
-) (*connect.Response[octantv1alpha.GetConnectionValidatorRunsResponse], error) {
+	request *connect.Request[octantv1alpha.GetConnectionValidatorRunIdsRequest],
+) (*connect.Response[octantv1alpha.GetConnectionValidatorRunIdsResponse], error) {
 	connScope := request.Msg.GetScope()
 	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
 		ctx,
@@ -272,7 +272,7 @@ func (ch *ConnectionHandler) GetConnectionValidatorRuns(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection validator runs: %w", err))
 	}
 
-	return connect.NewResponse(&octantv1alpha.GetConnectionValidatorRunsResponse{
+	return connect.NewResponse(&octantv1alpha.GetConnectionValidatorRunIdsResponse{
 		ValidatorRunIds: runs,
 	}), nil
 }
