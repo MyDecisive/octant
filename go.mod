@@ -10,7 +10,7 @@ require (
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/MyDecisive/octant-contracts/go v0.4.11-alpha
+	github.com/MyDecisive/octant-contracts/go v0.5.0-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/argoproj/gitops-engine v0.7.1-0.20250908182407-97ad5b59a627
 	github.com/go-faker/faker/v4 v4.7.0
