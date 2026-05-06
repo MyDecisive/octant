@@ -237,6 +237,22 @@ func TestGetAppStatus(t *testing.T) {
 		},
 	}
 
+	healthyApp := &v1alpha1.Application{
+		Status: v1alpha1.ApplicationStatus{
+			Health: v1alpha1.AppHealthStatus{
+				Status: health.HealthStatusHealthy,
+			},
+		},
+	}
+
+	unhealthyApp := &v1alpha1.Application{
+		Status: v1alpha1.ApplicationStatus{
+			Health: v1alpha1.AppHealthStatus{
+				Status: health.HealthStatusDegraded,
+			},
+		},
+	}
+
 	testCases := []struct {
 		description     string
 		testApp         v1alpha1.Application
@@ -244,10 +260,45 @@ func TestGetAppStatus(t *testing.T) {
 		validateResult  func(octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)
 	}{
 		{
+			description: "unknown error getting argo app",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+					return req.GetName() == "mdai"
+				})).Return(nil, assert.AnError).Once()
+				return mockAppServer
+			},
+			validateResult: func(is octantv1alpha.InstallStatus, rd []*octantv1alpha.ResourceDetails, err error) {
+				require.Error(t, err)
+				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, is)
+				assert.Nil(t, rd)
+			},
+		},
+		{
+			description: "healthy app status",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+					return req.GetName() == "mdai"
+				})).Return(healthyApp, nil).Once()
+				return mockAppServer
+			},
+			validateResult: func(is octantv1alpha.InstallStatus, rd []*octantv1alpha.ResourceDetails, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, is)
+				assert.Empty(t, rd)
+			},
+		},
+		{
 			description: "unknown error getting resource tree",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+					return req.GetName() == "mdai"
+				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
 					return req.GetApplicationName() == "mdai"
 				})).Return(nil, assert.AnError).Once()
@@ -264,6 +315,9 @@ func TestGetAppStatus(t *testing.T) {
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+					return req.GetName() == "mdai"
+				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
 					return req.GetApplicationName() == "mdai"
 				})).Return(appTreeNoPods, nil).Once()
@@ -276,10 +330,13 @@ func TestGetAppStatus(t *testing.T) {
 			},
 		},
 		{
-			description: "happy path",
+			description: "errored app status with details",
 			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+					return req.GetName() == "mdai"
+				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
 					return req.GetApplicationName() == "mdai"
 				})).Return(appTreeWithPods, nil).Once()
@@ -294,7 +351,7 @@ func TestGetAppStatus(t *testing.T) {
 				assert.Equal(t, "otherCoolPod", rd[1].GetName())
 				assert.Equal(t, "OK", rd[1].GetMessage())
 
-				require.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, is)
+				require.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, is)
 			},
 		},
 	}

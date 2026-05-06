@@ -141,6 +141,10 @@ func (*Client) GetAppStatus(
 	argoApp, err := applicationClient.Get(ctx, &application.ApplicationQuery{
 		Name: lo.ToPtr("mdai"),
 	})
+	if err != nil {
+		logger.Error("getting argo application", zap.Error(err), zap.String("appName", "mdai"))
+		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, err
+	}
 	appHealth := argoApp.Status.Health.Status
 
 	// if the app is healthy, we won't bother pulling the resource tree details
