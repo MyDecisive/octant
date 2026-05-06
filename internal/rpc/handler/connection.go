@@ -47,8 +47,8 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 ) {
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
-		request.Msg.GetNamespace(),
-		request.Msg.GetConnectionName(),
+		request.Msg.GetScope().GetNamespace(),
+		request.Msg.GetScope().GetConnectionName(),
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -65,8 +65,8 @@ func (ch *ConnectionHandler) GenerateManifests(
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
 
 	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
-		Namespace:   request.Msg.GetNamespace(),
-		Connection:  request.Msg.GetConnectionName(),
+		Namespace:   request.Msg.GetScope().GetNamespace(),
+		Connection:  request.Msg.GetScope().GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),
 		Format:      request.Msg.GetFormat(),
 	})
