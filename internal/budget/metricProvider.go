@@ -96,6 +96,10 @@ func (mp *MetricProvider) GetLogs(
 	if err != nil {
 		return nil, "", err
 	}
+	if total <= 0 {
+		return []*budgetv1alpha.Log{}, "", nil
+	}
+
 	raw, nextPage, err := mp.retriever.GetLogs(ctx, input)
 	if err != nil {
 		return nil, "", err
