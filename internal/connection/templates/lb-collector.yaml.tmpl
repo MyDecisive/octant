@@ -59,6 +59,10 @@ spec:
               - set(body, attributes["message"]) where IsString(attributes["message"])
               - delete_key(attributes, "message")
     exporters:
+      otlp_grpc/tracealyzer:
+        endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
+        tls:
+          insecure: true
       loadbalancing/traces:
         routing_key: traceID
         protocol:
@@ -139,7 +143,7 @@ spec:
           traces:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
-            exporters: [loadbalancing/traces, count/spans_by_facet]
+            exporters: [loadbalancing/traces, count/spans_by_facet, otlp_grpc/tracealyzer]
           metrics:
             receivers: [count/spans_by_facet]
             processors: [deltatocumulative]
