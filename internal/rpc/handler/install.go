@@ -3,7 +3,6 @@ package rpchandler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -50,16 +49,16 @@ func (ih *InstallHandler) InstallMDAIHub(
 	ctx context.Context,
 	req *connect.Request[octantv1alpha.InstallMDAIHubRequest],
 ) (*connect.Response[emptypb.Empty], error) {
-	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.InstallServiceInstallMDAIHubProcedure))
-
 	installNamespace := req.Msg.GetNamespace()
 	connectionName := req.Msg.GetConnectionName()
 	installVersion := req.Msg.GetMdaiVersion()
-
-	logger.Debug("received install MDAIHub request",
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.InstallServiceInstallMDAIHubProcedure),
 		zap.String("namespace", installNamespace),
 		zap.String("mdaiVersion", installVersion),
 	)
+
+	logger.Debug("received install MDAIHub request")
 
 	// 1) get the argo integration details
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
@@ -112,17 +111,20 @@ func (ih *InstallHandler) GetInstallStatus(
 	req *connect.Request[octantv1alpha.GetInstallStatusRequest],
 	response *connect.ServerStream[octantv1alpha.GetInstallStatusResponse],
 ) error {
-	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.InstallServiceGetInstallStatusProcedure))
 	connectionName := req.Msg.GetConnectionName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.InstallServiceGetInstallStatusProcedure),
+		zap.String("connectionName", connectionName),
+	)
 
-	logger.Debug("received install status request", zap.String("connectionName", connectionName))
+	logger.Debug("received install status request")
 
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, ih.config.CurrentNamespace, connectionName)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
 	if argoIntegration == nil {
-		return connect.NewError(connect.CodeNotFound, err)
+		return connect.NewError(connect.CodeNotFound, errors.New("argo integration not found"))
 	}
 
 	clientOpts := &apiclient.ClientOptions{
@@ -150,11 +152,13 @@ func (ih *InstallHandler) GetInstallStatus(
 	ticker := time.NewTicker(time.Duration(ih.config.Install.MdaiInstallPollingIntervalMillis) * time.Millisecond)
 	defer ticker.Stop()
 
+	timeoutChan := time.After(time.Duration(ih.config.Install.MdaiInstallTimeout) * time.Second)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return connect.NewError(connect.CodeCanceled, ctx.Err())
-		case <-time.After(time.Duration(ih.config.Install.MdaiInstallTimeout) * time.Second):
+		case <-timeoutChan:
 			logger.Warn("reached timeout waiting for app (mdai) to be healthy")
 			return connect.NewError(connect.CodeDeadlineExceeded, errors.New("timeout waiting for app (mdai) to be healthy"))
 		case <-ticker.C:
@@ -174,7 +178,7 @@ func (ih *InstallHandler) GetInstallStatus(
 			if lo.Contains(terminalInstallStates, status) {
 				return nil
 			}
-			logger.Debug(fmt.Sprintf("install status (%s) is not healthy", status))
+			logger.Debug("install status is not healthy", zap.String("status", status.String()))
 		}
 	}
 }

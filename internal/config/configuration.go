@@ -84,20 +84,9 @@ func Read() (*Configuration, error) {
 	}
 
 	if configuration.CurrentNamespace == "" {
-		configuration.CurrentNamespace = getCurrentNamespace()
-	}
-	return &configuration, nil
-}
-
-func getCurrentNamespace() string {
-	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
-		return ns
-	}
-
-	if data, err := os.ReadFile(namespaceFilePath); err == nil {
-		if ns := strings.TrimSpace(string(data)); ns != "" {
-			return ns
+		if data, err := os.ReadFile(namespaceFilePath); err == nil {
+			configuration.CurrentNamespace = strings.TrimSpace(string(data))
 		}
 	}
-	return ""
+	return &configuration, nil
 }

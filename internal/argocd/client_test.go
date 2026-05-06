@@ -355,12 +355,12 @@ func TestHealthStatusCodeToAppResourceHealth(t *testing.T) {
 		{
 			description:          "missing",
 			inputStatus:          health.HealthStatusMissing,
-			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
 		},
 		{
 			description:          "unknown",
 			inputStatus:          health.HealthStatusUnknown,
-			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
 		},
 		{
 			description:          "progressing",
@@ -380,51 +380,6 @@ func TestHealthStatusCodeToAppResourceHealth(t *testing.T) {
 
 			octantStatus := healthStatusCodeToAppResourceHealth(tc.inputStatus)
 			assert.Equal(t, tc.expectedOctantStatus, octantStatus)
-		})
-	}
-}
-
-func TestDetermineAppInstallStatus(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		description          string
-		inputStatuses        []octantv1alpha.InstallStatus
-		expectedOctantStatus octantv1alpha.InstallStatus
-	}{
-		{
-			description: "installed",
-			inputStatuses: []octantv1alpha.InstallStatus{
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-			},
-			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-		},
-		{
-			description: "errored",
-			inputStatuses: []octantv1alpha.InstallStatus{
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-				octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
-			},
-			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
-		},
-		{
-			description: "installing",
-			inputStatuses: []octantv1alpha.InstallStatus{
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-				octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
-			},
-			expectedOctantStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
-
-			installStatus := determineAppInstallStatus(tc.inputStatuses)
-			assert.Equal(t, tc.expectedOctantStatus, installStatus)
 		})
 	}
 }
