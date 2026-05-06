@@ -2,7 +2,6 @@ package rpchandler
 
 import (
 	"bytes"
-	"github.com/mydecisive/octant/internal/telemetry"
 	"net/http/httptest"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/connection"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -169,7 +169,7 @@ func TestConnectionHandler_GetConnectionStatus(t *testing.T) {
 	}))
 
 	require.NoError(t, err)
-	assert.Equal(t, expectedResponse.ReceivingData, resp.Msg.GetReceivingData())
+	assert.Equal(t, expectedResponse.GetReceivingData(), resp.Msg.GetReceivingData())
 }
 
 func TestConnectionHandler_GetConnections(t *testing.T) {
@@ -195,6 +195,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockData := &connection.OctantConnectionData{
 			SourceType:     "octant",
@@ -228,6 +229,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
+		t.Parallel()
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().
 			GetConnectionByName(mock.Anything, "test-ns", "missing-conn").

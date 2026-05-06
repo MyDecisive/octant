@@ -300,7 +300,9 @@ func extractDestinationsFromRequest(
 	return destinations
 }
 
-func convertConnectionDataToGetConnectionResponse(conn *connection.OctantConnectionData) *octantv1alpha.GetConnectionResponse {
+func convertConnectionDataToGetConnectionResponse(
+	conn *connection.OctantConnectionData,
+) *octantv1alpha.GetConnectionResponse {
 	if conn == nil {
 		return nil
 	}
@@ -341,7 +343,9 @@ func convertTelemetryTypesToProtoMLT(telemetries []telemetry.MLT) []octantv1alph
 	return mltTypes
 }
 
-func convertDestinationsToProtoDestionations(destinations []connection.OctantConnectionDestination) []*octantv1alpha.TelemetryDestination {
+func convertDestinationsToProtoDestionations(
+	destinations []connection.OctantConnectionDestination,
+) []*octantv1alpha.TelemetryDestination {
 	var contractDestinations []*octantv1alpha.TelemetryDestination
 	for _, d := range destinations {
 		var destType octantv1alpha.IntegrationType
