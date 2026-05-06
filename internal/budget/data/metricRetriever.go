@@ -209,10 +209,9 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	stmt := SELECT(
 		table.RootID.AS("root_span.name"),
 		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMil))).AS("root_span.count"),
-		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.BreadthSketch.Name())).AS("root_span.breadth"),
-		RawFloat(fmt.Sprintf(uddsketchCalcFormatter, table.DepthSketch.Name())).AS("root_span.depth"),
-		RawFloat(
-			fmt.Sprintf(uddsketchCalcFormatter, table.DurationSketch.Name())).DIV(Float(toMil)).
+		RawFloat(gdr.uddsketchCalc(table.BreadthSketch)).AS("root_span.breadth"),
+		RawFloat(gdr.uddsketchCalc(table.DepthSketch)).AS("root_span.depth"),
+		RawFloat(gdr.uddsketchCalc(table.DurationSketch)).DIV(Float(toMil)).
 			AS("root_span.invocation"),
 	).FROM(table).
 		WHERE(where).
@@ -274,4 +273,9 @@ func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	default:
 		return LastMonthInHR
 	}
+}
+
+// uddsketchCalc returns the saw query to perform the uddsketchCalc on the given col.
+func (*GreptimeDataRetriever) uddsketchCalc(col ColumnBlob) string {
+	return fmt.Sprintf(uddsketchCalcFormatter, col.Name())
 }
