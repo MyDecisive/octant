@@ -14,16 +14,10 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"sigs.k8s.io/yaml"
 )
-
-var terminalInstallStates = []octantv1alpha.InstallStatus{ // nolint: gochecknoglobals
-	octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
-	octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-}
 
 type InstallHandler struct {
 	octantv1alphaconnect.UnimplementedInstallServiceHandler
@@ -144,7 +138,7 @@ func (ih *InstallHandler) GetInstallStatus(
 	}); err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
-	if lo.Contains(terminalInstallStates, status) {
+	if status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED {
 		return nil
 	}
 
@@ -160,7 +154,13 @@ func (ih *InstallHandler) GetInstallStatus(
 			return connect.NewError(connect.CodeCanceled, ctx.Err())
 		case <-timeoutChan:
 			logger.Warn("reached timeout waiting for app (mdai) to be healthy")
-			return connect.NewError(connect.CodeDeadlineExceeded, errors.New("timeout waiting for app (mdai) to be healthy"))
+			if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
+				InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT,
+				Details:       details,
+			}); err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			}
+			return nil
 		case <-ticker.C:
 			logger.Debug("checking install status")
 			status, details, err = ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
@@ -175,10 +175,10 @@ func (ih *InstallHandler) GetInstallStatus(
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}
-			if lo.Contains(terminalInstallStates, status) {
+			if status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED {
 				return nil
 			}
-			logger.Debug("install status is not healthy", zap.String("status", status.String()))
+			logger.Debug("install still in progress or erroring", zap.String("status", status.String()))
 		}
 	}
 }
