@@ -138,11 +138,12 @@ linters:
           - maintidx
           - tagliatelle
           - unparam
-      - path: mocks/*
+      - path: internal/mock/.*
         linters:
-          - forcetypeassert
-          - mnd
-          - gocritic
+          - all
+      - path: internal/budget/data/db/public/table/.*
+        linters:
+          - all
       - path: internal/connection/*
         linters:
           - tagliatelle

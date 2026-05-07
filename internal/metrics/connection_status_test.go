@@ -849,10 +849,10 @@ func TestGetClientsConnected(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name          string
-		promResult    model.Value
-		promErr       error
-		wantConnected bool
+		name            string
+		promResult      model.Value
+		promErr         error
+		wantConnected   bool
 		wantErrContains string
 	}{
 		{
