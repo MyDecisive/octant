@@ -1,3 +1,4 @@
 .idea/
 web/dist
 .DS_Store
+vendor/

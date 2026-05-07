@@ -844,3 +844,69 @@ func TestGetConnectionValidatorRuns(t *testing.T) {
 		require.Nil(t, runs)
 	})
 }
+
+func TestGetClientsConnected(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		promResult    model.Value
+		promErr       error
+		wantConnected bool
+		wantErrContains string
+	}{
+		{
+			name:            "error - prometheus query fails",
+			promResult:      nil,
+			promErr:         assert.AnError,
+			wantConnected:   false,
+			wantErrContains: "failed to query prometheus",
+		},
+		{
+			name:          "mdai_connection label not found - empty vector returns false",
+			promResult:    model.Vector{},
+			wantConnected: false,
+		},
+		{
+			name: "mdai_connection found with value 0 returns false",
+			promResult: model.Vector{
+				{
+					Metric: model.Metric{"mdai_connection": "test-conn"},
+					Value:  0,
+				},
+			},
+			wantConnected: false,
+		},
+		{
+			name: "mdai_connection found with value > 0 returns true",
+			promResult: model.Vector{
+				{
+					Metric: model.Metric{"mdai_connection": "test-conn"},
+					Value:  3,
+				},
+			},
+			wantConnected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockPromAPI := v1mock.NewMockAPI(t)
+			mockPromAPI.EXPECT().
+				Query(mock.Anything, mock.Anything, mock.Anything).
+				Return(tt.promResult, nil, tt.promErr).
+				Times(1)
+
+			connected, err := getClientsConnected(t.Context(), mockPromAPI, "test-conn")
+
+			if tt.wantErrContains != "" {
+				require.ErrorContains(t, err, tt.wantErrContains)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.wantConnected, connected)
+		})
+	}
+}
