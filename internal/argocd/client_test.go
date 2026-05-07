@@ -324,9 +324,9 @@ func TestGetAppStatus(t *testing.T) {
 				return mockAppServer
 			},
 			validateResult: func(is octantv1alpha.InstallStatus, rd []*octantv1alpha.ResourceDetails, err error) {
-				require.ErrorContains(t, err, "no pod resources found")
+				require.NoError(t, err)
 				require.Empty(t, rd)
-				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, is)
+				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, is)
 			},
 		},
 		{

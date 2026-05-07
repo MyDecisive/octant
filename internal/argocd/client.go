@@ -2,7 +2,6 @@ package argocd
 
 import (
 	"context"
-	"errors"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
@@ -164,15 +163,16 @@ func (*Client) GetAppStatus(
 		ApplicationName: lo.ToPtr("mdai"),
 	})
 	if err != nil {
-		logger.Error("getting argo application resource tree", zap.Error(err))
-		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, err
+		logger.Error("getting argo application resource tree", zap.Error(err), zap.String("appName", "mdai"))
+		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, resourceDetails, err
 	}
 
 	pods := lo.Filter(tree.Nodes, func(item argoapp.ResourceNode, index int) bool {
 		return item.Kind == "Pod"
 	})
 	if len(pods) == 0 {
-		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, errors.New("no pod resources found")
+		logger.Debug("no pods found (yet)", zap.String("appName", "mdai"))
+		return octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil
 	}
 
 	resourceDetails = make([]*octantv1alpha.ResourceDetails, len(pods))
