@@ -74,7 +74,7 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 
 	logger.Debug("received save connection request")
 
-	if err := ah.argoIntegration.SetIntegration(ctx, ah.config.CurrentNamespace, integrationName,
+	if err := ah.argoIntegration.SetIntegration(ctx, integrationName,
 		integration.ArgoCDIntegrationData{
 			APIUrl:       argoEndpoint,
 			AccountToken: accountToken,

@@ -95,7 +95,7 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 
 		mockArgoCDClient := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoCDClient.EXPECT().
-			SetIntegration(mock.Anything, defaultNamespace, "coolConnection", mock.MatchedBy(func(integrationData any) bool {
+			SetIntegration(mock.Anything, "coolConnection", mock.MatchedBy(func(integrationData any) bool {
 				argocdIntegrationData, ok := integrationData.(integration.ArgoCDIntegrationData)
 				return ok && argocdIntegrationData.AccountToken == "abc123"
 			})).
@@ -127,7 +127,7 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 
 		mockArgoCDClient := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoCDClient.EXPECT().
-			SetIntegration(mock.Anything, defaultNamespace, "coolConnection", mock.MatchedBy(func(integrationData any) bool {
+			SetIntegration(mock.Anything, "coolConnection", mock.MatchedBy(func(integrationData any) bool {
 				argocdIntegrationData, ok := integrationData.(integration.ArgoCDIntegrationData)
 				return ok && argocdIntegrationData.AccountToken == "abc123"
 			})).

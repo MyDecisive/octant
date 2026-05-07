@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -28,9 +29,12 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 		mockK8sClient := fake.NewClientset()
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
-		actual, getErr := argocdIntegration.GetIntegrations(t.Context(), defaultNamespace)
+		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
 		require.NoError(t, getErr)
 		require.Nil(t, actual)
 	})
@@ -50,9 +54,12 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 		mockK8sClient := fake.NewClientset(existingObjects...)
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
-		actual, getErr := argocdIntegration.GetIntegrations(t.Context(), defaultNamespace)
+		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
 		require.NoError(t, getErr)
 
 		require.True(t, assert.ObjectsAreEqual(map[string]ArgoCDIntegrationData{
@@ -76,9 +83,12 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 		mockK8sClient := fake.NewClientset(existingObjects...)
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
-		actual, getErr := argocdIntegration.GetIntegrations(t.Context(), defaultNamespace)
+		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
 		require.NoError(t, getErr)
 		require.True(t, assert.ObjectsAreEqual(map[string]ArgoCDIntegrationData{
 			"team-a": validInt,
@@ -100,13 +110,16 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		mockK8sClient := fake.NewClientset()
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
 		// Verify the secret doesn't exist yet
 		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
 
-		err = argocdIntegration.SetIntegration(t.Context(), defaultNamespace, "team-a", newIntegration)
+		err = argocdIntegration.SetIntegration(t.Context(), "team-a", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
@@ -139,6 +152,9 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		mockK8sClient := fake.NewClientset(existingObjects...)
 		datadogIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
 		// Verify the secret DOES exist already
@@ -150,7 +166,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		require.Len(t, existingSecret.Data, 1)
 		require.Contains(t, existingSecret.Data, "team-a")
 
-		err = datadogIntegration.SetIntegration(t.Context(), defaultNamespace, "team-b", newIntegration)
+		err = datadogIntegration.SetIntegration(t.Context(), "team-b", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
@@ -179,13 +195,16 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		mockK8sClient := fake.NewClientset()
 		datadogIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
 		// validate secret doesn't exist before we try to delete
 		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
 		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
 
-		err = datadogIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
+		err = datadogIntegration.DeleteIntegration(t.Context(), "team-a")
 		require.NoError(t, err)
 	})
 
@@ -203,6 +222,9 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		mockK8sClient := fake.NewClientset(existingObjects...)
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
 		// validate secret exists with "team-a" before we try to delete with another integration name
@@ -214,7 +236,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		require.Len(t, existingSecret.Data, 1)
 		require.Contains(t, existingSecret.Data, "team-a")
 
-		err = argocdIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-b")
+		err = argocdIntegration.DeleteIntegration(t.Context(), "team-b")
 		require.NoError(t, err)
 	})
 
@@ -233,6 +255,9 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		mockK8sClient := fake.NewClientset(existingObjects...)
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
+			configuration: &config.Configuration{
+				CurrentNamespace: defaultNamespace,
+			},
 		}
 
 		// validate secret exists with both integration names before we delete one of them.
@@ -245,7 +270,7 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 		require.Contains(t, existingSecret.Data, "team-a")
 		require.Contains(t, existingSecret.Data, "team-b")
 
-		err = argocdIntegration.DeleteIntegration(t.Context(), defaultNamespace, "team-a")
+		err = argocdIntegration.DeleteIntegration(t.Context(), "team-a")
 		require.NoError(t, err)
 
 		existingSecret, err = mockK8sClient.CoreV1().

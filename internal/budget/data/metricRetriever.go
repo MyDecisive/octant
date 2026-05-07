@@ -17,6 +17,7 @@ const (
 	toMil = 1000000.0
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
+	showTableFormatter     = "SHOW TABLES LIKE '%s'"
 )
 
 const (
@@ -35,6 +36,10 @@ type MetricDataRetriever interface {
 	GetLogs(ctx context.Context, input MetricDataInput) ([]Log, string, error)
 	// GetRootSpans returns the list of root span data that matches the given inputs.
 	GetRootSpans(ctx context.Context, input MetricDataInput) ([]RootSpan, string, error)
+	// RootSpansExist returns true if root span table exists.
+	RootSpansExist(ctx context.Context, namespace string) (bool, error)
+	// LogsExist returns true if log table exists.
+	LogsExist(ctx context.Context, namespace string) (bool, error)
 }
 
 // Ensure GreptimeDataRetriever implements MetricDataRetriever.
@@ -232,6 +237,27 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	return result, next, nil
 }
 
+// RootSpansExist returns true if root span table exists.
+func (gdr *GreptimeDataRetriever) RootSpansExist(ctx context.Context, namespace string) (bool, error) {
+	conn, err := gdr.builder.Build(ctx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return gdr.tableExists(ctx, conn.DB, TraceRootTopology1m)
+}
+
+// LogsExist returns true if log table exists.
+func (gdr *GreptimeDataRetriever) LogsExist(ctx context.Context, namespace string) (bool, error) {
+	conn, err := gdr.builder.Build(ctx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return gdr.tableExists(ctx, conn.DB, BytesSentByServiceTotal)
+}
+
+// getTotal returns total sum of the valueCol divided by the divisor.
 func (gdr *GreptimeDataRetriever) getTotal(
 	ctx context.Context,
 	db *sql.DB,
@@ -255,6 +281,24 @@ func (gdr *GreptimeDataRetriever) getTotal(
 	return -1, budgetdb.ErrMissing
 }
 
+// tableExists returns true of the given table exists in greptimedb.
+func (*GreptimeDataRetriever) tableExists(
+	ctx context.Context,
+	db *sql.DB,
+	table Table,
+) (bool, error) {
+	stmt := RawStatement(fmt.Sprintf(showTableFormatter, table.TableName()))
+
+	var res []string
+	if err := stmt.QueryContext(ctx, db, &res); err != nil {
+		return false, err
+	}
+
+	return len(res) > 0, nil
+}
+
+// timeRangeExpression generates a bool expression that can be used
+// to only retrieve data within the given timeframe.
 func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
@@ -264,6 +308,7 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	)
 }
 
+// toHr converts timeframe enum to number of hours.
 func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	switch timeframe {
 	case budgetv1alpha.Timeframe_TIMEFRAME_24HR:

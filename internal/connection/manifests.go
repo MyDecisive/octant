@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"text/template"
+	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/integration"
@@ -43,13 +44,18 @@ var validatorTemplate string
 //go:embed templates/secret.yaml.tmpl
 var secretTemplate string
 
-type ArgoTemplateData struct {
+type ArgoConnectionTemplateData struct {
 	AppName                string
 	Namespace              string
 	ConnectionData         OctantConnectionData
 	DatadogIntegrationData *integration.DataDogIntegrationData
-	ValidatorEnabled       bool
 	IsArgoSideload         bool
+}
+
+type ArgoValidatorTemplateData struct {
+	ConnectionName string
+	Namespace      string
+	ValidatorRunID string
 }
 
 type ManifestOutputFormat string
@@ -59,12 +65,16 @@ const (
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
 
+func getRunID() string {
+	return time.Now().UTC().Format("2006-01-02_15-04-05.999999")
+}
+
 func (oc *OctantConnection) createTemplateData(
 	ctx context.Context,
 	namespace string,
 	name string,
 	connection OctantConnectionData,
-) (*ArgoTemplateData, error) {
+) (*ArgoConnectionTemplateData, error) {
 	if len(connection.Destinations) != 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
@@ -73,7 +83,7 @@ func (oc *OctantConnection) createTemplateData(
 	for _, destination := range connection.Destinations {
 		switch destination.DestinationType {
 		case "datadog":
-			foundDDIntegration, getDDIntErr := oc.datadogClient.GetIntegrationByName(ctx, namespace, destination.IntegrationName)
+			foundDDIntegration, getDDIntErr := oc.datadogClient.GetIntegrationByName(ctx, destination.IntegrationName)
 			if getDDIntErr != nil {
 				return nil, getDDIntErr
 			}
@@ -83,12 +93,11 @@ func (oc *OctantConnection) createTemplateData(
 		}
 	}
 
-	templateData := ArgoTemplateData{
+	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
 		Namespace:              namespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
-		ValidatorEnabled:       true,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
 	}
@@ -106,7 +115,16 @@ func CreateExportableArgoManifests(input CompressionInput, connection OctantConn
 	if err != nil {
 		return nil, err
 	}
-
+	validatorTemplateData := ArgoValidatorTemplateData{
+		ConnectionName: input.Connection,
+		Namespace:      input.Namespace,
+		ValidatorRunID: getRunID(),
+	}
+	validatorManifest, err := renderValidatorManifestForConnection(&validatorTemplateData, format)
+	if err != nil {
+		return nil, err
+	}
+	manifests[getFilename("validator", format)] = validatorManifest
 	appManifest, err := renderArgoAppManifest(templateData, format)
 	if err != nil {
 		return nil, err
@@ -127,22 +145,21 @@ func CreateExportableTemplateData(
 	namespace string,
 	name string,
 	connection OctantConnectionData,
-) (*ArgoTemplateData, error) {
+) (*ArgoConnectionTemplateData, error) {
 	if len(connection.Destinations) != 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
-		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
+		return nil, errors.New("generating argo application with multiple destinations is currently unsupported")
 	}
 	datadogIntegration := integration.DataDogIntegrationData{ // nolint:gosec // no, these are not secrets lol
 		APIKey: "<YOUR_API_KEY>",
 		DDUrl:  "<YOUR_DD_URL>",
 	}
 
-	templateData := ArgoTemplateData{
+	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
 		Namespace:              namespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: &datadogIntegration,
-		ValidatorEnabled:       true,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
 	}
@@ -172,7 +189,10 @@ func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
 }
 
 // renderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
-func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat ManifestOutputFormat) ([]byte, error) {
+func renderArgoAppManifest(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
 	if outputFormat == "" {
 		return []byte{}, errors.New("no output format specified")
 	}
@@ -201,23 +221,24 @@ func renderArgoAppManifest(templateData *ArgoTemplateData, outputFormat Manifest
 }
 
 func renderCollectorDeploymentManifests(
-	templateData *ArgoTemplateData,
+	templateData *ArgoConnectionTemplateData,
 	outputFormat ManifestOutputFormat,
 ) (map[string][]byte, error) {
 	if outputFormat == "" {
 		return nil, errors.New("no output format specified")
 	}
 
-	manifests := make(map[string][]byte)
-	for templateName, templateString := range map[string]string{
+	templates := map[string]string{
 		"lb-collector":    lbCollectorTemplate,
 		"log-collector":   logCollectorTemplate,
 		"trace-collector": traceCollectorTemplate,
 		"hub":             hubTemplate,
 		"observer":        observerTemplate,
-		"validator":       validatorTemplate,
 		"secret":          secretTemplate,
-	} {
+	}
+
+	manifests := make(map[string][]byte)
+	for templateName, templateString := range templates {
 		appManifestTemplate, err := template.New(templateName).Parse(templateString)
 		if err != nil {
 			return manifests, err
@@ -228,7 +249,7 @@ func renderCollectorDeploymentManifests(
 			return manifests, templateErr
 		}
 
-		filename := fmt.Sprintf("%s.%s", templateName, outputFormat)
+		filename := getFilename(templateName, outputFormat)
 		switch outputFormat {
 		case YAMLOutputFormat:
 			manifests[filename] = renderedYaml.Bytes()
@@ -255,4 +276,44 @@ func toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFo
 	}
 
 	return result
+}
+
+func getFilename(templateName string, outputFormat ManifestOutputFormat) string {
+	return fmt.Sprintf("%s.%s", templateName, outputFormat)
+}
+
+func renderValidatorManifestForConnection(
+	templateData *ArgoValidatorTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return nil, errors.New("no output format specified")
+	}
+
+	var manifest []byte
+	appManifestTemplate, err := template.New("validator").Parse(validatorTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	var renderedYaml bytes.Buffer
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return nil, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		manifest = renderedYaml.Bytes()
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return nil, err
+		}
+
+		manifest = renderedJSON
+	default:
+		return nil, errors.New("unknown output format")
+	}
+
+	return manifest, nil
 }

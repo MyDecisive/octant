@@ -220,6 +220,25 @@ func TestMetricProvider_GetLogs(t *testing.T) {
 		assert.Equal(t, expected, actual[0])
 	})
 
+	t.Run("success no total logs", func(t *testing.T) {
+		t.Parallel()
+
+		input := budgetdata.MetricDataInput{
+			Timeframe: timeframe,
+			Namespace: namespace,
+		}
+
+		mockRetriever := budgetdatamock.NewMockMetricDataRetriever(t)
+		mockRetriever.EXPECT().GetTotalLog(mock.Anything, timeframe, namespace).Return(0, nil).Once()
+
+		target := NewMetricProvider(c, mockRetriever)
+		actual, actualNext, err := target.GetLogs(t.Context(), input)
+		require.NoError(t, err)
+
+		assert.Empty(t, actualNext)
+		assert.Empty(t, actual)
+	})
+
 	t.Run("success no logs", func(t *testing.T) {
 		t.Parallel()
 
