@@ -24,10 +24,8 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 		t.Parallel()
 
 		testConfig := &config.Configuration{
-			Env: config.Dev,
-			RPC: config.RPC{
-				Port: 1234,
-			},
+			Env:              config.Dev,
+			Port:             1234,
 			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
@@ -57,10 +55,8 @@ func TestArgoCDHandler_TestConnection(t *testing.T) {
 		t.Parallel()
 
 		testConfig := &config.Configuration{
-			Env: config.Dev,
-			RPC: config.RPC{
-				Port: 1234,
-			},
+			Env:              config.Dev,
+			Port:             1234,
 			CurrentNamespace: defaultNamespace,
 		}
 		mockArgoCDClient := argocdmock.NewMockAPIClient(t)
