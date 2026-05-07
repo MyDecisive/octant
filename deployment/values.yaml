@@ -10,10 +10,7 @@ serviceAccount:
 deployment:
   name: octant
   replicas: 1
-  ports:
-    - name: octant-ui
-      containerPort: 5678
-      protocol: TCP
+  port: 5678
   tolerations: []
   nodeSelector: {}
   affinity: {}
@@ -26,9 +23,4 @@ image:
 
 services:
   name: octant
-  ports:
-    - name: octant-ui
-      port: 5678
-      protocol: TCP
-      targetPort: 5678
   type: ClusterIP

@@ -34,18 +34,12 @@ spec:
       - name: {{ .Values.deployment.name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         ports:
-        {{- .Values.deployment.ports | toYaml | nindent 8 }}
-        - name: octant-api
-          containerPort: 50051
+        - name: octant
+          containerPort: {{ .Values.deployment.port }}
           protocol: TCP
         env:
-        {{- $httpPort := 5678 }}
-        {{- range .Values.deployment.ports }}
-          {{- if eq .name "octant-ui" }}
-            {{- $httpPort = .containerPort }}
-          {{- end }}
-        {{- end }}
-          - name: HTTP_PORT
-            value: "{{ $httpPort }}"
+          - name: OCTANT_PORT
+            value: "{{ .Values.deployment.port }}"
           - name: PROMETHEUS_ENDPOINT
             value: "{{ .Values.deployment.prometheusEndpoint }}"
+

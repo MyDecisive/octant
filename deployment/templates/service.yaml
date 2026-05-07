@@ -8,8 +8,7 @@ spec:
   selector:
     app: {{ .Values.deployment.name }}
   ports:
-  {{- .Values.services.ports | toYaml | nindent 2 }}
-  - name: octant-api
-    port: 50051
+  - name: octant
+    port: {{ .Values.deployment.port }}
     protocol: TCP
-    targetPort: 50051
+    targetPort: {{ .Values.deployment.port }}
