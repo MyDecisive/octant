@@ -44,7 +44,7 @@ type RPC struct {
 }
 
 type Install struct {
-	MdaiInstallTimeout               int `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"60"`
+	MdaiInstallTimeout               int `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"90"`
 	MdaiInstallPollingIntervalMillis int `yaml:"mdaiInstallPollingIntervalMillis" env:"MDAI_INSTALL_POLLING_INTERVAL_MILLIS" env-default:"3000"` // nolint:lll
 }
 
