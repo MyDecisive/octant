@@ -165,6 +165,17 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(passVector, nil, nil).
 			Times(4)
 
+		connectedClientsVector := model.Vector{
+			{
+				Metric: model.Metric{"mdai_connection": "test-conn"},
+				Value:  3,
+			},
+		}
+		mockPromAPI.EXPECT().
+			Query(mock.Anything, mock.Anything, mock.Anything).
+			Return(connectedClientsVector, nil, nil).
+			Times(1)
+
 		factory := metricsmock.NewMockPromClientFactory(t)
 		factory.EXPECT().GetPromClient("test-ns").Return(mockPromAPI, nil)
 
