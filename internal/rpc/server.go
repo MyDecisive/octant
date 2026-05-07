@@ -58,11 +58,11 @@ func NewServer(
 	}
 }
 
-// Start will perform any necessary setups and then start the server.
-func (s Server) Start() error {
+// Handler will perform any necessary setups and then return the handler.
+func (s Server) Handler() (http.Handler, error) {
 	interceptors, err := s.getInterceptors()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	services := s.getServices()
 	mux := http.NewServeMux()
@@ -87,10 +87,7 @@ func (s Server) Start() error {
 	mux.Handle(budgetv1alphaconnect.NewBudgetServiceHandler(s.budgetHandler, interceptors))
 
 	// Serve HTTP/2 without TLS.
-	return http.ListenAndServe( //nolint:gosec // setting timeout handled by RPC server.
-		fmt.Sprintf(":%d", s.configuration.RPC.Port),
-		h2c.NewHandler(s.withCORS(mux), &http2.Server{}),
-	)
+	return h2c.NewHandler(s.withCORS(mux), &http2.Server{}), nil
 }
 
 // getServices returns the list of pre-defined services this RPC server serves.

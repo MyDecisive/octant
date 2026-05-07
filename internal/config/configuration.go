@@ -28,19 +28,14 @@ const (
 
 // Configuration represents the global configurations for octant.
 type Configuration struct {
+	Port             uint16      `yaml:"port" env:"OCTANT_PORT" env-default:"5678"`
 	Env              Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
 	CurrentNamespace string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
 	DefaultTimeout int     `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
-	RPC            RPC     `yaml:"rpc"`
 	Budget         Budget  `yaml:"budget"`
 	Install        Install `yaml:"install"`
 	Metrics        Metrics `yaml:"metrics"`
-}
-
-// RPC contains configuration for RPC related code.
-type RPC struct {
-	Port uint16 `yaml:"port" env:"OCTANT_RPC_PORT" env-default:"50051"`
 }
 
 type Install struct {
