@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -554,7 +555,12 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 		},
 	}
 
-	manifests, err := CreateExportableArgoManifests("test-namespace", "test-app", connection, YAMLOutputFormat)
+	manifests, err := CreateExportableArgoManifests(CompressionInput{
+		MdaiVersion: "0.9.0-dev",
+		Namespace:   "test-namespace",
+		Connection:  "test-app",
+		Format:      octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_YAML,
+	}, connection)
 	require.NoError(t, err)
 
 	_, hasLBCollector := manifests["lb-collector.yaml"]
@@ -573,6 +579,8 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 	assert.True(t, hasValidator, "validator.yaml should exist")
 	_, hasArgoApp := manifests["argo-app.yaml"]
 	assert.True(t, hasArgoApp, "argo-app.yaml should exist")
+	_, hasMdaiApp := manifests["mdai-app.yaml"]
+	assert.True(t, hasMdaiApp, "mdai-app.yaml should exist")
 
 	secretBytes, exists := (manifests)["secret.yaml"]
 	require.True(t, exists, "Exportable secret manifest missing")
@@ -671,4 +679,24 @@ func TestCreateTemplateData(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, data)
 	})
+}
+
+func TestToConnectionFormat(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		des      string
+		in       octantv1alpha.ManifestOutFormat
+		expected ManifestOutputFormat
+	}{
+		{"json", octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON, JSONOutputFormat},
+		{"yaml", octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_YAML, YAMLOutputFormat},
+	}
+	for _, tt := range tests {
+		t.Run(tt.des, func(t *testing.T) {
+			t.Parallel()
+			actual := toConnectionFormat(tt.in)
+
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
 }

@@ -37,6 +37,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 
 		client := octantv1alphaconnect.NewConnectionServiceClient(testServer.Client(), testServer.URL)
 		stream, err := client.GenerateManifests(t.Context(), connect.NewRequest(&octantv1alpha.GenerateManifestsRequest{
+			MdaiVersion: "0.9.0-dev",
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      faker.Word(),
 				ConnectionName: faker.Word(),
@@ -67,6 +68,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 
 		client := octantv1alphaconnect.NewConnectionServiceClient(testServer.Client(), testServer.URL)
 		stream, _ := client.GenerateManifests(t.Context(), connect.NewRequest(&octantv1alpha.GenerateManifestsRequest{
+			MdaiVersion: "0.9.0-dev",
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      faker.Word(),
 				ConnectionName: faker.Word(),

@@ -74,6 +74,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 		Connection:  connScope.GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),
 		Format:      request.Msg.GetFormat(),
+		MdaiVersion: request.Msg.GetMdaiVersion(),
 	})
 	if err != nil {
 		logger.Error("Failed to generate manifest zip file", zap.Error(err))
@@ -90,7 +91,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 		}
 
 		chunk := make([]byte, chunkSize)
-		_, err := buf.Read(chunk)
+		_, err = buf.Read(chunk)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil

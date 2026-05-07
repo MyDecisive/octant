@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/integration"
 	"sigs.k8s.io/yaml"
 )
@@ -103,23 +104,20 @@ func (oc *OctantConnection) createTemplateData(
 	return &templateData, nil
 }
 
-func CreateExportableArgoManifests(
-	namespace string,
-	name string,
-	connection OctantConnectionData,
-	format ManifestOutputFormat,
-) (map[string][]byte, error) {
-	templateData, err := CreateExportableTemplateData(namespace, name, connection)
+func CreateExportableArgoManifests(input CompressionInput, connection OctantConnectionData) (map[string][]byte, error) {
+	format := toConnectionFormat(input.Format)
+	templateData, err := CreateExportableTemplateData(input.Namespace, input.Connection, connection)
 	if err != nil {
 		return nil, err
 	}
+
 	manifests, err := renderCollectorDeploymentManifests(templateData, format)
 	if err != nil {
 		return nil, err
 	}
 	validatorTemplateData := ArgoValidatorTemplateData{
-		ConnectionName: name,
-		Namespace:      namespace,
+		ConnectionName: input.Connection,
+		Namespace:      input.Namespace,
 		ValidatorRunID: getRunID(),
 	}
 	validatorManifest, err := renderValidatorManifestForConnection(&validatorTemplateData, format)
@@ -132,6 +130,12 @@ func CreateExportableArgoManifests(
 		return nil, err
 	}
 	manifests[fmt.Sprintf("argo-app.%s", format)] = appManifest
+
+	mdaiManifest, err := RenderMdaiAppManifest(input.MdaiVersion, input.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	manifests[fmt.Sprintf("mdai-app.%s", format)] = mdaiManifest
 	return manifests, nil
 }
 
@@ -262,6 +266,16 @@ func renderCollectorDeploymentManifests(
 	}
 
 	return manifests, nil
+}
+
+// toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
+func toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFormat {
+	result := YAMLOutputFormat
+	if format == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
+		result = JSONOutputFormat
+	}
+
+	return result
 }
 
 func getFilename(templateName string, outputFormat ManifestOutputFormat) string {

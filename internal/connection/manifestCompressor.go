@@ -14,6 +14,7 @@ import (
 type CompressionInput struct {
 	Namespace      string
 	Connection     string
+	MdaiVersion    string
 	Telemetries    []octantv1alpha.MLTType
 	Format         octantv1alpha.ManifestOutFormat
 	DeploymentType octantv1alpha.DeploymentType
@@ -42,10 +43,8 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	input CompressionInput,
 ) (*bytes.Buffer, error) {
 	manifestsMap, err := CreateExportableArgoManifests(
-		input.Namespace,
-		input.Connection,
+		input,
 		cmc.toConnectionData(input.Telemetries, input.DeploymentType),
-		cmc.toConnectionFormat(input.Format),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("render manifest:%w", err)
@@ -102,14 +101,4 @@ func (*ConnectionManifestCompressor) toConnectionData(
 		},
 		Destinations: make([]OctantConnectionDestination, 1),
 	}
-}
-
-// toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
-func (*ConnectionManifestCompressor) toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFormat {
-	result := YAMLOutputFormat
-	if format == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
-		result = JSONOutputFormat
-	}
-
-	return result
 }
