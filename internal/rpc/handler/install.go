@@ -14,16 +14,10 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"sigs.k8s.io/yaml"
 )
-
-var terminalInstallStates = []octantv1alpha.InstallStatus{ // nolint: gochecknoglobals
-	octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
-	octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED,
-}
 
 type InstallHandler struct {
 	octantv1alphaconnect.UnimplementedInstallServiceHandler
@@ -144,7 +138,7 @@ func (ih *InstallHandler) GetInstallStatus(
 	}); err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
-	if lo.Contains(terminalInstallStates, status) {
+	if status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED {
 		return nil
 	}
 
@@ -181,10 +175,10 @@ func (ih *InstallHandler) GetInstallStatus(
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}
-			if lo.Contains(terminalInstallStates, status) {
+			if status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED {
 				return nil
 			}
-			logger.Debug("install still in progress", zap.String("status", status.String()))
+			logger.Debug("install still in progress or erroring", zap.String("status", status.String()))
 		}
 	}
 }

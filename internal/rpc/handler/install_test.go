@@ -346,8 +346,17 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 				mockArgoClient := argocdmock.NewMockAPIClient(t)
 				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
 					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
-				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, resourceDetails, nil).Once()
-				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, resourceDetails, nil).Times(3)
+
+				testConfig := &config.Configuration{
+					CurrentNamespace: defaultNamespace,
+					Env:              config.Dev,
+					Install: config.Install{
+						MdaiInstallTimeout:               1,
+						MdaiInstallPollingIntervalMillis: 400, // 0.4 seconds
+					},
+				}
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NoError(t, err)
@@ -357,10 +366,12 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 				for response.Receive() {
 					getInstallResponse := response.Msg()
 					require.NoError(t, response.Err())
-					if count > 0 {
-						require.Fail(t, "shouldn't have received more than one response")
+					switch count {
+					case 0, 1, 2:
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, getInstallResponse.GetInstallStatus())
+					case 3:
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT, getInstallResponse.GetInstallStatus())
 					}
-					require.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, getInstallResponse.GetInstallStatus())
 					count++
 				}
 				require.NoError(t, response.Err())
