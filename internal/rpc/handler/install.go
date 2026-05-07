@@ -160,7 +160,13 @@ func (ih *InstallHandler) GetInstallStatus(
 			return connect.NewError(connect.CodeCanceled, ctx.Err())
 		case <-timeoutChan:
 			logger.Warn("reached timeout waiting for app (mdai) to be healthy")
-			return connect.NewError(connect.CodeDeadlineExceeded, errors.New("timeout waiting for app (mdai) to be healthy"))
+			if err = response.Send(&octantv1alpha.GetInstallStatusResponse{
+				InstallStatus: octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT,
+				Details:       details,
+			}); err != nil {
+				return connect.NewError(connect.CodeInternal, err)
+			}
+			return nil
 		case <-ticker.C:
 			logger.Debug("checking install status")
 			status, details, err = ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
@@ -178,7 +184,7 @@ func (ih *InstallHandler) GetInstallStatus(
 			if lo.Contains(terminalInstallStates, status) {
 				return nil
 			}
-			logger.Debug("install status is not healthy", zap.String("status", status.String()))
+			logger.Debug("install still in progress", zap.String("status", status.String()))
 		}
 	}
 }

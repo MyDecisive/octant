@@ -394,13 +394,19 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 				require.NotNil(t, response)
 				require.NoError(t, err)
 
+				count := 0
 				for response.Receive() {
-					if response.Err() != nil {
-						var connectErr *connect.Error
-						require.ErrorAs(t, response.Err(), &connectErr)
-						require.Equal(t, connect.CodeDeadlineExceeded, connectErr.Code())
+					getInstallResponse := response.Msg()
+					require.NoError(t, response.Err())
+					switch count {
+					case 0: // first time it's still installing
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, getInstallResponse.GetInstallStatus())
+					case 1: // second response should be timeout
+						assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT, getInstallResponse.GetInstallStatus())
 					}
+					count++
 				}
+				require.NoError(t, response.Err())
 			},
 		},
 		{
