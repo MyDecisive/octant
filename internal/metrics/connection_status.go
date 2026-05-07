@@ -150,14 +150,7 @@ func getClientsConnected(
 		return false, fmt.Errorf("failed to query prometheus: %w", err)
 	}
 
-	if len(resultVector) == 0 {
-		return false, nil
-	}
-
-	if float64(resultVector[0].Value) <= 0 {
-		return false, nil
-	}
-	return true, nil
+	return len(resultVector) > 0 && float64(resultVector[0].Value) > 0, nil
 }
 
 // verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar
