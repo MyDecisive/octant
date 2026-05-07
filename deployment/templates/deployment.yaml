@@ -46,3 +46,5 @@ spec:
             value: "{{ $httpPort }}"
           - name: PROMETHEUS_ENDPOINT
             value: "{{ .Values.deployment.prometheusEndpoint }}"
+          - name: VITE_API_URL  # for the react app to know how to reach the rpc API
+            value: "http://localhost:50051"
