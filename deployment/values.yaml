@@ -14,9 +14,6 @@ deployment:
     - name: octant-ui
       containerPort: 5678
       protocol: TCP
-#    - name: octant-api
-#      containerPort: 50051
-#      protocol: TCP
   tolerations: []
   nodeSelector: {}
   affinity: {}
@@ -34,8 +31,4 @@ services:
       port: 5678
       protocol: TCP
       targetPort: 5678
-#    - name: octant-api
-#      port: 50051
-#      protocol: TCP
-#      targetPort: 50051
   type: ClusterIP

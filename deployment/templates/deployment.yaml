@@ -35,6 +35,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         ports:
         {{- .Values.deployment.ports | toYaml | nindent 8 }}
+        - name: octant-api
+          containerPort: 50051
+          protocol: TCP
         env:
         {{- $httpPort := 5678 }}
         {{- range .Values.deployment.ports }}
