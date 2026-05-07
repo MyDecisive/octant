@@ -123,12 +123,34 @@ func (cs *PrometheusConnectionStatus) GetConnectionStatus(
 		return nil, fmt.Errorf("verifying data integrity: %w", err)
 	}
 
+	clientsConnected, err := getClientsConnected(ctx, promClient, connectionName)
+	if err != nil {
+		return nil, fmt.Errorf("getting clients connected: %w", err)
+	}
+
 	return &octantv1alpha.GetConnectionStatusResponse{
 		ReceivingData:     receivingData,
 		SendingData:       sendingData,
 		DataIntegrity:     dataIntegrity,
+		ClientsConnected:  clientsConnected,
 		ValidationResults: validationResults,
 	}, nil
+}
+
+// getClientsConnected reads the envoy cluster metrics to ensure that clients are connecting.
+func getClientsConnected(
+	ctx context.Context,
+	promClient promv1.API,
+	connectionName string,
+) (bool, error) {
+	promQuery := buildConnectedClientsQuery(connectionName)
+
+	resultVector, err := queryVector(ctx, promClient, promQuery)
+	if err != nil {
+		return false, fmt.Errorf("failed to query prometheus: %w", err)
+	}
+
+	return len(resultVector) > 0 && float64(resultVector[0].Value) > 0, nil
 }
 
 // verifyDataFidelity reads MDAI Validator metrics to ensure that data coming in is meaningfully similar
@@ -398,6 +420,10 @@ func buildValidationQuery(metricName fidelityMetric, connectionName string, vali
 		connectionName,
 		validatorRunID,
 	)
+}
+
+func buildConnectedClientsQuery(connectionName string) string {
+	return fmt.Sprintf("increase(envoy_cluster_upstream_cx_total{mdai_connection=%q}[5m])", connectionName)
 }
 
 func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {
