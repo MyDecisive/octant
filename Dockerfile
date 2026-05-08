@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG GO_VERSION=1.25
-ARG OCTANT_UI_IMAGE=ghcr.io/mydecisive/octant-ui:latest
+ARG OCTANT_UI_VER=latest
+ARG OCTANT_UI_IMAGE=ghcr.io/mydecisive/octant-ui:${OCTANT_UI_VER}
 
 FROM ${OCTANT_UI_IMAGE} as ui-builder
 
