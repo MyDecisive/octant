@@ -25,7 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: '0'  # 0 is needed to get all tags
       - name: Bump version and push tag
         id: bump_version
@@ -34,13 +33,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_PREFIX: v
           DEFAULT_BUMP: patch # Options: major, minor, patch, none
-
+  additional-args:
+    name: Get UI Version
+    runs-on: ubuntu-24.04
+    outputs:
+      ARG: ${{ steps.arg.outputs.ARG }}
+    steps:
+      - id: arg
+        env:
+          UI: ${{ github.event.client_payload.ui-ver }}
+        run: echo "ARG=[\"OCTANT_UI_VER=${UI:-latest}\"]" >> $GITHUB_OUTPUT
   docker-tag:
-    needs: gh-tag
+    needs: [gh-tag, additional-args]
     if: needs.gh-tag.outputs.new_tag != ''
     uses: MyDecisive/ci/.github/workflows/docker-ghcr.yaml@main
     with:
       ref: refs/tags/${{ needs.gh-tag.outputs.new_tag }}
+      build-args: ${{ needs.additional-args.outputs.ARG }}
     secrets: inherit # pass all secrets
   helm-publish:
     needs: [gh-tag, docker-tag]
