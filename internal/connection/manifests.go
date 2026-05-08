@@ -79,15 +79,17 @@ func (oc *OctantConnection) createTemplateData(
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
 	}
-	var datadogIntegration *integration.DataDogIntegrationData
+	var (
+		datadogIntegration *integration.DataDogIntegrationData
+		err                error
+	)
 	for _, destination := range connection.Destinations {
 		switch destination.DestinationType {
 		case "datadog":
-			foundDDIntegration, getDDIntErr := oc.datadogClient.GetIntegrationByName(ctx, destination.IntegrationName)
-			if getDDIntErr != nil {
-				return nil, getDDIntErr
+			datadogIntegration, err = oc.datadogIntegration.GetIntegrationByName(ctx, destination.IntegrationName)
+			if err != nil {
+				return nil, err
 			}
-			datadogIntegration = foundDDIntegration
 		default:
 			return nil, fmt.Errorf("unknown destination type: %s", destination.DestinationType)
 		}

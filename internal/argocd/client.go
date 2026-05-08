@@ -26,11 +26,24 @@ type APIClient interface {
 		clientOpts *apiclient.ClientOptions,
 		argoApp argoapp.Application,
 	) error
+	DeleteArgoApp(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+		appName string,
+	) error
 	GetAppStatus(
 		ctx context.Context,
 		logger *zap.Logger,
 		clientOpts *apiclient.ClientOptions,
 	) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)
+	SyncApplication(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+		appName string,
+		manifests []string,
+	) error
 }
 
 type Client struct{}
@@ -108,6 +121,77 @@ func (*Client) PushArgoApp(
 		return err
 	}
 	return nil
+}
+
+func (*Client) DeleteArgoApp(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+	appName string,
+) error {
+	argoClient, err := apiclient.NewClient(clientOpts)
+	if err != nil {
+		logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
+		Name:              lo.ToPtr(appName),
+		AppNamespace:      lo.ToPtr("argocd"),
+		Cascade:           lo.ToPtr(true),
+		PropagationPolicy: lo.ToPtr("foreground"),
+	}); err != nil {
+		logger.Error("deleting argo app", zap.Error(err))
+	}
+	return nil
+}
+
+func (*Client) SyncApplication(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+	appName string,
+	manifests []string,
+) error {
+	argoClient, err := apiclient.NewClient(clientOpts)
+	if err != nil {
+		logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	_, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
+		Name:     lo.ToPtr(appName),
+		Revision: lo.ToPtr("HEAD"),
+		Prune:    lo.ToPtr(false),
+		DryRun:   lo.ToPtr(false),
+		Strategy: &argoapp.SyncStrategy{
+			Apply: &argoapp.SyncStrategyApply{
+				Force: true,
+			},
+		},
+		Manifests: manifests,
+	})
+	return err
 }
 
 // GetAppStatus retrieves the argo application status and any resource details available for a non-healthy state.

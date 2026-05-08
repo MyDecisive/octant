@@ -52,7 +52,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 		zap.String("mdaiVersion", installVersion),
 	)
 
-	logger.Debug("received install MDAIHub request")
+	logger.Debug("received request")
 
 	// 1) get the argo integration details
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, connectionName)
