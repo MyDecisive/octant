@@ -42,7 +42,9 @@ jobs:
       - id: arg
         env:
           UI: ${{ github.event.client_payload.ui-ver }}
-        run: echo "ARG=[\"OCTANT_UI_VER=${UI:-latest}\"]" >> $GITHUB_OUTPUT
+        run: |
+          ver=${UI:-latest}
+          echo "ARG=[\"OCTANT_UI_VER=${ver#"v"}\"]" >> $GITHUB_OUTPUT
   docker-tag:
     needs: [gh-tag, additional-args]
     if: needs.gh-tag.outputs.new_tag != ''
