@@ -246,6 +246,7 @@ func convertRequestToConnectionData(
 		Destinations:   destinations,
 		TelemetryTypes: dataTypes,
 		Deployment:     deployment,
+		MdaiNamespace:  request.Msg.GetScope().GetNamespace(),
 	}
 	return connData
 }

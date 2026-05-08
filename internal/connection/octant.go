@@ -32,6 +32,7 @@ type OctantConnectionData struct {
 	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
 	Deployment     *Deployment                   `json:"deployment,omitempty"`
 	Created        time.Time                     `json:"created"`
+	MdaiNamespace  string                        `json:"mdaiNamespace"`
 }
 
 type OctantConnection struct {
