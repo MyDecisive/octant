@@ -44,6 +44,7 @@ func (bfh *BudgetFilterHandler) GetFilter(
 
 	if ok, err := bfh.isAllowed(
 		ctx,
+		logger,
 		req.Msg.GetNamespace(),
 		req.Msg.GetConnectionName(),
 		req.Msg.GetType(),
@@ -90,6 +91,7 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 
 	if ok, err := bfh.isAllowed(
 		ctx,
+		logger,
 		req.Msg.GetNamespace(),
 		req.Msg.GetConnectionName(),
 		req.Msg.GetData().GetType(),
@@ -144,11 +146,16 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 // isAllowed returns true if the given connection allows the given MLT type.
 func (bfh *BudgetFilterHandler) isAllowed(
 	ctx context.Context,
+	logger *zap.Logger,
 	namespace string,
 	conn string,
 	mlt budgetv1alpha.FilterType,
 ) (bool, error) {
-	con, err := bfh.connection.GetConnectionByName(ctx, namespace, conn)
+	con, err := bfh.connection.GetConnectionByName(ctx, connection.Input{
+		Namespace:      namespace,
+		ConnectionName: conn,
+		Logger:         logger,
+	})
 	if err != nil {
 		return false, err
 	}

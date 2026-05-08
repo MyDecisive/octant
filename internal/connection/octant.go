@@ -136,7 +136,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Input) e
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		if deleteErr := oc.deleteArgoApp(ctx, input.ConnectionName, connection); deleteErr != nil {
+		if deleteErr := oc.deleteArgoApp(ctx, input.Logger, input.ConnectionName, connection); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -216,7 +216,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.sideloadValidatorForConnection(ctx, *connection, input.ConnectionName, input.Namespace)
+		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.ConnectionName, input.Namespace)
 	}
 
 	return "", nil
