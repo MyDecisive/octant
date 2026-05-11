@@ -8,6 +8,7 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha/budgetv1alphaconnect"
 	"github.com/mydecisive/octant/internal/budget"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"go.uber.org/zap"
 )
@@ -15,17 +16,20 @@ import (
 type BudgetTimeframeHandler struct {
 	budgetv1alphaconnect.UnimplementedTimeframeServiceHandler
 
-	connection connection.Connection[connection.OctantConnectionData]
-	retriever  budgetdata.MetricDataRetriever
+	currentNamespace string
+	connection       connection.Connection[connection.OctantConnectionData]
+	retriever        budgetdata.MetricDataRetriever
 }
 
 func NewBudgetTimeframeHandler(
+	co config.Configuration,
 	con connection.Connection[connection.OctantConnectionData],
 	retriever budgetdata.MetricDataRetriever,
 ) *BudgetTimeframeHandler {
 	return &BudgetTimeframeHandler{
-		connection: con,
-		retriever:  retriever,
+		currentNamespace: co.CurrentNamespace,
+		connection:       con,
+		retriever:        retriever,
 	}
 }
 
@@ -34,7 +38,7 @@ func (bth *BudgetTimeframeHandler) TimeframeStatus(
 	req *connect.Request[budgetv1alpha.TimeframeStatusRequest],
 ) (*connect.Response[budgetv1alpha.TimeframeStatusResponse], error) {
 	logger := zap.L().With(zap.String("operation", budgetv1alphaconnect.TimeframeServiceTimeframeStatusProcedure))
-	con, err := bth.connection.GetConnectionByName(ctx, req.Msg.GetNamespace(), req.Msg.GetConnectionName())
+	con, err := bth.connection.GetConnectionByName(ctx, bth.currentNamespace, req.Msg.GetConnectionName())
 	if err != nil {
 		logger.Error("failed to get connection data", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)

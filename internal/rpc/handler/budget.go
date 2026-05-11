@@ -9,6 +9,7 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha/budgetv1alphaconnect"
 	"github.com/mydecisive/octant/internal/budget"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/samber/lo"
@@ -18,17 +19,20 @@ import (
 type BudgetHandler struct {
 	budgetv1alphaconnect.UnimplementedBudgetServiceHandler
 
-	connection connection.Connection[connection.OctantConnectionData]
-	provider   budget.MetricDataProvider
+	currentNamespace string
+	connection       connection.Connection[connection.OctantConnectionData]
+	provider         budget.MetricDataProvider
 }
 
 func NewBudgetHandler(
+	co config.Configuration,
 	conn connection.Connection[connection.OctantConnectionData],
 	provider budget.MetricDataProvider,
 ) *BudgetHandler {
 	return &BudgetHandler{
-		connection: conn,
-		provider:   provider,
+		currentNamespace: co.CurrentNamespace,
+		connection:       conn,
+		provider:         provider,
 	}
 }
 
@@ -59,7 +63,7 @@ func (bh *BudgetHandler) Log( // nolint: dupl //no its not
 
 	if ok, err := bh.isAllowed(
 		ctx,
-		req.Msg.GetNamespace(),
+		bh.currentNamespace,
 		req.Msg.GetConnectionName(),
 		telemetry.Logs,
 	); err != nil {
@@ -99,7 +103,7 @@ func (bh *BudgetHandler) Trace( // nolint: dupl //no its not
 
 	if ok, err := bh.isAllowed(
 		ctx,
-		req.Msg.GetNamespace(),
+		bh.currentNamespace,
 		req.Msg.GetConnectionName(),
 		telemetry.Traces,
 	); err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	budgetfiltermock "github.com/mydecisive/octant/internal/mock/budgetfilter"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
@@ -26,6 +27,9 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 	namespace := faker.Word()
 	conn := faker.Word()
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	var task *octantv1alpha.SaveDatadogIntegrationRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
@@ -41,7 +45,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
@@ -50,7 +54,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(expected, nil)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -72,7 +76,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -81,7 +85,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrInvalid)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -102,7 +106,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -111,7 +115,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrFormat)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -132,7 +136,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -141,7 +145,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrNotFound)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -162,7 +166,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -171,7 +175,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().GetFilter(filterType, namespace, conn).Return(nil, budgetfilter.ErrStillUpdating)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -192,13 +196,13 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(nil, nil).Once()
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -219,7 +223,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
@@ -227,7 +231,7 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 
 		actual, err := target.GetFilter(t.Context(), connect.NewRequest(&budgetv1alpha.GetFilterRequest{
 			Type:           filterType,
@@ -251,6 +255,9 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		PctSampled: 10,
 		IncludeErr: true,
 	}
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -272,13 +279,13 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -305,7 +312,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -325,7 +332,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -354,7 +361,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -374,7 +381,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -403,7 +410,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -423,7 +430,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -453,7 +460,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
@@ -473,7 +480,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 			close(out)
 		})
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -503,7 +510,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
@@ -511,7 +518,7 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -540,13 +547,13 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
+			conf.CurrentNamespace,
 			conn,
 		).Return(nil, nil).Once()
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 
-		target := NewBudgetFilterHandler(mockConn, mockCtrl)
+		target := NewBudgetFilterHandler(conf, mockConn, mockCtrl)
 		_, handler := budgetv1alphaconnect.NewFilterServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)

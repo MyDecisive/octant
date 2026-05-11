@@ -8,6 +8,7 @@ import (
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	budgetdatamock "github.com/mydecisive/octant/internal/mock/budgetdata"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
@@ -21,6 +22,9 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 
 	var input *budgetv1alpha.TimeframeStatusRequest
 	require.NoError(t, faker.FakeData(&input, options.WithRandomMapAndSliceMaxSize(1)))
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	cases := []struct {
 		des      string
@@ -55,7 +59,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 			mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 			mockConn.EXPECT().GetConnectionByName(
 				mock.Anything,
-				input.GetNamespace(),
+				conf.CurrentNamespace,
 				input.GetConnectionName(),
 			).Return(&connection.OctantConnectionData{
 				Created: tt.in,
@@ -65,7 +69,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 			mockRetriever.EXPECT().RootSpansExist(mock.Anything, input.GetNamespace()).Return(true, nil)
 			mockRetriever.EXPECT().LogsExist(mock.Anything, input.GetNamespace()).Return(true, nil)
 
-			target := NewBudgetTimeframeHandler(mockConn, mockRetriever)
+			target := NewBudgetTimeframeHandler(conf, mockConn, mockRetriever)
 
 			actual, err := target.TimeframeStatus(t.Context(), connect.NewRequest(input))
 			require.NoError(t, err)
@@ -87,11 +91,11 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
+			conf.CurrentNamespace,
 			input.GetConnectionName(),
 		).Return(nil, nil).Once()
 
-		target := NewBudgetTimeframeHandler(mockConn, nil)
+		target := NewBudgetTimeframeHandler(conf, mockConn, nil)
 
 		actual, err := target.TimeframeStatus(t.Context(), connect.NewRequest(input))
 		require.NoError(t, err)
@@ -108,7 +112,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
+			conf.CurrentNamespace,
 			input.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			Created: time.Now().Add(-(24 * time.Hour)),
@@ -118,7 +122,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockRetriever.EXPECT().RootSpansExist(mock.Anything, input.GetNamespace()).Return(false, nil)
 		mockRetriever.EXPECT().LogsExist(mock.Anything, input.GetNamespace()).Return(true, nil)
 
-		target := NewBudgetTimeframeHandler(mockConn, mockRetriever)
+		target := NewBudgetTimeframeHandler(conf, mockConn, mockRetriever)
 
 		actual, err := target.TimeframeStatus(t.Context(), connect.NewRequest(input))
 		require.NoError(t, err)
@@ -134,7 +138,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
+			conf.CurrentNamespace,
 			input.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			Created: time.Now().Add(-(24 * time.Hour)),
@@ -144,7 +148,7 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockRetriever.EXPECT().RootSpansExist(mock.Anything, input.GetNamespace()).Return(true, nil)
 		mockRetriever.EXPECT().LogsExist(mock.Anything, input.GetNamespace()).Return(false, nil)
 
-		target := NewBudgetTimeframeHandler(mockConn, mockRetriever)
+		target := NewBudgetTimeframeHandler(conf, mockConn, mockRetriever)
 
 		actual, err := target.TimeframeStatus(t.Context(), connect.NewRequest(input))
 		require.NoError(t, err)
@@ -160,11 +164,11 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
+			conf.CurrentNamespace,
 			input.GetConnectionName(),
 		).Return(nil, assert.AnError).Once()
 
-		target := NewBudgetTimeframeHandler(mockConn, nil)
+		target := NewBudgetTimeframeHandler(conf, mockConn, nil)
 
 		actual, err := target.TimeframeStatus(t.Context(), connect.NewRequest(input))
 		require.Error(t, err)

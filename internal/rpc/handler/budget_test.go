@@ -8,6 +8,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	budgetmock "github.com/mydecisive/octant/internal/mock/budget"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
@@ -24,6 +25,9 @@ func TestBudgetHandler_Overall(t *testing.T) {
 		Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		Namespace: faker.Word(),
 	}
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -38,7 +42,7 @@ func TestBudgetHandler_Overall(t *testing.T) {
 			task.GetNamespace(),
 		).Return(expected, nil).Once()
 
-		target := NewBudgetHandler(nil, mockProvider)
+		target := NewBudgetHandler(conf, nil, mockProvider)
 
 		actual, err := target.Overall(t.Context(), connect.NewRequest(task))
 		require.NoError(t, err)
@@ -56,7 +60,7 @@ func TestBudgetHandler_Overall(t *testing.T) {
 			task.GetNamespace(),
 		).Return(nil, assert.AnError).Once()
 
-		target := NewBudgetHandler(nil, mockProvider)
+		target := NewBudgetHandler(conf, nil, mockProvider)
 
 		actual, err := target.Overall(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -70,6 +74,9 @@ func TestBudgetHandler_Log(t *testing.T) {
 	var task *budgetv1alpha.LogRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
 	task.Timeframe = budgetv1alpha.Timeframe_TIMEFRAME_MTD
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	expectedInput := budgetdata.MetricDataInput{
 		Timeframe: task.GetTimeframe(),
@@ -101,13 +108,13 @@ func TestBudgetHandler_Log(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Log(t.Context(), connect.NewRequest(task))
 		require.NoError(t, err)
@@ -125,13 +132,13 @@ func TestBudgetHandler_Log(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Log(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -148,11 +155,11 @@ func TestBudgetHandler_Log(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(nil, assert.AnError).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Log(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -182,13 +189,13 @@ func TestBudgetHandler_Log(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Log(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -204,6 +211,9 @@ func TestBudgetHandler_Trace(t *testing.T) {
 	var task *budgetv1alpha.TraceRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
 	task.Timeframe = budgetv1alpha.Timeframe_TIMEFRAME_MTD
+	conf := config.Configuration{
+		CurrentNamespace: faker.Word(),
+	}
 
 	expectedInput := budgetdata.MetricDataInput{
 		Timeframe: task.GetTimeframe(),
@@ -235,13 +245,13 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
 		require.NoError(t, err)
@@ -259,13 +269,13 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -282,11 +292,11 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(nil, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -303,11 +313,11 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(nil, assert.AnError).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)
@@ -337,13 +347,13 @@ func TestBudgetHandler_Trace(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			task.GetNamespace(),
+			conf.CurrentNamespace,
 			task.GetConnectionName(),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
 
-		target := NewBudgetHandler(mockConn, mockProvider)
+		target := NewBudgetHandler(conf, mockConn, mockProvider)
 
 		actual, err := target.Trace(t.Context(), connect.NewRequest(task))
 		assert.Nil(t, actual)

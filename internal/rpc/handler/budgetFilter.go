@@ -8,6 +8,7 @@ import (
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha/budgetv1alphaconnect"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/samber/lo"
@@ -17,17 +18,20 @@ import (
 type BudgetFilterHandler struct {
 	budgetv1alphaconnect.UnimplementedFilterServiceHandler
 
-	connection connection.Connection[connection.OctantConnectionData]
-	setting    budgetfilter.SettingController
+	currentNamespace string
+	connection       connection.Connection[connection.OctantConnectionData]
+	setting          budgetfilter.SettingController
 }
 
 func NewBudgetFilterHandler(
+	co config.Configuration,
 	conn connection.Connection[connection.OctantConnectionData],
 	setting budgetfilter.SettingController,
 ) *BudgetFilterHandler {
 	return &BudgetFilterHandler{
-		connection: conn,
-		setting:    setting,
+		currentNamespace: co.CurrentNamespace,
+		connection:       conn,
+		setting:          setting,
 	}
 }
 
@@ -44,7 +48,7 @@ func (bfh *BudgetFilterHandler) GetFilter(
 
 	if ok, err := bfh.isAllowed(
 		ctx,
-		req.Msg.GetNamespace(),
+		bfh.currentNamespace,
 		req.Msg.GetConnectionName(),
 		req.Msg.GetType(),
 	); err != nil {
@@ -90,7 +94,7 @@ func (bfh *BudgetFilterHandler) UpdateFilter(
 
 	if ok, err := bfh.isAllowed(
 		ctx,
-		req.Msg.GetNamespace(),
+		bfh.currentNamespace,
 		req.Msg.GetConnectionName(),
 		req.Msg.GetData().GetType(),
 	); err != nil {
