@@ -40,10 +40,12 @@ func (ah *ArgoCDHandler) TestConnection(
 ) (*connect.Response[octantv1alpha.TestConnectionResponse], error) {
 	argoEndpoint := req.Msg.GetArgoEndpoint()
 	argoAccountToken := req.Msg.GetArgoAccountToken()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ArgoCDServiceTestConnectionProcedure),
+		zap.String("argoEndpoint", argoEndpoint),
+	)
 
-	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
-
-	logger.Debug("received test connection request")
+	logger.Debug("received request")
 
 	clientOpts := &apiclient.ClientOptions{
 		ServerAddr: argoEndpoint,
@@ -69,10 +71,13 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 	argoEndpoint := req.Msg.GetArgoEndpoint()
 	accountToken := req.Msg.GetArgoAccountToken()
 	integrationName := req.Msg.GetName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ArgoCDServiceSaveArgoConnectionProcedure),
+		zap.String("argoEndpoint", argoEndpoint),
+		zap.String("integrationName", integrationName),
+	)
 
-	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
-
-	logger.Debug("received save connection request")
+	logger.Debug("received request")
 
 	if err := ah.argoIntegration.SetIntegration(ctx, integrationName,
 		integration.ArgoCDIntegrationData{

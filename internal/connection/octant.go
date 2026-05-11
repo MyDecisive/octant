@@ -15,7 +15,6 @@ import (
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/mydecisive/octant/internal/wrapper"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +45,6 @@ type OctantConnection struct {
 }
 
 func NewOctantConnection(
-	httpClient wrapper.HTTPClient,
 	k8sClient kubernetes.Interface,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
