@@ -198,7 +198,7 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err = oc.sideloadConnectionApp(ctx, input.Logger, input.Namespace, input.ConnectionName, connection)
+		err = oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
 		if err != nil {
 			return err
 		}

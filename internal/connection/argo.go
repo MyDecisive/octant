@@ -31,10 +31,10 @@ type argoSyncApply struct {
 func (oc *OctantConnection) sideloadConnectionApp(
 	ctx context.Context,
 	logger *zap.Logger,
-	namespace, name string,
+	name string,
 	connection OctantConnectionData,
 ) error {
-	templateData, err := oc.createTemplateData(ctx, namespace, name, connection)
+	templateData, err := oc.createTemplateData(ctx, name, connection)
 	if err != nil {
 		return err
 	}
