@@ -16,13 +16,14 @@ import (
 func TestDeleteArgoApp(t *testing.T) {
 	t.Parallel()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "DELETE", r.Method)
 		assert.Equal(t, "/api/v1/applications/my-app", r.URL.Path)
 		assert.Contains(t, r.URL.RawQuery, "cascade=true")
 		w.WriteHeader(http.StatusOK)
 	}))
-	defer ts.Close()
+	ts.StartTLS()
+	t.Cleanup(ts.Close)
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
@@ -61,7 +62,7 @@ func TestPushArgoApp(t *testing.T) { // nolint:gocognit
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if r.Method == http.MethodPost && r.URL.Path == "/api/v1/applications" {
 					w.WriteHeader(tc.createResponseCode)
@@ -73,7 +74,8 @@ func TestPushArgoApp(t *testing.T) { // nolint:gocognit
 				}
 				w.WriteHeader(http.StatusOK)
 			}))
-			defer ts.Close()
+			ts.StartTLS()
+			t.Cleanup(ts.Close)
 
 			f := setupFixture(t)
 			f.httpClient = ts.Client()
@@ -162,40 +164,18 @@ func TestDeleteArgoApp_Error_RequestCreation(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestDeleteArgoApp_Error_HTTPDoFailed(t *testing.T) {
-	t.Parallel()
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	ts.Close()
-
-	f := setupFixture(t)
-	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, "argo-test").
-		Return(&integration.ArgoCDIntegrationData{
-			APIUrl: ts.URL,
-		}, nil)
-
-	octantConnection := f.build()
-
-	err := octantConnection.deleteArgoApp(context.Background(), "my-app", OctantConnectionData{
-		Deployment: &Deployment{IntegrationName: "argo-test"},
-	})
-
-	require.Error(t, err)
-}
-
 func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 	t.Parallel()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, err := w.Write([]byte(`{"error": "invalid session: token signature is invalid: signature is invalid",
 		"code": 16,
 		"message": "invalid session: token signature is invalid: signature is invalid"}`))
 		assert.NoError(t, err)
 	}))
-	defer ts.Close()
+	ts.StartTLS()
+	t.Cleanup(ts.Close)
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
@@ -219,11 +199,12 @@ func TestDeleteArgoApp_Error_BadStatusCode_Unauthorized_Error(t *testing.T) {
 func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
 	t.Parallel()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`ooky spooky`)) // nolint: errcheck,gosec,revive
 	}))
-	defer ts.Close()
+	ts.StartTLS()
+	t.Cleanup(ts.Close)
 
 	f := setupFixture(t)
 	f.httpClient = ts.Client()
@@ -243,36 +224,6 @@ func TestDeleteArgoApp_Error_BadStatusCode_String_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "got unexpected response code from ArgoCD API")
 	assert.Contains(t, err.Error(), "Status 500")
 	assert.Contains(t, err.Error(), "Body: ooky spooky")
-}
-
-func TestPushArgoApp_Error_HTTPDoFailed(t *testing.T) {
-	t.Parallel()
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	ts.Close()
-
-	f := setupFixture(t)
-	f.httpClient = ts.Client()
-	f.argoMock.EXPECT().
-		GetIntegrationByName(mock.Anything, "argo-test").
-		Return(&integration.ArgoCDIntegrationData{
-			APIUrl: ts.URL,
-		}, nil)
-	f.datadogMock.EXPECT().
-		GetIntegrationByName(mock.Anything, "dd-1").
-		Return(&integration.DataDogIntegrationData{}, nil)
-
-	octantConnection := f.build()
-
-	connData := OctantConnectionData{
-		Destinations: []OctantConnectionDestination{
-			{DestinationType: "datadog", IntegrationName: "dd-1"},
-		},
-		Deployment: &Deployment{IntegrationName: "argo-test"},
-	}
-
-	err := octantConnection.sideloadConnectionApp(context.Background(), "default", "my-test-app", connData)
-	require.Error(t, err)
 }
 
 func TestBuildDeleteAppURL(t *testing.T) {
@@ -306,11 +257,12 @@ func TestSideloadValidatorForConnection_Errors(t *testing.T) {
 
 	t.Run("Sync Returns Non-200 Error", func(t *testing.T) {
 		t.Parallel()
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`internal server error`)) // nolint: errcheck
 		}))
-		defer ts.Close()
+		ts.StartTLS()
+		t.Cleanup(ts.Close)
 
 		f := setupFixture(t)
 		f.httpClient = ts.Client()

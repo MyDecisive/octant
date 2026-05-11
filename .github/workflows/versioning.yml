@@ -2,15 +2,21 @@
 # Controlling the patch, minor, major version bump can be done manually with a special tag in your merge commit message.
 name: Bump semantic version
 on:
-  pull_request:
-    types:
-      - closed
+  push:
+    paths-ignore:
+      - '.devcontainer/**'
+      - '.github/**'
+      - '.**.yml'
+      - '**.md'
+      - '.gitignore'
+      - 'Makefile'
     branches:
       - main
+  repository_dispatch:
+    types: [build-and-publish]
 
 jobs:
   gh-tag:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -19,9 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: '0'  # 0 is needed to get all tags
-
       - name: Bump version and push tag
         id: bump_version
         uses: anothrNick/github-tag-action@1.75.0
@@ -29,13 +33,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_PREFIX: v
           DEFAULT_BUMP: patch # Options: major, minor, patch, none
-
+  additional-args:
+    name: Get UI Version
+    runs-on: ubuntu-24.04
+    outputs:
+      ARG: ${{ steps.arg.outputs.ARG }}
+    steps:
+      - id: arg
+        env:
+          UI: ${{ github.event.client_payload.ui-ver }}
+        run: |
+          ver=${UI:-latest}
+          echo "ARG=[\"OCTANT_UI_VER=${ver#"v"}\"]" >> $GITHUB_OUTPUT
   docker-tag:
-    needs: gh-tag
+    needs: [gh-tag, additional-args]
     if: needs.gh-tag.outputs.new_tag != ''
     uses: MyDecisive/ci/.github/workflows/docker-ghcr.yaml@main
     with:
       ref: refs/tags/${{ needs.gh-tag.outputs.new_tag }}
+      build-args: ${{ needs.additional-args.outputs.ARG }}
     secrets: inherit # pass all secrets
   helm-publish:
     needs: [gh-tag, docker-tag]

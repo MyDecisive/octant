@@ -37,7 +37,6 @@ type OctantConnectionData struct {
 }
 
 type OctantConnection struct {
-	httpClient         wrapper.HTTPClient
 	k8sClient          kubernetes.Interface
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
@@ -56,7 +55,6 @@ func NewOctantConnection(
 	argoClient argocd.APIClient,
 ) *OctantConnection {
 	return &OctantConnection{
-		httpClient:         httpClient,
 		k8sClient:          k8sClient,
 		argoIntegration:    argoIntegration,
 		datadogIntegration: datadogIntegration,
