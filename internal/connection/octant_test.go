@@ -33,7 +33,7 @@ const (
 
 // Helper to stand up a fake Argo API.
 func setupTestServer() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		// Return success for all standard operations
@@ -51,6 +51,8 @@ func setupTestServer() *httptest.Server {
 			w.WriteHeader(http.StatusOK) // Catch-all for tests not strictly checking response bodies
 		}
 	}))
+	server.StartTLS()
+	return server
 }
 
 // --- FIXTURE HELPER ---

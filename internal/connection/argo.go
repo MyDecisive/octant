@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/mydecisive/octant/internal/integration"
 )
@@ -94,7 +95,12 @@ func (oc *OctantConnection) doArgoAppSync(
 		return err
 	}
 	syncURL := fmt.Sprintf("%s/api/v1/applications/%s/sync", argoIntegration.APIUrl, name)
-	syncReq, err := http.NewRequestWithContext(ctx, http.MethodPost, syncURL, bytes.NewReader(syncPayloadJSON))
+	syncReq, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		ensureProtocol(syncURL),
+		bytes.NewReader(syncPayloadJSON),
+	)
 	if err != nil {
 		return err
 	}
@@ -154,7 +160,12 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		return "", err
 	}
 	syncURL := fmt.Sprintf("%s/api/v1/applications/%s/sync", argoIntegration.APIUrl, connectionName)
-	syncReq, err := http.NewRequestWithContext(ctx, http.MethodPost, syncURL, bytes.NewReader(syncPayloadJSON))
+	syncReq, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		ensureProtocol(syncURL),
+		bytes.NewReader(syncPayloadJSON),
+	)
 	if err != nil {
 		return "", err
 	}
@@ -201,7 +212,7 @@ func (oc *OctantConnection) doArgoAppCreation(
 		return err
 	}
 	createAppURL := argoIntegration.APIUrl + "/api/v1/applications"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, createAppURL, bytes.NewReader(appJSON))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ensureProtocol(createAppURL), bytes.NewReader(appJSON))
 	if err != nil {
 		return err
 	}
@@ -221,6 +232,15 @@ func (oc *OctantConnection) doArgoAppCreation(
 	return nil
 }
 
+func ensureProtocol(url string) string {
+	if !strings.HasPrefix(url, "https://") {
+		// Optional: Remove http:// if it exists to avoid https://http://
+		url = strings.TrimPrefix(url, "http://")
+		return "https://" + url
+	}
+	return url
+}
+
 func buildDeleteAppURL(apiURL string, appName string) string {
 	query := "?cascade=true&propagationPolicy=foreground&appNamespace=argocd&cascade=true"
 	return fmt.Sprintf("%s/api/v1/applications/%s%s", apiURL, appName, query)
@@ -238,7 +258,7 @@ func (oc *OctantConnection) deleteArgoApp(ctx context.Context, name string, conn
 	}
 
 	deleteAppURL := buildDeleteAppURL(argoIntegration.APIUrl, name)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, ensureProtocol(deleteAppURL), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -283,7 +303,7 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	deleteAppURL := buildDeleteValidatorResourceURL(argoIntegration.APIUrl, name, namespace)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteAppURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, ensureProtocol(deleteAppURL), http.NoBody)
 	if err != nil {
 		return err
 	}
