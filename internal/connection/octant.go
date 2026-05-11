@@ -74,7 +74,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 	*octantv1alpha.GetConnectionStatusResponse,
 	error,
 ) {
-	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
+	connection, err := oc.GetConnectionByName(ctx, oc.configuration.CurrentNamespace, connectionName)
 	if err != nil {
 		return nil, fmt.Errorf("getting connection: %w", err)
 	}
@@ -95,7 +95,9 @@ func (oc *OctantConnection) GetConnectionByName(
 	ctx context.Context,
 	namespace, name string,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -116,7 +118,9 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, connectionName string) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
 		if k8serrors.IsNotFound(getCMErr) {
 			return nil
@@ -145,7 +149,9 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 
 	delete(cm.Data, connectionName)
 
-	if _, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+	if _, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
 	}
 
@@ -153,7 +159,9 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string) ([]string, error) {
-	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return []string{}, nil
@@ -191,16 +199,29 @@ func (oc *OctantConnection) SaveConnection(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 		}
-		if createErr := oc.createConnection(ctx, connection, namespace, connectionName); createErr != nil {
+		if createErr := oc.createConnection(
+			ctx,
+			connection,
+			oc.configuration.CurrentNamespace,
+			connectionName,
+		); createErr != nil {
 			return createErr
 		}
 	} else {
-		if updateErr := oc.updateConnection(ctx, cm, connection, namespace, connectionName); updateErr != nil {
+		if updateErr := oc.updateConnection(
+			ctx,
+			cm,
+			connection,
+			oc.configuration.CurrentNamespace,
+			connectionName,
+		); updateErr != nil {
 			return updateErr
 		}
 	}
@@ -236,7 +257,9 @@ func (oc *OctantConnection) PutConnectionValidatorRun(
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, namespace, connectionName string) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
 		if k8serrors.IsNotFound(getCMErr) {
 			return nil

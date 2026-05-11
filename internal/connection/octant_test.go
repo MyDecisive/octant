@@ -74,7 +74,7 @@ func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 		datadogMock:      integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t),
 		httpClient:       http.DefaultClient, // Default safe client; tests can override with httptest server clients
 		connectionStatus: metricsmock.NewMockConnectionStatus(t),
-		configuration:    &config.Configuration{},
+		configuration:    &config.Configuration{CurrentNamespace: defaultNamespace},
 	}
 }
 
