@@ -27,7 +27,7 @@ spec:
   replicas: {{$replicas | printf "%d"}}
   resources:
     requests:
-      memory: "100Mi"
+      memory: "128Mi"
       cpu: "100m"
   env:
   {{- if .DatadogIntegrationData }}
