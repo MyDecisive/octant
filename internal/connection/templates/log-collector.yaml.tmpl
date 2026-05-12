@@ -17,7 +17,7 @@ spec:
   {{- $replicas:=0}}
   {{- range .ConnectionData.TelemetryTypes }}
     {{- if eq . "logs" }}
-      {{- $replicas = 1}}
+      {{- $replicas = 2}}
       {{- break }}
     {{- end }}
   {{- end }}
@@ -68,10 +68,6 @@ spec:
         timeout: 5s
         send_batch_size: 8192
         send_batch_max_size: 10000
-      memory_limiter:
-        check_interval: 1s
-        limit_percentage: 80
-        spike_limit_percentage: 25
       groupbyattrs:
         keys:
           - service
@@ -109,7 +105,6 @@ spec:
           # Order matters: memory_limiter first, then mark errors,
           # then sample, then batch for export.
           processors: [
-            memory_limiter,
             transform/log_priority,
             probabilistic_sampler/logs,
             resource/observer_exporter_tag,
@@ -120,7 +115,6 @@ spec:
         logs/watch_receivers:
           receivers: [ otlp ]
           processors: [
-            memory_limiter,
             resource/observer_receiver_tag,
             groupbyattrs,
             batch

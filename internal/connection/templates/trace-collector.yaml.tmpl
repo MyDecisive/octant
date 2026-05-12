@@ -20,7 +20,7 @@ spec:
   {{- $replicas:=0}}
   {{- range .ConnectionData.TelemetryTypes }}
     {{- if eq . "traces" }}
-      {{- $replicas = 1}}
+      {{- $replicas = 2}}
       {{- break }}
     {{- end }}
   {{- end }}
@@ -55,10 +55,6 @@ spec:
             endpoint: 0.0.0.0:4318
     processors:
       deltatocumulative: {}
-      memory_limiter:
-        check_interval: 1s
-        limit_percentage: 80
-        spike_limit_percentage: 25
       tail_sampling:
         decision_wait: 10s
         num_traces: 100000
@@ -126,7 +122,7 @@ spec:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, tail_sampling, batch]
+          processors: [tail_sampling, batch]
           exporters: [ datadog, count/spans_by_facet ]
         metrics:
           receivers: [count/spans_by_facet]

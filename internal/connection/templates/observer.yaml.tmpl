@@ -35,8 +35,11 @@ spec:
 
   observerResource:
     image: public.ecr.aws/decisiveai/observer-collector:0.1.6
-    replicas: 1
+    replicas: 2
     resources:
+      limits:
+        memory: "512Mi"
+        cpu: "200m"
       requests:
         memory: "128Mi"
         cpu: "100m"
