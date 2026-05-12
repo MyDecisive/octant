@@ -468,7 +468,7 @@ func TestRenderValidatorManifest(t *testing.T) {
 
 		spec := validator["spec"].(map[string]any)
 		collectorRef := spec["collectorRef"].(map[string]any)
-		assert.Equal(t, "test-app", collectorRef["name"])
+		assert.Equal(t, "test-app-sampling-lb", collectorRef["name"])
 	})
 }
 
