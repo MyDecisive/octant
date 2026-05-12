@@ -20,17 +20,14 @@ spec:
   {{- $replicas:=0}}
   {{- range .ConnectionData.TelemetryTypes }}
     {{- if eq . "traces" }}
-      {{- $replicas = 3}}
+      {{- $replicas = 1}}
       {{- break }}
     {{- end }}
   {{- end }}
   replicas: {{$replicas | printf "%d"}}
   resources:
-    limits:
-      memory: "256Mi"
-      cpu: "200m"
     requests:
-      memory: "128Mi"
+      memory: "100Mi"
       cpu: "100m"
   env:
   {{- if .DatadogIntegrationData }}
