@@ -13,25 +13,25 @@ import (
 
 const connectionsConfigmapName = "mdai-octant-connections"
 
-type Input struct {
+type ConnectionCRUDInput struct {
 	Logger         *zap.Logger
 	Namespace      string
 	ConnectionName string
 }
 
 type Connection[T any] interface {
-	GetConnectionByName(ctx context.Context, input Input) (*T, error)
-	GetConnections(ctx context.Context, input Input) ([]string, error)
-	SaveConnection(ctx context.Context, connection T, input Input) error
-	DeleteConnection(ctx context.Context, input Input) error
+	GetConnectionByName(ctx context.Context, input ConnectionCRUDInput) (*T, error)
+	GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error)
+	SaveConnection(ctx context.Context, connection T, input ConnectionCRUDInput) error
+	DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error
 	GetConnectionStatus(
 		ctx context.Context,
-		input Input,
+		input ConnectionCRUDInput,
 		validatorRunID string,
 	) (*octantv1alpha.GetConnectionStatusResponse, error)
-	GetConnectionValidatorRuns(ctx context.Context, input Input) ([]string, error)
-	PutConnectionValidatorRun(ctx context.Context, input Input) (string, error)
-	DeleteConnectionValidator(ctx context.Context, input Input) error
+	GetConnectionValidatorRuns(ctx context.Context, input ConnectionCRUDInput) ([]string, error)
+	PutConnectionValidatorRun(ctx context.Context, input ConnectionCRUDInput) (string, error)
+	DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error
 }
 
 func updateConfigMapWithConnection(

@@ -138,7 +138,7 @@ func (bh *BudgetHandler) isAllowed(
 	conn string,
 	mlt telemetry.MLT,
 ) (bool, error) {
-	con, err := bh.connection.GetConnectionByName(ctx, connection.Input{
+	con, err := bh.connection.GetConnectionByName(ctx, connection.ConnectionCRUDInput{
 		ConnectionName: conn,
 		Namespace:      namespace,
 		Logger:         logger,

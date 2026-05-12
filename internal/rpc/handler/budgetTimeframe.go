@@ -34,7 +34,7 @@ func (bth *BudgetTimeframeHandler) TimeframeStatus(
 	req *connect.Request[budgetv1alpha.TimeframeStatusRequest],
 ) (*connect.Response[budgetv1alpha.TimeframeStatusResponse], error) {
 	logger := zap.L().With(zap.String("operation", budgetv1alphaconnect.TimeframeServiceTimeframeStatusProcedure))
-	con, err := bth.connection.GetConnectionByName(ctx, connection.Input{
+	con, err := bth.connection.GetConnectionByName(ctx, connection.ConnectionCRUDInput{
 		Logger:         logger,
 		ConnectionName: req.Msg.GetConnectionName(),
 		Namespace:      req.Msg.GetNamespace(),

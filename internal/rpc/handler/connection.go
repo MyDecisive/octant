@@ -59,7 +59,7 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			Namespace:      connScope.Namespace,
 			ConnectionName: connScope.ConnectionName,
 			Logger:         logger,
@@ -139,7 +139,7 @@ func (ch *ConnectionHandler) GetConnections(
 
 	logger.Debug("received request")
 
-	names, err := ch.octantConnection.GetConnections(ctx, connection.Input{Logger: logger})
+	names, err := ch.octantConnection.GetConnections(ctx, connection.ConnectionCRUDInput{Logger: logger})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connections: %w", err))
 	}
@@ -163,7 +163,7 @@ func (ch *ConnectionHandler) GetConnection(
 
 	conn, err := ch.octantConnection.GetConnectionByName(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			ConnectionName: connectionName,
 			Logger:         logger,
 		},
@@ -194,7 +194,7 @@ func (ch *ConnectionHandler) CreateConnection(
 	err := ch.octantConnection.SaveConnection(
 		ctx,
 		connData,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			Namespace:      connScope.Namespace,
 			ConnectionName: connScope.ConnectionName,
 			Logger:         logger,
@@ -221,7 +221,7 @@ func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll
 
 	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			Namespace:      connScope.Namespace,
 			ConnectionName: connScope.ConnectionName,
 			Logger:         logger,
@@ -250,7 +250,7 @@ func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 
 	runID, err := ch.octantConnection.PutConnectionValidatorRun(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			Namespace:      connScope.Namespace,
 			ConnectionName: connScope.ConnectionName,
 			Logger:         logger,
@@ -279,7 +279,7 @@ func (ch *ConnectionHandler) DeleteConnection(
 
 	err := ch.octantConnection.DeleteConnection(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			ConnectionName: connectionName,
 			Logger:         logger,
 		},
@@ -305,7 +305,7 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 
 	err := ch.octantConnection.DeleteConnectionValidator(
 		ctx,
-		connection.Input{
+		connection.ConnectionCRUDInput{
 			Namespace:      connScope.Namespace,
 			ConnectionName: connScope.ConnectionName,
 			Logger:         logger,

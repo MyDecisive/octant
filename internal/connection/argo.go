@@ -51,8 +51,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 
 	var argoApp argoapp.Application
 	if err = yaml.Unmarshal(appYAML, &argoApp); err != nil {
-		// TODO: logger
-		// logger.Error("unmarshalling cert manager application manifest", zap.Error(err))
+		logger.Error("unmarshalling cert manager application manifest", zap.Error(err))
 		return fmt.Errorf("unmarshaling app manifest: %w", err)
 	}
 
@@ -63,6 +62,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 	}
 	logger.Debug("pushing app install", zap.String("appName", argoApp.Name))
 	if err = oc.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
+		logger.Error("pushing app installation", zap.Error(err))
 		return fmt.Errorf("pushing argo app: %w", err)
 	}
 

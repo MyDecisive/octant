@@ -151,7 +151,7 @@ func (bfh *BudgetFilterHandler) isAllowed(
 	conn string,
 	mlt budgetv1alpha.FilterType,
 ) (bool, error) {
-	con, err := bfh.connection.GetConnectionByName(ctx, connection.Input{
+	con, err := bfh.connection.GetConnectionByName(ctx, connection.ConnectionCRUDInput{
 		Namespace:      namespace,
 		ConnectionName: conn,
 		Logger:         logger,
