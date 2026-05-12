@@ -56,6 +56,14 @@ spec:
               - set(body, attributes["message"]) where IsString(attributes["message"])
               - delete_key(attributes, "message")
     exporters:
+      datadog:
+        idle_conn_timeout: 1s
+        api:
+          fail_on_invalid_key: false
+          key: "00000000000000000000000000000000"
+          site: datadoghq.noop
+        tls:
+          insecure_skip_verify: true
       otlp_grpc/tracealyzer:
         endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
         tls:
@@ -132,12 +140,15 @@ spec:
       pipelines:
         {{- range .ConnectionData.TelemetryTypes }}
           {{- if eq . "logs" }}
-          logs:
+          logs/lb:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
             exporters: [loadbalancing/logs]
+          logs/validation:
+            receivers: [datadog]
+            exporters: [datadog]
           {{- else if eq . "traces" }}
-          traces:
+          traces/lb:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
             exporters: [loadbalancing/traces, count/spans_by_facet, otlp_grpc/tracealyzer]
@@ -145,6 +156,9 @@ spec:
             receivers: [count/spans_by_facet]
             processors: [deltatocumulative]
             exporters: [prometheus]
+          traces/validation:
+            receivers: [datadog]
+            exporters: [datadog]
           {{- end }}
         {{- end }}
       telemetry:

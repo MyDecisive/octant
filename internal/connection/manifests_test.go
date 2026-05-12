@@ -259,7 +259,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.Contains(t, includedLabels, "service.name")
 
 		// Check Dynamic Pipelines
-		for _, tel := range []string{"logs", "traces"} {
+		for _, tel := range []string{"logs/lb", "logs/validation", "traces/lb", "traces/validation"} {
 			receivers, found := getNestedField(otelConfig, "service", "pipelines", tel, "receivers")
 			require.True(t, found, "Pipeline %s should exist", tel)
 			assert.Contains(t, receivers.([]any), "datadog", "Pipeline should include datadog receiver")
@@ -273,7 +273,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.Equal(t, "mdai-tracealyzer.test-ns.svc.cluster.local:4317", tracealyzerEndpoint)
 
 		traceExporters, hasTraceExporters := getNestedField(
-			otelConfig, "service", "pipelines", "traces", "exporters",
+			otelConfig, "service", "pipelines", "traces/lb", "exporters",
 		)
 		require.True(t, hasTraceExporters, "Traces pipeline exporters should exist")
 		assert.Contains(t,
@@ -316,10 +316,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.True(t, hasOtelConfig, "OTEL config should exist")
 		otelConfig := otelConfigRaw.(map[string]any)
 
-		_, foundExporters := getNestedField(otelConfig, "exporters", "datadog", "api")
-		assert.False(t, foundExporters, "Datadog API exporter should NOT be configured")
-
-		_, foundLogs := getNestedField(otelConfig, "service", "pipelines", "logs")
+		_, foundLogs := getNestedField(otelConfig, "service", "pipelines", "logs/lb")
 		assert.False(t, foundLogs, "Logs pipeline should not exist")
 	})
 }
