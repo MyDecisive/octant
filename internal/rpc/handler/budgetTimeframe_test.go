@@ -55,8 +55,10 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 			mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 			mockConn.EXPECT().GetConnectionByName(
 				mock.Anything,
-				input.GetNamespace(),
-				input.GetConnectionName(),
+				mock.MatchedBy(func(crudInput connection.ConnectionCRUDInput) bool {
+					return crudInput.Namespace == input.GetNamespace() &&
+						crudInput.ConnectionName == input.GetConnectionName()
+				}),
 			).Return(&connection.OctantConnectionData{
 				Created: tt.in,
 			}, nil).Once()
@@ -87,8 +89,10 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
-			input.GetConnectionName(),
+			mock.MatchedBy(func(crudInput connection.ConnectionCRUDInput) bool {
+				return crudInput.Namespace == input.GetNamespace() &&
+					crudInput.ConnectionName == input.GetConnectionName()
+			}),
 		).Return(nil, nil).Once()
 
 		target := NewBudgetTimeframeHandler(mockConn, nil)
@@ -108,8 +112,10 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
-			input.GetConnectionName(),
+			mock.MatchedBy(func(crudInput connection.ConnectionCRUDInput) bool {
+				return crudInput.Namespace == input.GetNamespace() &&
+					crudInput.ConnectionName == input.GetConnectionName()
+			}),
 		).Return(&connection.OctantConnectionData{
 			Created: time.Now().Add(-(24 * time.Hour)),
 		}, nil).Once()
@@ -134,8 +140,10 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
-			input.GetConnectionName(),
+			mock.MatchedBy(func(crudInput connection.ConnectionCRUDInput) bool {
+				return crudInput.Namespace == input.GetNamespace() &&
+					crudInput.ConnectionName == input.GetConnectionName()
+			}),
 		).Return(&connection.OctantConnectionData{
 			Created: time.Now().Add(-(24 * time.Hour)),
 		}, nil).Once()
@@ -160,8 +168,10 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			input.GetNamespace(),
-			input.GetConnectionName(),
+			mock.MatchedBy(func(crudInput connection.ConnectionCRUDInput) bool {
+				return crudInput.Namespace == input.GetNamespace() &&
+					crudInput.ConnectionName == input.GetConnectionName()
+			}),
 		).Return(nil, assert.AnError).Once()
 
 		target := NewBudgetTimeframeHandler(mockConn, nil)

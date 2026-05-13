@@ -6,7 +6,6 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
@@ -40,16 +39,14 @@ func (ah *ArgoCDHandler) TestConnection(
 ) (*connect.Response[octantv1alpha.TestConnectionResponse], error) {
 	argoEndpoint := req.Msg.GetArgoEndpoint()
 	argoAccountToken := req.Msg.GetArgoAccountToken()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ArgoCDServiceTestConnectionProcedure),
+		zap.String("argoEndpoint", argoEndpoint),
+	)
 
-	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
+	logger.Debug("received request")
 
-	logger.Debug("received test connection request")
-
-	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoEndpoint,
-		AuthToken:  argoAccountToken,
-		Insecure:   ah.config.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(ah.config.Env, argoEndpoint, argoAccountToken)
 	success, err := ah.argoClient.TestConnection(ctx, logger, clientOpts)
 	if err != nil {
 		logger.Error("testing argocd connection", zap.Error(err))
@@ -69,10 +66,13 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 	argoEndpoint := req.Msg.GetArgoEndpoint()
 	accountToken := req.Msg.GetArgoAccountToken()
 	integrationName := req.Msg.GetName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ArgoCDServiceSaveArgoConnectionProcedure),
+		zap.String("argoEndpoint", argoEndpoint),
+		zap.String("integrationName", integrationName),
+	)
 
-	logger := zap.L().With(zap.String("argoEndpoint", argoEndpoint))
-
-	logger.Debug("received save connection request")
+	logger.Debug("received request")
 
 	if err := ah.argoIntegration.SetIntegration(ctx, integrationName,
 		integration.ArgoCDIntegrationData{
