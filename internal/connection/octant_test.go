@@ -64,7 +64,6 @@ type octantTestFixture struct {
 	httpClient       *http.Client
 	connectionStatus *metricsmock.MockConnectionStatus
 	configuration    *config.Configuration
-	// generator        *manifestconnectionmock.MockManifestGenerator
 }
 
 // setupFixture initializes a default set of dependencies for OctantConnection.
@@ -78,7 +77,6 @@ func setupFixture(t *testing.T, objects ...runtime.Object) *octantTestFixture {
 		httpClient:       http.DefaultClient, // Default safe client; tests can override with httptest server clients
 		connectionStatus: metricsmock.NewMockConnectionStatus(t),
 		configuration:    &config.Configuration{CurrentNamespace: defaultNamespace},
-		// generator:        manifestconnectionmock.NewMockManifestGenerator(t),
 	}
 }
 
