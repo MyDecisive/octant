@@ -27,14 +27,18 @@ type ManifestCompressor interface {
 }
 
 // ConnectionManifestCompressor implements ManifestCompressor.
-type ConnectionManifestCompressor struct{}
+type ConnectionManifestCompressor struct {
+	generator ManifestGenerator
+}
 
 // Ensure ConnectionManifestCompressor implements ManifestCompressor.
 var _ ManifestCompressor = &ConnectionManifestCompressor{}
 
 // NewConnectionManifestCompressor returns a new instance of ConnectionManifestCompressor.
-func NewConnectionManifestCompressor() *ConnectionManifestCompressor {
-	return &ConnectionManifestCompressor{}
+func NewConnectionManifestCompressor(generator ManifestGenerator) *ConnectionManifestCompressor {
+	return &ConnectionManifestCompressor{
+		generator: generator,
+	}
 }
 
 // CreateCompressed creates manifest files abse on the given inputs and then compress the files into a zip.
@@ -42,7 +46,7 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	ctx context.Context,
 	input CompressionInput,
 ) (*bytes.Buffer, error) {
-	manifestsMap, err := CreateExportableArgoManifests(
+	manifestsMap, err := cmc.generator.CreateExportableArgoManifests(
 		input,
 		cmc.toConnectionData(input.Telemetries, input.DeploymentType),
 	)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	"sigs.k8s.io/yaml"
 )
@@ -44,9 +45,14 @@ var validatorTemplate string
 //go:embed templates/secret.yaml.tmpl
 var secretTemplate string
 
+//go:embed templates/additional.yaml.tmpl
+var additionalTemplate string
+
 type ArgoConnectionTemplateData struct {
 	AppName                string
 	Namespace              string
+	ServiceAccount         string
+	CurrentNamespace       string
 	ConnectionData         OctantConnectionData
 	DatadogIntegrationData *integration.DataDogIntegrationData
 	IsArgoSideload         bool
@@ -96,6 +102,8 @@ func (oc *OctantConnection) createTemplateData(
 
 	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
+		CurrentNamespace:       oc.configuration.CurrentNamespace,
+		ServiceAccount:         oc.configuration.ServiceAccountName,
 		Namespace:              connection.MdaiNamespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
@@ -105,14 +113,53 @@ func (oc *OctantConnection) createTemplateData(
 	return &templateData, nil
 }
 
-func CreateExportableArgoManifests(input CompressionInput, connection OctantConnectionData) (map[string][]byte, error) {
-	format := toConnectionFormat(input.Format)
-	templateData, err := CreateExportableTemplateData(input.Connection, connection)
+type ManifestGenerator interface {
+	CreateExportableArgoManifests(input CompressionInput, connection OctantConnectionData) (map[string][]byte, error)
+	CreateExportableTemplateData(
+		name string,
+		connection OctantConnectionData,
+	) (*ArgoConnectionTemplateData, error)
+	RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error)
+	RenderCollectorDeploymentManifests(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) (map[string][]byte, error)
+	RenderValidatorManifestForConnection(
+		templateData *ArgoValidatorTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
+	RenderArgoAppManifest(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
+}
+
+// ConnectionManifestGenerator implements ManifestCompressor.
+type ConnectionManifestGenerator struct {
+	configuration *config.Configuration
+}
+
+// Ensure ConnectionManifestGenerator implements ManifestCompressor.
+var _ ManifestGenerator = &ConnectionManifestGenerator{}
+
+// NewConnectionManifestGenerator returns a new instance of ConnectionManifestGenerator.
+func NewConnectionManifestGenerator(con *config.Configuration) *ConnectionManifestGenerator {
+	return &ConnectionManifestGenerator{
+		configuration: con,
+	}
+}
+
+func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
+	input CompressionInput,
+	connection OctantConnectionData,
+) (map[string][]byte, error) {
+	format := cmg.toConnectionFormat(input.Format)
+	templateData, err := cmg.CreateExportableTemplateData(input.Connection, connection)
 	if err != nil {
 		return nil, err
 	}
 
-	manifests, err := renderCollectorDeploymentManifests(templateData, format)
+	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, format)
 	if err != nil {
 		return nil, err
 	}
@@ -121,18 +168,18 @@ func CreateExportableArgoManifests(input CompressionInput, connection OctantConn
 		Namespace:      input.Namespace,
 		ValidatorRunID: getRunID(),
 	}
-	validatorManifest, err := renderValidatorManifestForConnection(&validatorTemplateData, format)
+	validatorManifest, err := cmg.RenderValidatorManifestForConnection(&validatorTemplateData, format)
 	if err != nil {
 		return nil, err
 	}
-	manifests[getFilename("validator", format)] = validatorManifest
-	appManifest, err := renderArgoAppManifest(templateData, format)
+	manifests[cmg.getFilename("validator", format)] = validatorManifest
+	appManifest, err := cmg.RenderArgoAppManifest(templateData, format)
 	if err != nil {
 		return nil, err
 	}
 	manifests[fmt.Sprintf("argo-app.%s", format)] = appManifest
 
-	mdaiManifest, err := RenderMdaiAppManifest(input.MdaiVersion, input.Namespace)
+	mdaiManifest, err := cmg.RenderMdaiAppManifest(input.MdaiVersion, input.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +189,7 @@ func CreateExportableArgoManifests(input CompressionInput, connection OctantConn
 
 // CreateExportableTemplateData TODO: Combine these template data methods instead of copypasta
 // CreateExportableTemplateData is like the other function but doesn't inject secrets.
-func CreateExportableTemplateData(
+func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 	name string,
 	connection OctantConnectionData,
 ) (*ArgoConnectionTemplateData, error) {
@@ -157,6 +204,8 @@ func CreateExportableTemplateData(
 
 	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
+		CurrentNamespace:       cmg.configuration.CurrentNamespace,
+		ServiceAccount:         cmg.configuration.ServiceAccountName,
 		Namespace:              connection.MdaiNamespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: &datadogIntegration,
@@ -167,7 +216,7 @@ func CreateExportableTemplateData(
 }
 
 // RenderMdaiAppManifest renders the mdai argo application manifest with the provided template inputs.
-func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
+func (*ConnectionManifestGenerator) RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
 	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
 	if err != nil {
 		return []byte{}, fmt.Errorf("error parsing mdai app template: %w", err)
@@ -188,8 +237,8 @@ func RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
 	return renderedYaml.Bytes(), nil
 }
 
-// renderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
-func renderArgoAppManifest(
+// RenderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
+func (*ConnectionManifestGenerator) RenderArgoAppManifest(
 	templateData *ArgoConnectionTemplateData,
 	outputFormat ManifestOutputFormat,
 ) ([]byte, error) {
@@ -220,7 +269,7 @@ func renderArgoAppManifest(
 	return renderedYaml.Bytes(), nil
 }
 
-func renderCollectorDeploymentManifests(
+func (cmg *ConnectionManifestGenerator) RenderCollectorDeploymentManifests(
 	templateData *ArgoConnectionTemplateData,
 	outputFormat ManifestOutputFormat,
 ) (map[string][]byte, error) {
@@ -235,6 +284,7 @@ func renderCollectorDeploymentManifests(
 		"hub":             hubTemplate,
 		"observer":        observerTemplate,
 		"secret":          secretTemplate,
+		"additional":      additionalTemplate,
 	}
 
 	manifests := make(map[string][]byte)
@@ -249,7 +299,7 @@ func renderCollectorDeploymentManifests(
 			return manifests, templateErr
 		}
 
-		filename := getFilename(templateName, outputFormat)
+		filename := cmg.getFilename(templateName, outputFormat)
 		switch outputFormat {
 		case YAMLOutputFormat:
 			manifests[filename] = renderedYaml.Bytes()
@@ -268,21 +318,7 @@ func renderCollectorDeploymentManifests(
 	return manifests, nil
 }
 
-// toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
-func toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFormat {
-	result := YAMLOutputFormat
-	if format == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
-		result = JSONOutputFormat
-	}
-
-	return result
-}
-
-func getFilename(templateName string, outputFormat ManifestOutputFormat) string {
-	return fmt.Sprintf("%s.%s", templateName, outputFormat)
-}
-
-func renderValidatorManifestForConnection(
+func (*ConnectionManifestGenerator) RenderValidatorManifestForConnection(
 	templateData *ArgoValidatorTemplateData,
 	outputFormat ManifestOutputFormat,
 ) ([]byte, error) {
@@ -316,4 +352,18 @@ func renderValidatorManifestForConnection(
 	}
 
 	return manifest, nil
+}
+
+// toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
+func (*ConnectionManifestGenerator) toConnectionFormat(format octantv1alpha.ManifestOutFormat) ManifestOutputFormat {
+	result := YAMLOutputFormat
+	if format == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
+		result = JSONOutputFormat
+	}
+
+	return result
+}
+
+func (*ConnectionManifestGenerator) getFilename(templateName string, outputFormat ManifestOutputFormat) string {
+	return fmt.Sprintf("%s.%s", templateName, outputFormat)
 }

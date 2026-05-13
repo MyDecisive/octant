@@ -71,7 +71,7 @@ func TestGetConnectionByName(t *testing.T) {
 	t.Run("configmap not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -84,7 +84,7 @@ func TestGetConnectionByName(t *testing.T) {
 	t.Run("connection not found in configmap", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "team-b",
 			Namespace:      defaultNamespace,
@@ -105,7 +105,7 @@ func TestGetConnectionByName(t *testing.T) {
 				},
 			},
 		}
-		octantConnection := NewOctantConnection(fake.NewClientset(badConnectionData...), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(badConnectionData...), nil, nil, nil, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -118,7 +118,7 @@ func TestGetConnectionByName(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -153,7 +153,8 @@ func TestSaveConnection(t *testing.T) { // nolint: paralleltest
 			Return(nil).
 			Once()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient)
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(), mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
 		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -192,7 +193,7 @@ func TestDeleteConnection(t *testing.T) {
 			Once()
 
 		mockK8sClient := fake.NewClientset(mockK8sData...)
-		octantConnection := NewOctantConnection(mockK8sClient, mockArgoIntegration, nil, nil, testConfig, mockArgoClient)
+		octantConnection := NewOctantConnection(mockK8sClient, mockArgoIntegration, nil, nil, testConfig, mockArgoClient, nil)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -219,7 +220,7 @@ func TestGetConnectionStatus(t *testing.T) {
 	t.Run("configmap not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -232,7 +233,7 @@ func TestGetConnectionStatus(t *testing.T) {
 	t.Run("connection not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -257,7 +258,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(theResponse, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, mockConnectionStatus, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, mockConnectionStatus, testConfig, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -285,7 +286,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 	t.Run("configmap not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -298,7 +299,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 	t.Run("connection not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -324,7 +325,8 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			},
 		}
 
-		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil)
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil, generator)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -349,7 +351,8 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(nil).
 			Once()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), mockArgoIntegration, nil, nil, testConfig, mockArgoClient)
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), mockArgoIntegration, nil, nil, testConfig, mockArgoClient, generator)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,

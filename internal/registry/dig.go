@@ -93,6 +93,11 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(
+		connection.NewConnectionManifestGenerator,
+		dig.As(new(connection.ManifestGenerator))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
 		connection.NewConnectionManifestCompressor,
 		dig.As(new(connection.ManifestCompressor))); err != nil {
 		return nil, err

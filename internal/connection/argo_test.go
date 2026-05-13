@@ -32,7 +32,7 @@ func TestDeleteArgoApp(t *testing.T) {
 		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoIntegration.EXPECT().GetIntegrationByName(mock.Anything, "coolIntegration").Return(nil, assert.AnError).Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, nil)
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, nil, nil)
 		require.Error(t, oc.deleteArgoApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
 	})
 
@@ -47,7 +47,7 @@ func TestDeleteArgoApp(t *testing.T) {
 			return opts.ServerAddr == "http://argo.com" && opts.AuthToken == "abc123"
 		}), "mdai").Return(nil).Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient)
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient, nil)
 		require.NoError(t, oc.deleteArgoApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
 	})
 }
@@ -58,6 +58,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 	testConfig := &config.Configuration{
 		Env: config.Dev,
 	}
+	generator := NewConnectionManifestGenerator(testConfig)
 	ocd := OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "coolIntegration"},
 		Destinations: []OctantConnectionDestination{
@@ -92,7 +93,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 				},
 			},
 		}
-		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil)
+		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, generator)
 		require.ErrorContains(t,
 			oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "mdai", connectionData),
 			"pushing argo application with multiple destinations is currently unsupported",
@@ -114,7 +115,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 			Return(ddIntegrationData, nil).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, nil)
+		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, nil, nil)
 		require.Error(t, oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
 	})
 
@@ -139,7 +140,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 			Return(assert.AnError).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient)
+		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
 		require.Error(t, oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
 	})
 
@@ -168,7 +169,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 			Return(nil).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient)
+		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
 		require.NoError(t, oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
 	})
 }
@@ -179,6 +180,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 	testConfig := &config.Configuration{
 		Env: config.Dev,
 	}
+	generator := NewConnectionManifestGenerator(testConfig)
 	argoIntegrationData := &integration.ArgoCDIntegrationData{
 		APIUrl:       "http://argo.com",
 		AccountToken: "abc123",
@@ -194,7 +196,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Return(nil, assert.AnError).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, nil)
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, nil, nil)
 		validatorRunID, err := oc.sideloadValidatorForConnection(t.Context(), zaptest.NewLogger(t), "coolIntegration", defaultNamespace)
 		require.Error(t, err)
 		require.Empty(t, validatorRunID)
@@ -215,7 +217,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Return(assert.AnError).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient)
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient, generator)
 		validatorRunID, err := oc.sideloadValidatorForConnection(t.Context(), zaptest.NewLogger(t), "coolIntegration", defaultNamespace)
 		require.Error(t, err)
 		require.Empty(t, validatorRunID)
@@ -236,7 +238,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient)
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient, generator)
 		validatorRunID, err := oc.sideloadValidatorForConnection(t.Context(), zaptest.NewLogger(t), "coolIntegration", defaultNamespace)
 		require.NoError(t, err)
 		require.NotEmpty(t, validatorRunID)

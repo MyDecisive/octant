@@ -5,6 +5,7 @@ import (
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/go-faker/faker/v4"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +14,12 @@ import (
 func TestConnectionManifestCompressor_CreateCompressed(t *testing.T) {
 	t.Parallel()
 
-	target := NewConnectionManifestCompressor()
+	generator := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
+	target := NewConnectionManifestCompressor(generator)
 	actual, err := target.CreateCompressed(t.Context(), CompressionInput{
 		Namespace:  faker.Word(),
 		Connection: faker.Word(),
@@ -28,6 +34,11 @@ func TestConnectionManifestCompressor_CreateCompressed(t *testing.T) {
 
 func TestConnectionManifestCompressor_ToConnectionData(t *testing.T) {
 	t.Parallel()
+
+	generator := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 
 	tests := []struct {
 		des      string
@@ -45,7 +56,7 @@ func TestConnectionManifestCompressor_ToConnectionData(t *testing.T) {
 				octantv1alpha.MLTType_MLT_TYPE_LOG,
 				octantv1alpha.MLTType_MLT_TYPE_TRACE,
 			}
-			target := NewConnectionManifestCompressor()
+			target := NewConnectionManifestCompressor(generator)
 			actual := target.toConnectionData(tel, tt.in)
 
 			assert.Len(t, actual.TelemetryTypes, 3)

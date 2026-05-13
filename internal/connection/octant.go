@@ -43,6 +43,7 @@ type OctantConnection struct {
 	connectionMetrics  metrics.ConnectionStatus
 	configuration      *config.Configuration
 	argoClient         argocd.APIClient
+	generator          ManifestGenerator
 }
 
 func NewOctantConnection(
@@ -52,6 +53,7 @@ func NewOctantConnection(
 	connectionMetrics metrics.ConnectionStatus,
 	configuration *config.Configuration,
 	argoClient argocd.APIClient,
+	generator ManifestGenerator,
 ) *OctantConnection {
 	return &OctantConnection{
 		k8sClient:          k8sClient,
@@ -60,6 +62,7 @@ func NewOctantConnection(
 		connectionMetrics:  connectionMetrics,
 		configuration:      configuration,
 		argoClient:         argoClient,
+		generator:          generator,
 	}
 }
 

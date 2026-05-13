@@ -24,17 +24,20 @@ type InstallHandler struct {
 	config          *config.Configuration
 	argoClient      argocd.APIClient
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
+	generator       connection.ManifestGenerator
 }
 
 func NewInstallHandler(
 	theConfig *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	generator connection.ManifestGenerator,
 ) *InstallHandler {
 	return &InstallHandler{
 		config:          theConfig,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
+		generator:       generator,
 	}
 }
 
@@ -63,7 +66,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	}
 
 	// 2) render the argo app template(s)
-	manifestBytes, err := connection.RenderMdaiAppManifest(installVersion, installNamespace)
+	manifestBytes, err := ih.generator.RenderMdaiAppManifest(installVersion, installNamespace)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

@@ -12,9 +12,11 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
+	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -26,6 +28,9 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 	t.Parallel()
 
 	defaultNamespace := "default"
+	namespace := faker.Word()
+	connectionName := faker.Word()
+	ver := faker.Word()
 
 	testCases := []struct {
 		description         string
@@ -42,11 +47,13 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, "coolConnection").
+					GetIntegrationByName(mock.Anything, connectionName).
 					Return(nil, assert.AnError).
 					Once()
 
-				return NewInstallHandler(testConfig, nil, mockArgoIntegration)
+				mockGenerator := connectionmock.NewMockManifestGenerator(t)
+
+				return NewInstallHandler(testConfig, nil, mockArgoIntegration, mockGenerator)
 			},
 			validateResult: func(response *connect.Response[emptypb.Empty], err error) {
 				require.Error(t, err)
@@ -67,11 +74,13 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, "coolConnection").
+					GetIntegrationByName(mock.Anything, connectionName).
 					Return(nil, nil).
 					Once()
 
-				return NewInstallHandler(testConfig, nil, mockArgoIntegration)
+				mockGenerator := connectionmock.NewMockManifestGenerator(t)
+
+				return NewInstallHandler(testConfig, nil, mockArgoIntegration, mockGenerator)
 			},
 			validateResult: func(response *connect.Response[emptypb.Empty], err error) {
 				require.Error(t, err)
@@ -103,14 +112,17 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, "coolConnection").
+					GetIntegrationByName(mock.Anything, connectionName).
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
 					}, nil).
 					Once()
 
-				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+				mockGenerator := connectionmock.NewMockManifestGenerator(t)
+				mockGenerator.EXPECT().RenderMdaiAppManifest(ver, namespace).Return([]byte("{}"), nil)
+
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration, mockGenerator)
 			},
 			validateResult: func(response *connect.Response[emptypb.Empty], err error) {
 				require.Error(t, err)
@@ -143,22 +155,23 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
 						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
-					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
-						return theApp.Name == "mdai"
-					})).
+					}), argoapp.Application{}).
 					Return(assert.AnError).
 					Once()
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, "coolConnection").
+					GetIntegrationByName(mock.Anything, connectionName).
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
 					}, nil).
 					Once()
 
-				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+				mockGenerator := connectionmock.NewMockManifestGenerator(t)
+				mockGenerator.EXPECT().RenderMdaiAppManifest(ver, namespace).Return([]byte("{}"), nil)
+
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration, mockGenerator)
 			},
 			validateResult: func(response *connect.Response[emptypb.Empty], err error) {
 				require.Error(t, err)
@@ -191,22 +204,23 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 				mockArgoClient.EXPECT().
 					PushArgoApp(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
 						return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
-					}), mock.MatchedBy(func(theApp argoapp.Application) bool {
-						return theApp.Name == "mdai"
-					})).
+					}), argoapp.Application{}).
 					Return(nil).
 					Once()
 
 				mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 				mockArgoIntegration.EXPECT().
-					GetIntegrationByName(mock.Anything, "coolConnection").
+					GetIntegrationByName(mock.Anything, connectionName).
 					Return(&integration.ArgoCDIntegrationData{
 						APIUrl:       "http://argocd.com",
 						AccountToken: "abc123",
 					}, nil).
 					Once()
 
-				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+				mockGenerator := connectionmock.NewMockManifestGenerator(t)
+				mockGenerator.EXPECT().RenderMdaiAppManifest(ver, namespace).Return([]byte("{}"), nil)
+
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration, mockGenerator)
 			},
 			validateResult: func(response *connect.Response[emptypb.Empty], err error) {
 				require.NoError(t, err)
@@ -226,9 +240,9 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 			response, err := handler.InstallMDAIHub(
 				t.Context(),
 				connect.NewRequest(&octantv1alpha.InstallMDAIHubRequest{
-					Namespace:      "mdai",
-					ConnectionName: "coolConnection",
-					MdaiVersion:    "0.9.0-dev",
+					Namespace:      namespace,
+					ConnectionName: connectionName,
+					MdaiVersion:    ver,
 				}),
 			)
 
@@ -277,7 +291,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, assert.AnError).
 					Once()
-				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
+				return NewInstallHandler(theConfig, nil, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NotNil(t, response)
@@ -297,7 +311,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					GetIntegrationByName(mock.Anything, "coolConnection").
 					Return(nil, nil).
 					Once()
-				return NewInstallHandler(theConfig, nil, mockArgoIntegration)
+				return NewInstallHandler(theConfig, nil, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NotNil(t, response)
@@ -322,7 +336,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
 					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, nil, assert.AnError).Once()
-				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NotNil(t, response)
@@ -356,7 +370,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 						MdaiInstallPollingIntervalMillis: 400, // 0.4 seconds
 					},
 				}
-				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NoError(t, err)
@@ -399,7 +413,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 						MdaiInstallPollingIntervalMillis: 2000, // 2 seconds
 					},
 				}
-				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration)
+				return NewInstallHandler(testConfig, mockArgoClient, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NotNil(t, response)
@@ -437,7 +451,7 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
 					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, resourceDetails, nil).Once()
-				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration)
+				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration, nil)
 			},
 			validateResult: func(response *connect.ServerStreamForClient[octantv1alpha.GetInstallStatusResponse], err error) {
 				require.NoError(t, err)
