@@ -41,6 +41,7 @@ type OctantConnection struct {
 	datadogClient     integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics metrics.ConnectionStatus
 	configuration     *config.Configuration
+	generator         ManifestGenerator
 	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
 	// taskSets      map[DeploymentType]DeploymentTaskSet
 }
@@ -52,6 +53,7 @@ func NewOctantConnection(
 	datadogClient integration.Integration[integration.DataDogIntegrationData],
 	connectionMetrics metrics.ConnectionStatus,
 	configuration *config.Configuration,
+	generator ManifestGenerator,
 ) *OctantConnection {
 	return &OctantConnection{
 		httpClient:        httpClient,
@@ -60,6 +62,7 @@ func NewOctantConnection(
 		datadogClient:     datadogClient,
 		connectionMetrics: connectionMetrics,
 		configuration:     configuration,
+		generator:         generator,
 	}
 }
 

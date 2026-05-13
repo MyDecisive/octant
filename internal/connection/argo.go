@@ -78,7 +78,7 @@ func (oc *OctantConnection) doArgoAppSync(
 ) error {
 	// TODO: Port all this functionality over to the argocd.Client!
 
-	manifests, err := renderCollectorDeploymentManifests(templateData, JSONOutputFormat)
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		ValidatorRunID: getRunID(),
 	}
 
-	manifest, err := renderValidatorManifestForConnection(templateData, JSONOutputFormat)
+	manifest, err := oc.generator.RenderValidatorManifestForConnection(templateData, JSONOutputFormat)
 	if err != nil {
 		return "", err
 	}
@@ -207,7 +207,7 @@ func (oc *OctantConnection) doArgoAppCreation(
 ) error {
 	// TODO: If possible, use the functionality from argocd.Client
 
-	appJSON, err := renderArgoAppManifest(templateData, JSONOutputFormat)
+	appJSON, err := oc.generator.RenderArgoAppManifest(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
 	}
