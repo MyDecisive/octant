@@ -34,7 +34,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 
 	var argoApp argoapp.Application
 	if err = yaml.Unmarshal(appYAML, &argoApp); err != nil {
-		logger.Error("unmarshalling cert manager application manifest", zap.Error(err))
+		logger.Error("unmarshalling connection application manifest", zap.Error(err))
 		return fmt.Errorf("unmarshaling app manifest: %w", err)
 	}
 
@@ -71,7 +71,7 @@ func (oc *OctantConnection) doArgoAppSync(
 	templateData *ArgoConnectionTemplateData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
-	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, JSONOutputFormat)
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, YAMLOutputFormat)
 	if err != nil {
 		return err
 	}

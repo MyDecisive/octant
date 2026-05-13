@@ -46,9 +46,11 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	ctx context.Context,
 	input CompressionInput,
 ) (*bytes.Buffer, error) {
+	data := cmc.toConnectionData(input.Telemetries, input.DeploymentType)
+	data.MdaiNamespace = input.Namespace
 	manifestsMap, err := cmc.generator.CreateExportableArgoManifests(
 		input,
-		cmc.toConnectionData(input.Telemetries, input.DeploymentType),
+		data,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("render manifest:%w", err)
