@@ -71,8 +71,6 @@ func (oc *OctantConnection) doArgoAppSync(
 	templateData *ArgoConnectionTemplateData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
-	// TODO: Port all this functionality over to the argocd.Client!
-
 	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
