@@ -14,7 +14,7 @@ import (
 
 const (
 	contentTypeJSON             = "application/json"
-	mdaiGatewayRootURLFormatter = "http://%s-mdai-gateway-access:8081" // nolint:revive // no, http is fine
+	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local" // nolint:revive // no, http is fine
 	mdaiGatewayGetVarFormatter  = "/variables/values/hub/%s/var/%s"
 	mdaiGatewayPostVarFormatter = "/variables/hub/%s/var/%s"
 )
@@ -51,7 +51,7 @@ func NewMDAIGateway(c *config.Configuration, client wrapper.HTTPClient) *MDAIGat
 
 // GetVariable returns the value of the given variable from MDAI gateway.
 func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName string) (string, error) {
-	url := mdai.baseURL(hubName) + fmt.Sprintf(
+	url := mdai.baseURL(namespace) + fmt.Sprintf(
 		mdaiGatewayGetVarFormatter,
 		hubName,
 		varName,
@@ -90,7 +90,7 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 // UpdateVariable updates the value of the given variable in MDAI gateway.
 // This will return `ErrInvalid` if the operation failed.
 func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varName string, value any) error {
-	url := mdai.baseURL(hubName) + fmt.Sprintf(
+	url := mdai.baseURL(namespace) + fmt.Sprintf(
 		mdaiGatewayPostVarFormatter,
 		hubName,
 		varName,
@@ -113,12 +113,13 @@ func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varNam
 
 // baseUrl returns the base URL.
 // If URL override is given, then that one will be returned.
-func (mdai *MDAIGateway) baseURL(hubName string) string {
+func (mdai *MDAIGateway) baseURL(namespace string) string {
 	url := mdai.urlOverride
 	if url == "" {
 		url = fmt.Sprintf(
 			mdaiGatewayRootURLFormatter,
-			hubName,
+			mdai.gatewayName,
+			namespace,
 		)
 	}
 	return url
