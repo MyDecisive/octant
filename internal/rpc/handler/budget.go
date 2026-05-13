@@ -59,6 +59,7 @@ func (bh *BudgetHandler) Log( // nolint: dupl //no its not
 
 	if ok, err := bh.isAllowed(
 		ctx,
+		logger,
 		req.Msg.GetNamespace(),
 		req.Msg.GetConnectionName(),
 		telemetry.Logs,
@@ -99,6 +100,7 @@ func (bh *BudgetHandler) Trace( // nolint: dupl //no its not
 
 	if ok, err := bh.isAllowed(
 		ctx,
+		logger,
 		req.Msg.GetNamespace(),
 		req.Msg.GetConnectionName(),
 		telemetry.Traces,
@@ -131,11 +133,16 @@ func (bh *BudgetHandler) Trace( // nolint: dupl //no its not
 // isAllowed returns true if the given connection allows the given MLT type.
 func (bh *BudgetHandler) isAllowed(
 	ctx context.Context,
+	logger *zap.Logger,
 	namespace string,
 	conn string,
 	mlt telemetry.MLT,
 ) (bool, error) {
-	con, err := bh.connection.GetConnectionByName(ctx, namespace, conn)
+	con, err := bh.connection.GetConnectionByName(ctx, connection.ConnectionCRUDInput{
+		ConnectionName: conn,
+		Namespace:      namespace,
+		Logger:         logger,
+	})
 	if err != nil {
 		return false, err
 	}

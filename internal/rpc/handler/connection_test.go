@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestConnectionHandler_GenerateManifests(t *testing.T) {
@@ -91,7 +92,9 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().
-			GetConnectionValidatorRuns(mock.Anything, "test-ns", "test-conn").
+			GetConnectionValidatorRuns(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
+			})).
 			Return(expectedRuns, nil)
 
 		target := NewConnectionHandler(nil, mockConn, nil)
@@ -112,7 +115,9 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().
-			PutConnectionValidatorRun(mock.Anything, "test-ns", "test-conn").
+			PutConnectionValidatorRun(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
+			})).
 			Return(expectedRunID, nil)
 
 		target := NewConnectionHandler(nil, mockConn, nil)
@@ -132,7 +137,9 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().
-			DeleteConnectionValidator(mock.Anything, "test-ns", "test-conn").
+			DeleteConnectionValidator(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
+			})).
 			Return(nil)
 
 		target := NewConnectionHandler(nil, mockConn, nil)
@@ -158,7 +165,9 @@ func TestConnectionHandler_GetConnectionStatus(t *testing.T) {
 	}
 
 	mockConn.EXPECT().
-		GetConnectionStatus(mock.Anything, "test-ns", "test-conn", "test-run").
+		GetConnectionStatus(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+			return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
+		}), "test-run").
 		Return(expectedResponse, nil)
 
 	target := NewConnectionHandler(nil, mockConn, nil)
@@ -181,13 +190,11 @@ func TestConnectionHandler_GetConnections(t *testing.T) {
 	expectedConns := []string{"conn-a", "conn-b"}
 
 	mockConn.EXPECT().
-		GetConnections(mock.Anything, "test-ns").
+		GetConnections(mock.Anything, mock.Anything).
 		Return(expectedConns, nil)
 
 	target := NewConnectionHandler(nil, mockConn, nil)
-	resp, err := target.GetConnections(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionsRequest{
-		Namespace: "test-ns",
-	}))
+	resp, err := target.GetConnections(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 
 	require.NoError(t, err)
 	assert.ElementsMatch(t, expectedConns, resp.Msg.GetConnectionNames())
@@ -212,15 +219,14 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 		}
 
 		mockConn.EXPECT().
-			GetConnectionByName(mock.Anything, "test-ns", "test-conn").
+			GetConnectionByName(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.ConnectionName == "test-conn"
+			})).
 			Return(mockData, nil)
 
 		target := NewConnectionHandler(nil, mockConn, nil)
 		resp, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
-			Scope: &octantv1alpha.ConnectionScope{
-				Namespace:      "test-ns",
-				ConnectionName: "test-conn",
-			},
+			ConnectionName: "test-conn",
 		}))
 
 		require.NoError(t, err)
@@ -234,15 +240,14 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 		t.Parallel()
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().
-			GetConnectionByName(mock.Anything, "test-ns", "missing-conn").
+			GetConnectionByName(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.ConnectionName == "missing-conn"
+			})).
 			Return(nil, nil) // returns nil, nil when not found
 
 		target := NewConnectionHandler(nil, mockConn, nil)
 		_, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
-			Scope: &octantv1alpha.ConnectionScope{
-				Namespace:      "test-ns",
-				ConnectionName: "missing-conn",
-			},
+			ConnectionName: "missing-conn",
 		}))
 
 		require.Error(t, err)
@@ -259,7 +264,9 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 			return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
 				len(data.Destinations) == 1 &&
 				len(data.TelemetryTypes) == 1
-		}), "test-ns", "test-conn").
+		}), mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+			return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
+		})).
 		Return(nil)
 
 	target := NewConnectionHandler(nil, mockConn, nil)
@@ -289,15 +296,14 @@ func TestConnectionHandler_DeleteConnection(t *testing.T) {
 
 	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 	mockConn.EXPECT().
-		DeleteConnection(mock.Anything, "test-ns", "test-conn").
+		DeleteConnection(mock.Anything, mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+			return input.ConnectionName == "test-conn"
+		})).
 		Return(nil)
 
 	target := NewConnectionHandler(nil, mockConn, nil)
 	_, err := target.DeleteConnection(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionRequest{
-		Scope: &octantv1alpha.ConnectionScope{
-			Namespace:      "test-ns",
-			ConnectionName: "test-conn",
-		},
+		ConnectionName: "test-conn",
 	}))
 
 	require.NoError(t, err)

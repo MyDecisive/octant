@@ -8,7 +8,6 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
@@ -55,7 +54,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 		zap.String("mdaiVersion", installVersion),
 	)
 
-	logger.Debug("received install MDAIHub request")
+	logger.Debug("received request")
 
 	// 1) get the argo integration details
 	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, connectionName)
@@ -84,11 +83,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 	}
 
 	// 3) apply the application to the argo cluster
-	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(ih.config.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	// first, apply the cert manager app manifest
 	logger.Debug("pushing cert-manager app install")
 	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, certManagerApp); err != nil {
@@ -124,11 +119,7 @@ func (ih *InstallHandler) GetInstallStatus(
 		return connect.NewError(connect.CodeNotFound, errors.New("argo integration not found"))
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(ih.config.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	status, details, err := ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)

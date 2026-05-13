@@ -8,10 +8,15 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	clientRetryMax = 3
 )
 
 type APIClient interface {
@@ -26,17 +31,39 @@ type APIClient interface {
 		clientOpts *apiclient.ClientOptions,
 		argoApp argoapp.Application,
 	) error
+	DeleteArgoApp(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+		appName string,
+	) error
 	GetAppStatus(
 		ctx context.Context,
 		logger *zap.Logger,
 		clientOpts *apiclient.ClientOptions,
 	) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)
+	SyncApplication(
+		ctx context.Context,
+		logger *zap.Logger,
+		clientOpts *apiclient.ClientOptions,
+		appName string,
+		manifests []string,
+	) error
 }
 
 type Client struct{}
 
 func NewArgoCDClient() *Client {
 	return &Client{}
+}
+
+func CreateClientOpts(env config.Environment, clusterURL, authToken string) *apiclient.ClientOptions {
+	return &apiclient.ClientOptions{
+		HttpRetryMax: clientRetryMax,
+		ServerAddr:   clusterURL,
+		AuthToken:    authToken,
+		Insecure:     env == config.Dev, // ignore certs in localdev
+	}
 }
 
 // TestConnection checks the provided clientOpts are valid argo cd API credentials.
@@ -105,6 +132,81 @@ func (*Client) PushArgoApp(
 		Upsert:      lo.ToPtr(true),
 	}); err != nil {
 		logger.Error("creating argo app", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+func (*Client) DeleteArgoApp(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+	appName string,
+) error {
+	argoClient, err := apiclient.NewClient(clientOpts)
+	if err != nil {
+		logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
+		Name:              lo.ToPtr(appName),
+		AppNamespace:      lo.ToPtr("argocd"),
+		Cascade:           lo.ToPtr(true),
+		PropagationPolicy: lo.ToPtr("foreground"),
+	}); err != nil {
+		logger.Error("deleting argo app", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+func (*Client) SyncApplication(
+	ctx context.Context,
+	logger *zap.Logger,
+	clientOpts *apiclient.ClientOptions,
+	appName string,
+	manifests []string,
+) error {
+	argoClient, err := apiclient.NewClient(clientOpts)
+	if err != nil {
+		logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
+		Name:     lo.ToPtr(appName),
+		Revision: lo.ToPtr("HEAD"),
+		Prune:    lo.ToPtr(false),
+		DryRun:   lo.ToPtr(false),
+		Strategy: &argoapp.SyncStrategy{
+			Apply: &argoapp.SyncStrategyApply{
+				Force: true,
+			},
+		},
+		Manifests: manifests,
+	}); err != nil {
+		logger.Error("syncing argo application", zap.Error(err))
 		return err
 	}
 	return nil

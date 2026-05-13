@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"crypto/tls"
 	"net/http"
 	"os"
 	"os/signal"
@@ -184,13 +183,6 @@ func provideKubeClient() (kubernetes.Interface, error) { // nolint: ireturn
 
 func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient { // nolint: ireturn
 	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				// ignore certs for localdev
-				// TODO: ignoring certs will be removed in ENG-1236 because we won't be creating our own client anymore.
-				InsecureSkipVerify: configuration.Env == config.Dev, // nolint: gosec
-			},
-		},
 		Timeout: time.Duration(configuration.DefaultTimeout) * time.Second,
 	}
 }

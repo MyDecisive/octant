@@ -77,23 +77,24 @@ func getRunID() string {
 
 func (oc *OctantConnection) createTemplateData(
 	ctx context.Context,
-	namespace string,
 	name string,
 	connection OctantConnectionData,
 ) (*ArgoConnectionTemplateData, error) {
-	if len(connection.Destinations) != 1 {
+	if len(connection.Destinations) > 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
 	}
-	var datadogIntegration *integration.DataDogIntegrationData
+	var (
+		datadogIntegration *integration.DataDogIntegrationData
+		err                error
+	)
 	for _, destination := range connection.Destinations {
 		switch destination.DestinationType {
 		case "datadog":
-			foundDDIntegration, getDDIntErr := oc.datadogClient.GetIntegrationByName(ctx, destination.IntegrationName)
-			if getDDIntErr != nil {
-				return nil, getDDIntErr
+			datadogIntegration, err = oc.datadogIntegration.GetIntegrationByName(ctx, destination.IntegrationName)
+			if err != nil {
+				return nil, err
 			}
-			datadogIntegration = foundDDIntegration
 		default:
 			return nil, fmt.Errorf("unknown destination type: %s", destination.DestinationType)
 		}
@@ -101,9 +102,9 @@ func (oc *OctantConnection) createTemplateData(
 
 	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
-		Namespace:              namespace,
 		CurrentNamespace:       oc.configuration.CurrentNamespace,
 		ServiceAccount:         oc.configuration.ServiceAccountName,
+		Namespace:              connection.MdaiNamespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
@@ -115,7 +116,6 @@ func (oc *OctantConnection) createTemplateData(
 type ManifestGenerator interface {
 	CreateExportableArgoManifests(input CompressionInput, connection OctantConnectionData) (map[string][]byte, error)
 	CreateExportableTemplateData(
-		namespace string,
 		name string,
 		connection OctantConnectionData,
 	) (*ArgoConnectionTemplateData, error)
@@ -154,7 +154,7 @@ func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 	connection OctantConnectionData,
 ) (map[string][]byte, error) {
 	format := cmg.toConnectionFormat(input.Format)
-	templateData, err := cmg.CreateExportableTemplateData(input.Namespace, input.Connection, connection)
+	templateData, err := cmg.CreateExportableTemplateData(input.Connection, connection)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,6 @@ func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 // CreateExportableTemplateData TODO: Combine these template data methods instead of copypasta
 // CreateExportableTemplateData is like the other function but doesn't inject secrets.
 func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
-	namespace string,
 	name string,
 	connection OctantConnectionData,
 ) (*ArgoConnectionTemplateData, error) {
@@ -205,9 +204,9 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 
 	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
-		Namespace:              namespace,
 		CurrentNamespace:       cmg.configuration.CurrentNamespace,
 		ServiceAccount:         cmg.configuration.ServiceAccountName,
+		Namespace:              connection.MdaiNamespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: &datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push

@@ -49,10 +49,21 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	error,
 ) {
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionStatusProcedure),
+		zap.String("namespace", connScope.GetNamespace()),
+		zap.String("connectionName", connScope.GetConnectionName()),
+	)
+
+	logger.Debug("received request")
+
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
+			Logger:         logger,
+		},
 		request.Msg.GetValidatorRunId(),
 	)
 	if err != nil {
@@ -67,8 +78,16 @@ func (ch *ConnectionHandler) GenerateManifests(
 	request *connect.Request[octantv1alpha.GenerateManifestsRequest],
 	stream *connect.ServerStream[octantv1alpha.GenerateManifestsResponse],
 ) error {
-	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceGenerateManifestsProcedure),
+		zap.String("namespace", connScope.GetNamespace()),
+		zap.String("connectionName", connScope.GetConnectionName()),
+		zap.String("mdaiVersion", request.Msg.GetMdaiVersion()),
+	)
+
+	logger.Debug("received request")
+
 	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
 		Namespace:   connScope.GetNamespace(),
 		Connection:  connScope.GetConnectionName(),
@@ -112,9 +131,15 @@ func (ch *ConnectionHandler) GenerateManifests(
 
 func (ch *ConnectionHandler) GetConnections(
 	ctx context.Context,
-	request *connect.Request[octantv1alpha.GetConnectionsRequest],
+	_ *connect.Request[emptypb.Empty],
 ) (*connect.Response[octantv1alpha.GetConnectionsResponse], error) {
-	names, err := ch.octantConnection.GetConnections(ctx, request.Msg.GetNamespace())
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionsProcedure),
+	)
+
+	logger.Debug("received request")
+
+	names, err := ch.octantConnection.GetConnections(ctx, connection.ConnectionCRUDInput{Logger: logger})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connections: %w", err))
 	}
@@ -128,11 +153,20 @@ func (ch *ConnectionHandler) GetConnection(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.GetConnectionRequest],
 ) (*connect.Response[octantv1alpha.GetConnectionResponse], error) {
-	connScope := request.Msg.GetScope()
+	connectionName := request.Msg.GetConnectionName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionProcedure),
+		zap.String("connectionName", connectionName),
+	)
+
+	logger.Debug("received request")
+
 	conn, err := ch.octantConnection.GetConnectionByName(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			ConnectionName: connectionName,
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection: %w", err))
@@ -150,11 +184,21 @@ func (ch *ConnectionHandler) CreateConnection(
 ) (*connect.Response[emptypb.Empty], error) {
 	connData := convertRequestToConnectionData(request)
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceCreateConnectionProcedure),
+		zap.String("connectionName", connScope.GetConnectionName()),
+	)
+
+	logger.Debug("received request")
+
 	err := ch.octantConnection.SaveConnection(
 		ctx,
 		connData,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
@@ -168,10 +212,20 @@ func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll
 	request *connect.Request[octantv1alpha.GetConnectionValidatorRunIdsRequest],
 ) (*connect.Response[octantv1alpha.GetConnectionValidatorRunIdsResponse], error) {
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionValidatorRunIdsProcedure),
+		zap.String("connectionName", connScope.GetConnectionName()),
+	)
+
+	logger.Debug("received request")
+
 	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get connection validator runs: %w", err))
@@ -187,10 +241,20 @@ func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 	request *connect.Request[octantv1alpha.CreateConnectionValidatorRunRequest],
 ) (*connect.Response[octantv1alpha.CreateConnectionValidatorRunResponse], error) {
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceCreateConnectionValidatorRunProcedure),
+		zap.String("connectionName", connScope.GetConnectionName()),
+	)
+
+	logger.Debug("received request")
+
 	runID, err := ch.octantConnection.PutConnectionValidatorRun(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate validator run: %w", err))
@@ -205,11 +269,20 @@ func (ch *ConnectionHandler) DeleteConnection(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.DeleteConnectionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
-	connScope := request.Msg.GetScope()
+	connectionName := request.Msg.GetConnectionName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceDeleteConnectionProcedure),
+		zap.String("connectionName", connectionName),
+	)
+
+	logger.Debug("received request")
+
 	err := ch.octantConnection.DeleteConnection(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			ConnectionName: connectionName,
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
@@ -223,10 +296,20 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 	request *connect.Request[octantv1alpha.DeleteConnectionValidatorRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	connScope := request.Msg.GetScope()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ConnectionServiceDeleteConnectionValidatorProcedure),
+		zap.String("connectionName", connScope.GetConnectionName()),
+	)
+
+	logger.Debug("received request")
+
 	err := ch.octantConnection.DeleteConnectionValidator(
 		ctx,
-		connScope.GetNamespace(),
-		connScope.GetConnectionName(),
+		connection.ConnectionCRUDInput{
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
+			Logger:         logger,
+		},
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete connection: %w", err))
@@ -246,6 +329,7 @@ func convertRequestToConnectionData(
 		Destinations:   destinations,
 		TelemetryTypes: dataTypes,
 		Deployment:     deployment,
+		MdaiNamespace:  request.Msg.GetScope().GetNamespace(),
 	}
 	return connData
 }

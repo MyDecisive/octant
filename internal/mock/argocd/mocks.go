@@ -41,6 +41,75 @@ func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 	return &MockAPIClient_Expecter{mock: &_m.Mock}
 }
 
+// DeleteArgoApp provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) DeleteArgoApp(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string) error {
+	ret := _mock.Called(ctx, logger, clientOpts, appName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteArgoApp")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string) error); ok {
+		r0 = returnFunc(ctx, logger, clientOpts, appName)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAPIClient_DeleteArgoApp_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteArgoApp'
+type MockAPIClient_DeleteArgoApp_Call struct {
+	*mock.Call
+}
+
+// DeleteArgoApp is a helper method to define mock.On call
+//   - ctx context.Context
+//   - logger *zap.Logger
+//   - clientOpts *apiclient.ClientOptions
+//   - appName string
+func (_e *MockAPIClient_Expecter) DeleteArgoApp(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}) *MockAPIClient_DeleteArgoApp_Call {
+	return &MockAPIClient_DeleteArgoApp_Call{Call: _e.mock.On("DeleteArgoApp", ctx, logger, clientOpts, appName)}
+}
+
+func (_c *MockAPIClient_DeleteArgoApp_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string)) *MockAPIClient_DeleteArgoApp_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *zap.Logger
+		if args[1] != nil {
+			arg1 = args[1].(*zap.Logger)
+		}
+		var arg2 *apiclient.ClientOptions
+		if args[2] != nil {
+			arg2 = args[2].(*apiclient.ClientOptions)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_DeleteArgoApp_Call) Return(err error) *MockAPIClient_DeleteArgoApp_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAPIClient_DeleteArgoApp_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string) error) *MockAPIClient_DeleteArgoApp_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAppStatus provides a mock function for the type MockAPIClient
 func (_mock *MockAPIClient) GetAppStatus(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error) {
 	ret := _mock.Called(ctx, logger, clientOpts)
@@ -186,6 +255,81 @@ func (_c *MockAPIClient_PushArgoApp_Call) Return(err error) *MockAPIClient_PushA
 }
 
 func (_c *MockAPIClient_PushArgoApp_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, argoApp v1alpha1.Application) error) *MockAPIClient_PushArgoApp_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SyncApplication provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) SyncApplication(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string) error {
+	ret := _mock.Called(ctx, logger, clientOpts, appName, manifests)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SyncApplication")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string, []string) error); ok {
+		r0 = returnFunc(ctx, logger, clientOpts, appName, manifests)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAPIClient_SyncApplication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SyncApplication'
+type MockAPIClient_SyncApplication_Call struct {
+	*mock.Call
+}
+
+// SyncApplication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - logger *zap.Logger
+//   - clientOpts *apiclient.ClientOptions
+//   - appName string
+//   - manifests []string
+func (_e *MockAPIClient_Expecter) SyncApplication(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}, manifests interface{}) *MockAPIClient_SyncApplication_Call {
+	return &MockAPIClient_SyncApplication_Call{Call: _e.mock.On("SyncApplication", ctx, logger, clientOpts, appName, manifests)}
+}
+
+func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string)) *MockAPIClient_SyncApplication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *zap.Logger
+		if args[1] != nil {
+			arg1 = args[1].(*zap.Logger)
+		}
+		var arg2 *apiclient.ClientOptions
+		if args[2] != nil {
+			arg2 = args[2].(*apiclient.ClientOptions)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 []string
+		if args[4] != nil {
+			arg4 = args[4].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_SyncApplication_Call) Return(err error) *MockAPIClient_SyncApplication_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAPIClient_SyncApplication_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string) error) *MockAPIClient_SyncApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }

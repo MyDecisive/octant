@@ -440,3 +440,173 @@ func TestHealthStatusCodeToAppResourceHealth(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteArgoApp(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		description     string
+		testApp         v1alpha1.Application
+		setupMockServer func(t *testing.T) application.ApplicationServiceServer
+		validateResult  func(err error)
+	}{
+		{
+			description: "unknown error deleting application",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Delete(mock.Anything, mock.MatchedBy(func(req *application.ApplicationDeleteRequest) bool {
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd" &&
+						req.GetCascade() &&
+						req.GetPropagationPolicy() == "foreground"
+				})).Return(nil, assert.AnError).Once()
+				return mockAppServer
+			},
+			validateResult: func(err error) {
+				require.Error(t, err)
+			},
+		},
+		{
+			description: "happy path",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Delete(mock.Anything, mock.MatchedBy(func(req *application.ApplicationDeleteRequest) bool {
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd" &&
+						req.GetCascade() &&
+						req.GetPropagationPolicy() == "foreground"
+				})).Return(&application.ApplicationResponse{}, nil).Once()
+				return mockAppServer
+			},
+			validateResult: func(err error) {
+				require.NoError(t, err)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
+
+			lc := &net.ListenConfig{
+				KeepAlive: 5 * time.Second,
+			}
+			lis, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+
+			s := grpc.NewServer()
+
+			mockAppServer := testCase.setupMockServer(t)
+
+			application.RegisterApplicationServiceServer(s, mockAppServer)
+
+			// start the mock app service server
+			go s.Serve(lis) // nolint: errcheck
+
+			t.Cleanup(s.Stop)
+
+			clientOpts := &apiclient.ClientOptions{
+				ServerAddr: lis.Addr().String(),
+				Insecure:   true,
+				PlainText:  true, // needed for local testing
+			}
+
+			testClient := NewArgoCDClient()
+			testErr := testClient.DeleteArgoApp(t.Context(), zaptest.NewLogger(t), clientOpts, "mdai")
+			testCase.validateResult(testErr)
+		})
+	}
+}
+
+func TestSyncApplication(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		description     string
+		testApp         v1alpha1.Application
+		setupMockServer func(t *testing.T) application.ApplicationServiceServer
+		validateResult  func(err error)
+	}{
+		{
+			description: "unknown error syncing application",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Sync(mock.Anything, mock.MatchedBy(func(req *application.ApplicationSyncRequest) bool {
+					return req.GetName() == "mdai" &&
+						req.GetRevision() == "HEAD" &&
+						!req.GetPrune() &&
+						!req.GetDryRun() &&
+						req.GetStrategy().Apply.Force &&
+						len(req.GetManifests()) == 2
+				})).Return(nil, assert.AnError).Once()
+				return mockAppServer
+			},
+			validateResult: func(err error) {
+				require.Error(t, err)
+			},
+		},
+		{
+			description: "happy path",
+			setupMockServer: func(t *testing.T) application.ApplicationServiceServer {
+				t.Helper()
+				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+				mockAppServer.EXPECT().Sync(mock.Anything, mock.MatchedBy(func(req *application.ApplicationSyncRequest) bool {
+					return req.GetName() == "mdai" &&
+						req.GetRevision() == "HEAD" &&
+						!req.GetPrune() &&
+						!req.GetDryRun() &&
+						req.GetStrategy().Apply.Force &&
+						len(req.GetManifests()) == 2
+				})).Return(&v1alpha1.Application{}, nil).Once()
+				return mockAppServer
+			},
+			validateResult: func(err error) {
+				require.NoError(t, err)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
+
+			lc := &net.ListenConfig{
+				KeepAlive: 5 * time.Second,
+			}
+			lis, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+
+			s := grpc.NewServer()
+
+			mockAppServer := testCase.setupMockServer(t)
+
+			application.RegisterApplicationServiceServer(s, mockAppServer)
+
+			// start the mock app service server
+			go s.Serve(lis) // nolint: errcheck
+
+			t.Cleanup(s.Stop)
+
+			clientOpts := &apiclient.ClientOptions{
+				ServerAddr: lis.Addr().String(),
+				Insecure:   true,
+				PlainText:  true, // needed for local testing
+			}
+
+			testClient := NewArgoCDClient()
+			testErr := testClient.SyncApplication(
+				t.Context(),
+				zaptest.NewLogger(t),
+				clientOpts,
+				"mdai",
+				[]string{"manifest 1 content", "manifest 2 content"},
+			)
+			testCase.validateResult(testErr)
+		})
+	}
+}

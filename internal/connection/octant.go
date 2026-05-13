@@ -10,11 +10,12 @@ import (
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/mydecisive/octant/internal/wrapper"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,37 +33,36 @@ type OctantConnectionData struct {
 	TelemetryTypes []telemetry.MLT               `json:"telemetryTypes"`
 	Deployment     *Deployment                   `json:"deployment,omitempty"`
 	Created        time.Time                     `json:"created"`
+	MdaiNamespace  string                        `json:"mdaiNamespace"`
 }
 
 type OctantConnection struct {
-	httpClient        wrapper.HTTPClient
-	k8sClient         kubernetes.Interface
-	argoClient        integration.Integration[integration.ArgoCDIntegrationData]
-	datadogClient     integration.Integration[integration.DataDogIntegrationData]
-	connectionMetrics metrics.ConnectionStatus
-	configuration     *config.Configuration
-	generator         ManifestGenerator
-	// TODO: Refactor connection operations to use tasksets/plans instead of if-argo-then
-	// taskSets      map[DeploymentType]DeploymentTaskSet
+	k8sClient          kubernetes.Interface
+	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
+	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
+	connectionMetrics  metrics.ConnectionStatus
+	configuration      *config.Configuration
+	argoClient         argocd.APIClient
+	generator          ManifestGenerator
 }
 
 func NewOctantConnection(
-	httpClient wrapper.HTTPClient,
 	k8sClient kubernetes.Interface,
-	argoClient integration.Integration[integration.ArgoCDIntegrationData],
-	datadogClient integration.Integration[integration.DataDogIntegrationData],
+	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
 	connectionMetrics metrics.ConnectionStatus,
 	configuration *config.Configuration,
+	argoClient argocd.APIClient,
 	generator ManifestGenerator,
 ) *OctantConnection {
 	return &OctantConnection{
-		httpClient:        httpClient,
-		k8sClient:         k8sClient,
-		argoClient:        argoClient,
-		datadogClient:     datadogClient,
-		connectionMetrics: connectionMetrics,
-		configuration:     configuration,
-		generator:         generator,
+		k8sClient:          k8sClient,
+		argoIntegration:    argoIntegration,
+		datadogIntegration: datadogIntegration,
+		connectionMetrics:  connectionMetrics,
+		configuration:      configuration,
+		argoClient:         argoClient,
+		generator:          generator,
 	}
 }
 
@@ -70,25 +70,24 @@ var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
 
 func (oc *OctantConnection) GetConnectionStatus(
 	ctx context.Context,
-	namespace string,
-	connectionName string,
+	input ConnectionCRUDInput,
 	validatorRunID string,
 ) (
 	*octantv1alpha.GetConnectionStatusResponse,
 	error,
 ) {
-	connection, err := oc.GetConnectionByName(ctx, oc.configuration.CurrentNamespace, connectionName)
+	connection, err := oc.GetConnectionByName(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("getting connection: %w", err)
 	}
 	if connection == nil {
-		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", connectionName, namespace)
+		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", input.ConnectionName, input.Namespace)
 	}
 
 	return oc.connectionMetrics.GetConnectionStatus(
 		ctx,
-		namespace,
-		connectionName,
+		input.Namespace,
+		input.ConnectionName,
 		connection.TelemetryTypes,
 		validatorRunID,
 	)
@@ -96,31 +95,32 @@ func (oc *OctantConnection) GetConnectionStatus(
 
 func (oc *OctantConnection) GetConnectionByName(
 	ctx context.Context,
-	namespace, name string,
+	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
 	configmap, err := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 			return nil, nil // nolint: nilnil
 		}
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
 	}
 
-	if _, ok := configmap.Data[name]; !ok {
-		return nil, nil // nolint: nilnil
+	if _, ok := configmap.Data[input.ConnectionName]; !ok {
+		return nil, fmt.Errorf("connection '%s' not found", input.ConnectionName)
 	}
 
 	var connection OctantConnectionData
-	if err = json.Unmarshal([]byte(configmap.Data[name]), &connection); err != nil {
+	if err = json.Unmarshal([]byte(configmap.Data[input.ConnectionName]), &connection); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal connection data: %w", err)
 	}
 
 	return &connection, nil
 }
 
-func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, connectionName string) error {
+func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
 	cm, getCMErr := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
@@ -134,23 +134,24 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 	if cm.Data == nil {
 		return nil
 	}
-	if _, exists := cm.Data[connectionName]; !exists {
+	if _, exists := cm.Data[input.ConnectionName]; !exists {
+		input.Logger.Warn("connection not found", zap.String("connectionName", input.ConnectionName))
 		return nil
 	}
 
 	var connection OctantConnectionData
-	if err := json.Unmarshal([]byte(cm.Data[connectionName]), &connection); err != nil {
+	if err := json.Unmarshal([]byte(cm.Data[input.ConnectionName]), &connection); err != nil {
 		return fmt.Errorf("failed to unmarshal connection data: %w", err)
 	}
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		if deleteErr := oc.deleteArgoApp(ctx, connectionName, connection); deleteErr != nil {
+		if deleteErr := oc.deleteArgoApp(ctx, input.Logger, input.ConnectionName, connection); deleteErr != nil {
 			return deleteErr
 		}
 	}
 
-	delete(cm.Data, connectionName)
+	delete(cm.Data, input.ConnectionName)
 
 	if _, err := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
@@ -161,7 +162,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, namespace, con
 	return nil
 }
 
-func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string) ([]string, error) {
+func (oc *OctantConnection) GetConnections(ctx context.Context, _ ConnectionCRUDInput) ([]string, error) {
 	configmap, err := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
@@ -181,15 +182,15 @@ func (oc *OctantConnection) GetConnections(ctx context.Context, namespace string
 
 func (oc *OctantConnection) GetConnectionValidatorRuns(
 	ctx context.Context,
-	namespace, connectionName string,
+	input ConnectionCRUDInput,
 ) ([]string, error) {
-	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, namespace, connectionName)
+	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, input.Namespace, input.ConnectionName)
 }
 
 func (oc *OctantConnection) SaveConnection(
 	ctx context.Context,
 	connection OctantConnectionData,
-	namespace, connectionName string,
+	input ConnectionCRUDInput,
 ) error {
 	if connection.Deployment == nil {
 		return errors.New("no deployment object found on octant connection; unable to create connection")
@@ -213,7 +214,7 @@ func (oc *OctantConnection) SaveConnection(
 			ctx,
 			connection,
 			oc.configuration.CurrentNamespace,
-			connectionName,
+			input.ConnectionName,
 		); createErr != nil {
 			return createErr
 		}
@@ -223,14 +224,14 @@ func (oc *OctantConnection) SaveConnection(
 			cm,
 			connection,
 			oc.configuration.CurrentNamespace,
-			connectionName,
+			input.ConnectionName,
 		); updateErr != nil {
 			return updateErr
 		}
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err = oc.sideloadConnectionApp(ctx, namespace, connectionName, connection)
+		err = oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
 		if err != nil {
 			return err
 		}
@@ -239,27 +240,23 @@ func (oc *OctantConnection) SaveConnection(
 	return nil
 }
 
-func (oc *OctantConnection) PutConnectionValidatorRun(
-	ctx context.Context,
-	namespace string,
-	connectionName string,
-) (string, error) {
-	connection, err := oc.GetConnectionByName(ctx, namespace, connectionName)
+func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input ConnectionCRUDInput) (string, error) {
+	connection, err := oc.GetConnectionByName(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("getting connection: %w", err)
 	}
 	if connection == nil {
-		return "", fmt.Errorf("connection '%s' not found", connectionName)
+		return "", fmt.Errorf("connection '%s' not found", input.ConnectionName)
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.sideloadValidatorForConnection(ctx, *connection, connectionName, namespace)
+		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.Namespace)
 	}
 
 	return "", nil
 }
 
-func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, namespace, connectionName string) error {
+func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
 	cm, getCMErr := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
@@ -273,20 +270,18 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, names
 	if cm.Data == nil {
 		return nil
 	}
-	if _, exists := cm.Data[connectionName]; !exists {
+	if _, exists := cm.Data[input.ConnectionName]; !exists {
 		return nil
 	}
 
 	var connection OctantConnectionData
-	if err := json.Unmarshal([]byte(cm.Data[connectionName]), &connection); err != nil {
+	if err := json.Unmarshal([]byte(cm.Data[input.ConnectionName]), &connection); err != nil {
 		return fmt.Errorf("failed to unmarshal connection data: %w", err)
 	}
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		if deleteErr := oc.deleteValidatorResource(ctx, connectionName, namespace, connection); deleteErr != nil {
-			return deleteErr
-		}
+		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName+"-telemetry-validation", connection)
 	}
 
 	return nil
