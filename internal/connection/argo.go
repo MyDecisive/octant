@@ -56,17 +56,18 @@ func (oc *OctantConnection) sideloadConnectionApp(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   oc.configuration.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
 	}
 	logger.Debug("pushing app install", zap.String("appName", argoApp.Name))
 	if err = oc.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
-		logger.Error("pushing app installation", zap.Error(err))
+		logger.Error("pushing argo app", zap.Error(err))
 		return fmt.Errorf("pushing argo app: %w", err)
 	}
 
-	return oc.doArgoAppSync(ctx, logger, templateData, argoIntegration, name)
+	return oc.doArgoAppSync(ctx, logger, templateData, argoIntegration)
 }
 
 func (oc *OctantConnection) getArgoIntegration(
@@ -91,9 +92,8 @@ func (oc *OctantConnection) doArgoAppSync(
 	logger *zap.Logger,
 	templateData *ArgoConnectionTemplateData,
 	argoIntegration *integration.ArgoCDIntegrationData,
-	name string,
 ) error {
-	manifests, err := renderCollectorDeploymentManifests(templateData, JSONOutputFormat)
+	manifests, err := renderCollectorDeploymentManifests(templateData, YAMLOutputFormat)
 	if err != nil {
 		return err
 	}
@@ -104,17 +104,18 @@ func (oc *OctantConnection) doArgoAppSync(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   oc.configuration.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
 	}
-	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, name, manifestsSlice)
+	// TODO: not sure if templateData.AppName or connection name here...
+	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, templateData.AppName, manifestsSlice)
 }
 
 func (oc *OctantConnection) sideloadValidatorForConnection(
 	ctx context.Context,
 	logger *zap.Logger,
-	integrationName string,
 	connectionName string,
 	namespace string,
 ) (string, error) {
@@ -123,7 +124,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	//       entire sideload behavior has this ephemerality problem... but feels weird to push new manifests on top of
 	//       the old ones like this. Clean this up for the git integration.
 
-	argoIntegration, err := oc.getArgoIntegration(ctx, integrationName)
+	argoIntegration, err := oc.getArgoIntegration(ctx, connectionName)
 	if err != nil {
 		return "", err
 	}
@@ -144,9 +145,10 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   oc.configuration.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
 	}
 	if err = oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice); err != nil {
 		return "", err
@@ -169,9 +171,10 @@ func (oc *OctantConnection) deleteArgoApp(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   oc.configuration.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
 	}
 	logger.Debug("deleting argo app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
@@ -192,9 +195,10 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   oc.configuration.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
 	}
 	logger.Debug("deleting telemetry validator app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)

@@ -41,7 +41,7 @@ func (_m *MockConnection[T]) EXPECT() *MockConnection_Expecter[T] {
 }
 
 // DeleteConnection provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) DeleteConnection(ctx context.Context, input connection.Input) error {
+func (_mock *MockConnection[T]) DeleteConnection(ctx context.Context, input connection.ConnectionCRUDInput) error {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -49,7 +49,7 @@ func (_mock *MockConnection[T]) DeleteConnection(ctx context.Context, input conn
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		r0 = ret.Error(0)
@@ -64,20 +64,20 @@ type MockConnection_DeleteConnection_Call[T any] struct {
 
 // DeleteConnection is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) DeleteConnection(ctx interface{}, input interface{}) *MockConnection_DeleteConnection_Call[T] {
 	return &MockConnection_DeleteConnection_Call[T]{Call: _e.mock.On("DeleteConnection", ctx, input)}
 }
 
-func (_c *MockConnection_DeleteConnection_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_DeleteConnection_Call[T] {
+func (_c *MockConnection_DeleteConnection_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_DeleteConnection_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -92,13 +92,13 @@ func (_c *MockConnection_DeleteConnection_Call[T]) Return(err error) *MockConnec
 	return _c
 }
 
-func (_c *MockConnection_DeleteConnection_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) error) *MockConnection_DeleteConnection_Call[T] {
+func (_c *MockConnection_DeleteConnection_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) error) *MockConnection_DeleteConnection_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteConnectionValidator provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) DeleteConnectionValidator(ctx context.Context, input connection.Input) error {
+func (_mock *MockConnection[T]) DeleteConnectionValidator(ctx context.Context, input connection.ConnectionCRUDInput) error {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -106,7 +106,7 @@ func (_mock *MockConnection[T]) DeleteConnectionValidator(ctx context.Context, i
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		r0 = ret.Error(0)
@@ -121,20 +121,20 @@ type MockConnection_DeleteConnectionValidator_Call[T any] struct {
 
 // DeleteConnectionValidator is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) DeleteConnectionValidator(ctx interface{}, input interface{}) *MockConnection_DeleteConnectionValidator_Call[T] {
 	return &MockConnection_DeleteConnectionValidator_Call[T]{Call: _e.mock.On("DeleteConnectionValidator", ctx, input)}
 }
 
-func (_c *MockConnection_DeleteConnectionValidator_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_DeleteConnectionValidator_Call[T] {
+func (_c *MockConnection_DeleteConnectionValidator_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_DeleteConnectionValidator_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -149,13 +149,13 @@ func (_c *MockConnection_DeleteConnectionValidator_Call[T]) Return(err error) *M
 	return _c
 }
 
-func (_c *MockConnection_DeleteConnectionValidator_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) error) *MockConnection_DeleteConnectionValidator_Call[T] {
+func (_c *MockConnection_DeleteConnectionValidator_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) error) *MockConnection_DeleteConnectionValidator_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetConnectionByName provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnectionByName(ctx context.Context, input connection.Input) (*T, error) {
+func (_mock *MockConnection[T]) GetConnectionByName(ctx context.Context, input connection.ConnectionCRUDInput) (*T, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -164,17 +164,17 @@ func (_mock *MockConnection[T]) GetConnectionByName(ctx context.Context, input c
 
 	var r0 *T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) (*T, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) (*T, error)); ok {
 		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) *T); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) *T); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
@@ -189,20 +189,20 @@ type MockConnection_GetConnectionByName_Call[T any] struct {
 
 // GetConnectionByName is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) GetConnectionByName(ctx interface{}, input interface{}) *MockConnection_GetConnectionByName_Call[T] {
 	return &MockConnection_GetConnectionByName_Call[T]{Call: _e.mock.On("GetConnectionByName", ctx, input)}
 }
 
-func (_c *MockConnection_GetConnectionByName_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_GetConnectionByName_Call[T] {
+func (_c *MockConnection_GetConnectionByName_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_GetConnectionByName_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -217,13 +217,13 @@ func (_c *MockConnection_GetConnectionByName_Call[T]) Return(v *T, err error) *M
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionByName_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) (*T, error)) *MockConnection_GetConnectionByName_Call[T] {
+func (_c *MockConnection_GetConnectionByName_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) (*T, error)) *MockConnection_GetConnectionByName_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetConnectionStatus provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, input connection.Input, validatorRunID string) (*octantv1alpha.GetConnectionStatusResponse, error) {
+func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, input connection.ConnectionCRUDInput, validatorRunID string) (*octantv1alpha.GetConnectionStatusResponse, error) {
 	ret := _mock.Called(ctx, input, validatorRunID)
 
 	if len(ret) == 0 {
@@ -232,17 +232,17 @@ func (_mock *MockConnection[T]) GetConnectionStatus(ctx context.Context, input c
 
 	var r0 *octantv1alpha.GetConnectionStatusResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput, string) (*octantv1alpha.GetConnectionStatusResponse, error)); ok {
 		return returnFunc(ctx, input, validatorRunID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input, string) *octantv1alpha.GetConnectionStatusResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput, string) *octantv1alpha.GetConnectionStatusResponse); ok {
 		r0 = returnFunc(ctx, input, validatorRunID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*octantv1alpha.GetConnectionStatusResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.Input, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ConnectionCRUDInput, string) error); ok {
 		r1 = returnFunc(ctx, input, validatorRunID)
 	} else {
 		r1 = ret.Error(1)
@@ -257,21 +257,21 @@ type MockConnection_GetConnectionStatus_Call[T any] struct {
 
 // GetConnectionStatus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 //   - validatorRunID string
 func (_e *MockConnection_Expecter[T]) GetConnectionStatus(ctx interface{}, input interface{}, validatorRunID interface{}) *MockConnection_GetConnectionStatus_Call[T] {
 	return &MockConnection_GetConnectionStatus_Call[T]{Call: _e.mock.On("GetConnectionStatus", ctx, input, validatorRunID)}
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.Context, input connection.Input, validatorRunID string)) *MockConnection_GetConnectionStatus_Call[T] {
+func (_c *MockConnection_GetConnectionStatus_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput, validatorRunID string)) *MockConnection_GetConnectionStatus_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -291,13 +291,13 @@ func (_c *MockConnection_GetConnectionStatus_Call[T]) Return(getConnectionStatus
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input, validatorRunID string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnection_GetConnectionStatus_Call[T] {
+func (_c *MockConnection_GetConnectionStatus_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput, validatorRunID string) (*octantv1alpha.GetConnectionStatusResponse, error)) *MockConnection_GetConnectionStatus_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetConnectionValidatorRuns provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnectionValidatorRuns(ctx context.Context, input connection.Input) ([]string, error) {
+func (_mock *MockConnection[T]) GetConnectionValidatorRuns(ctx context.Context, input connection.ConnectionCRUDInput) ([]string, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -306,17 +306,17 @@ func (_mock *MockConnection[T]) GetConnectionValidatorRuns(ctx context.Context, 
 
 	var r0 []string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) ([]string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) ([]string, error)); ok {
 		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) []string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) []string); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
@@ -331,20 +331,20 @@ type MockConnection_GetConnectionValidatorRuns_Call[T any] struct {
 
 // GetConnectionValidatorRuns is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) GetConnectionValidatorRuns(ctx interface{}, input interface{}) *MockConnection_GetConnectionValidatorRuns_Call[T] {
 	return &MockConnection_GetConnectionValidatorRuns_Call[T]{Call: _e.mock.On("GetConnectionValidatorRuns", ctx, input)}
 }
 
-func (_c *MockConnection_GetConnectionValidatorRuns_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_GetConnectionValidatorRuns_Call[T] {
+func (_c *MockConnection_GetConnectionValidatorRuns_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_GetConnectionValidatorRuns_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -359,13 +359,13 @@ func (_c *MockConnection_GetConnectionValidatorRuns_Call[T]) Return(strings []st
 	return _c
 }
 
-func (_c *MockConnection_GetConnectionValidatorRuns_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) ([]string, error)) *MockConnection_GetConnectionValidatorRuns_Call[T] {
+func (_c *MockConnection_GetConnectionValidatorRuns_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) ([]string, error)) *MockConnection_GetConnectionValidatorRuns_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetConnections provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) GetConnections(ctx context.Context, input connection.Input) ([]string, error) {
+func (_mock *MockConnection[T]) GetConnections(ctx context.Context, input connection.ConnectionCRUDInput) ([]string, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -374,17 +374,17 @@ func (_mock *MockConnection[T]) GetConnections(ctx context.Context, input connec
 
 	var r0 []string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) ([]string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) ([]string, error)); ok {
 		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) []string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) []string); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
@@ -399,20 +399,20 @@ type MockConnection_GetConnections_Call[T any] struct {
 
 // GetConnections is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) GetConnections(ctx interface{}, input interface{}) *MockConnection_GetConnections_Call[T] {
 	return &MockConnection_GetConnections_Call[T]{Call: _e.mock.On("GetConnections", ctx, input)}
 }
 
-func (_c *MockConnection_GetConnections_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_GetConnections_Call[T] {
+func (_c *MockConnection_GetConnections_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_GetConnections_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -427,13 +427,13 @@ func (_c *MockConnection_GetConnections_Call[T]) Return(strings []string, err er
 	return _c
 }
 
-func (_c *MockConnection_GetConnections_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) ([]string, error)) *MockConnection_GetConnections_Call[T] {
+func (_c *MockConnection_GetConnections_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) ([]string, error)) *MockConnection_GetConnections_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // PutConnectionValidatorRun provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) PutConnectionValidatorRun(ctx context.Context, input connection.Input) (string, error) {
+func (_mock *MockConnection[T]) PutConnectionValidatorRun(ctx context.Context, input connection.ConnectionCRUDInput) (string, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -442,15 +442,15 @@ func (_mock *MockConnection[T]) PutConnectionValidatorRun(ctx context.Context, i
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) (string, error)); ok {
 		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.Input) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ConnectionCRUDInput) string); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ConnectionCRUDInput) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
@@ -465,20 +465,20 @@ type MockConnection_PutConnectionValidatorRun_Call[T any] struct {
 
 // PutConnectionValidatorRun is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) PutConnectionValidatorRun(ctx interface{}, input interface{}) *MockConnection_PutConnectionValidatorRun_Call[T] {
 	return &MockConnection_PutConnectionValidatorRun_Call[T]{Call: _e.mock.On("PutConnectionValidatorRun", ctx, input)}
 }
 
-func (_c *MockConnection_PutConnectionValidatorRun_Call[T]) Run(run func(ctx context.Context, input connection.Input)) *MockConnection_PutConnectionValidatorRun_Call[T] {
+func (_c *MockConnection_PutConnectionValidatorRun_Call[T]) Run(run func(ctx context.Context, input connection.ConnectionCRUDInput)) *MockConnection_PutConnectionValidatorRun_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.Input
+		var arg1 connection.ConnectionCRUDInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.Input)
+			arg1 = args[1].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -493,13 +493,13 @@ func (_c *MockConnection_PutConnectionValidatorRun_Call[T]) Return(s string, err
 	return _c
 }
 
-func (_c *MockConnection_PutConnectionValidatorRun_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.Input) (string, error)) *MockConnection_PutConnectionValidatorRun_Call[T] {
+func (_c *MockConnection_PutConnectionValidatorRun_Call[T]) RunAndReturn(run func(ctx context.Context, input connection.ConnectionCRUDInput) (string, error)) *MockConnection_PutConnectionValidatorRun_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SaveConnection provides a mock function for the type MockConnection
-func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection1 T, input connection.Input) error {
+func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection1 T, input connection.ConnectionCRUDInput) error {
 	ret := _mock.Called(ctx, connection1, input)
 
 	if len(ret) == 0 {
@@ -507,7 +507,7 @@ func (_mock *MockConnection[T]) SaveConnection(ctx context.Context, connection1 
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, T, connection.Input) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, T, connection.ConnectionCRUDInput) error); ok {
 		r0 = returnFunc(ctx, connection1, input)
 	} else {
 		r0 = ret.Error(0)
@@ -523,12 +523,12 @@ type MockConnection_SaveConnection_Call[T any] struct {
 // SaveConnection is a helper method to define mock.On call
 //   - ctx context.Context
 //   - connection1 T
-//   - input connection.Input
+//   - input connection.ConnectionCRUDInput
 func (_e *MockConnection_Expecter[T]) SaveConnection(ctx interface{}, connection1 interface{}, input interface{}) *MockConnection_SaveConnection_Call[T] {
 	return &MockConnection_SaveConnection_Call[T]{Call: _e.mock.On("SaveConnection", ctx, connection1, input)}
 }
 
-func (_c *MockConnection_SaveConnection_Call[T]) Run(run func(ctx context.Context, connection1 T, input connection.Input)) *MockConnection_SaveConnection_Call[T] {
+func (_c *MockConnection_SaveConnection_Call[T]) Run(run func(ctx context.Context, connection1 T, input connection.ConnectionCRUDInput)) *MockConnection_SaveConnection_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -538,9 +538,9 @@ func (_c *MockConnection_SaveConnection_Call[T]) Run(run func(ctx context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(T)
 		}
-		var arg2 connection.Input
+		var arg2 connection.ConnectionCRUDInput
 		if args[2] != nil {
-			arg2 = args[2].(connection.Input)
+			arg2 = args[2].(connection.ConnectionCRUDInput)
 		}
 		run(
 			arg0,
@@ -556,7 +556,7 @@ func (_c *MockConnection_SaveConnection_Call[T]) Return(err error) *MockConnecti
 	return _c
 }
 
-func (_c *MockConnection_SaveConnection_Call[T]) RunAndReturn(run func(ctx context.Context, connection1 T, input connection.Input) error) *MockConnection_SaveConnection_Call[T] {
+func (_c *MockConnection_SaveConnection_Call[T]) RunAndReturn(run func(ctx context.Context, connection1 T, input connection.ConnectionCRUDInput) error) *MockConnection_SaveConnection_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

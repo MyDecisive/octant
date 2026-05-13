@@ -41,8 +41,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
@@ -72,8 +74,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -102,8 +106,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -132,8 +138,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -162,8 +170,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -192,8 +202,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(nil, nil).Once()
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
@@ -219,8 +231,10 @@ func TestBudgetFilterHandler_GetFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
@@ -272,8 +286,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -305,8 +321,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -354,8 +372,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -403,8 +423,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -453,8 +475,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Traces},
 		}, nil).Once()
@@ -503,8 +527,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(&connection.OctantConnectionData{
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs},
 		}, nil).Once()
@@ -540,8 +566,10 @@ func TestBudgetFilterHandler_UpdateFilter(t *testing.T) {
 		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
 		mockConn.EXPECT().GetConnectionByName(
 			mock.Anything,
-			namespace,
-			conn,
+			mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
+				return input.Namespace == namespace &&
+					input.ConnectionName == conn
+			}),
 		).Return(nil, nil).Once()
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)

@@ -48,9 +48,10 @@ func (ah *ArgoCDHandler) TestConnection(
 	logger.Debug("received request")
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoEndpoint,
-		AuthToken:  argoAccountToken,
-		Insecure:   ah.config.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoEndpoint,
+		AuthToken:    argoAccountToken,
+		Insecure:     ah.config.Env == config.Dev, // ignore certs in localdev
 	}
 	success, err := ah.argoClient.TestConnection(ctx, logger, clientOpts)
 	if err != nil {

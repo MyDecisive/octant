@@ -152,6 +152,7 @@ func (*Client) DeleteArgoApp(
 		PropagationPolicy: lo.ToPtr("foreground"),
 	}); err != nil {
 		logger.Error("deleting argo app", zap.Error(err))
+		return err
 	}
 	return nil
 }
@@ -179,7 +180,7 @@ func (*Client) SyncApplication(
 		}
 	}()
 
-	_, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
+	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
 		Name:     lo.ToPtr(appName),
 		Revision: lo.ToPtr("HEAD"),
 		Prune:    lo.ToPtr(false),
@@ -190,8 +191,11 @@ func (*Client) SyncApplication(
 			},
 		},
 		Manifests: manifests,
-	})
-	return err
+	}); err != nil {
+		logger.Error("syncing argo application", zap.Error(err))
+		return err
+	}
+	return nil
 }
 
 // GetAppStatus retrieves the argo application status and any resource details available for a non-healthy state.

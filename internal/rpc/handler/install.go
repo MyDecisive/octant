@@ -82,9 +82,10 @@ func (ih *InstallHandler) InstallMDAIHub(
 
 	// 3) apply the application to the argo cluster
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     ih.config.Env == config.Dev, // ignore certs in localdev
 	}
 	// first, apply the cert manager app manifest
 	logger.Debug("pushing cert-manager app install")
@@ -122,9 +123,10 @@ func (ih *InstallHandler) GetInstallStatus(
 	}
 
 	clientOpts := &apiclient.ClientOptions{
-		ServerAddr: argoIntegration.APIUrl,
-		AuthToken:  argoIntegration.AccountToken,
-		Insecure:   ih.config.Env == config.Dev, // ignore certs in localdev
+		HttpRetryMax: 3,
+		ServerAddr:   argoIntegration.APIUrl,
+		AuthToken:    argoIntegration.AccountToken,
+		Insecure:     ih.config.Env == config.Dev, // ignore certs in localdev
 	}
 	status, details, err := ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
 	if err != nil {

@@ -74,7 +74,7 @@ func (oc *OctantConnection) createTemplateData(
 	name string,
 	connection OctantConnectionData,
 ) (*ArgoConnectionTemplateData, error) {
-	if len(connection.Destinations) != 1 {
+	if len(connection.Destinations) > 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
 		return nil, errors.New("pushing argo application with multiple destinations is currently unsupported")
 	}

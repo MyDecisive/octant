@@ -15,6 +15,7 @@ import (
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,13 +94,14 @@ func (oc *OctantConnection) GetConnectionByName(ctx context.Context, input Conne
 	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
+			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 			return nil, nil // nolint: nilnil
 		}
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
 	}
 
 	if _, ok := configmap.Data[input.ConnectionName]; !ok {
-		return nil, nil // nolint: nilnil
+		return nil, fmt.Errorf("connection '%s' not found", input.ConnectionName)
 	}
 
 	var connection OctantConnectionData
@@ -123,6 +125,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 		return nil
 	}
 	if _, exists := cm.Data[input.ConnectionName]; !exists {
+		input.Logger.Warn("connection not found", zap.String("connectionName", input.ConnectionName))
 		return nil
 	}
 
@@ -213,7 +216,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.ConnectionName, input.Namespace)
+		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.Namespace)
 	}
 
 	return "", nil
