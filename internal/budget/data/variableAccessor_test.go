@@ -33,8 +33,7 @@ func TestMDAIGateway_GetVariable(t *testing.T) {
 
 	url := fmt.Sprintf(
 		mdaiGatewayRootURLFormatter,
-		c.Budget.DefaultMDAIGatewayName,
-		namespace,
+		hubName,
 	) + fmt.Sprintf(
 		mdaiGatewayGetVarFormatter,
 		hubName,
@@ -157,8 +156,7 @@ func TestMDAIGateway_UpdateVariable(t *testing.T) {
 
 	url := fmt.Sprintf(
 		mdaiGatewayRootURLFormatter,
-		c.Budget.DefaultMDAIGatewayName,
-		namespace,
+		hubName,
 	) + fmt.Sprintf(
 		mdaiGatewayPostVarFormatter,
 		hubName,

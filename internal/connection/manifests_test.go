@@ -9,6 +9,8 @@ import (
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/go-faker/faker/v4"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -55,12 +57,17 @@ func TestRenderManifestFormats(t *testing.T) {
 		},
 	}
 
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	formats := []ManifestOutputFormat{JSONOutputFormat, YAMLOutputFormat}
 
 	for _, format := range formats {
 		t.Run(string(format), func(t *testing.T) {
 			t.Parallel()
-			manifests, err := renderCollectorDeploymentManifests(&templateData, format)
+			manifests, err := target.RenderCollectorDeploymentManifests(&templateData, format)
 			require.NoError(t, err)
 
 			expectedFiles := []string{
@@ -70,6 +77,7 @@ func TestRenderManifestFormats(t *testing.T) {
 				fmt.Sprintf("observer.%s", format),
 				fmt.Sprintf("hub.%s", format),
 				fmt.Sprintf("secret.%s", format),
+				fmt.Sprintf("additional.%s", format),
 			}
 
 			for _, file := range expectedFiles {
@@ -94,6 +102,12 @@ func TestRenderManifestFormats(t *testing.T) {
 
 func TestRenderArgoAppManifest(t *testing.T) {
 	t.Parallel()
+
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	t.Run("Valid Argo App Configuration", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoConnectionTemplateData{
@@ -101,7 +115,7 @@ func TestRenderArgoAppManifest(t *testing.T) {
 			Namespace: "team-a-namespace",
 		}
 
-		result, err := renderArgoAppManifest(&templateData, YAMLOutputFormat)
+		result, err := target.RenderArgoAppManifest(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 
 		var parsed map[string]any
@@ -121,10 +135,15 @@ func TestRenderArgoAppManifest(t *testing.T) {
 
 func TestRenderMdaiAppManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := RenderMdaiAppManifest("0.9.0", "mdai")
+		result, err := target.RenderMdaiAppManifest("0.9.0", "mdai")
 		require.NoError(t, err)
 
 		var parsedApp argoapp.Application
@@ -142,6 +161,12 @@ func TestRenderMdaiAppManifest(t *testing.T) {
 
 func TestRenderSecretManifest(t *testing.T) {
 	t.Parallel()
+
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	t.Run("With Sideload and Datadog Integration", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoConnectionTemplateData{
@@ -153,7 +178,7 @@ func TestRenderSecretManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		secretBytes := (manifests)["secret.yaml"]
 
@@ -181,7 +206,7 @@ func TestRenderSecretManifest(t *testing.T) {
 			DatadogIntegrationData: nil,
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		secretBytes := (manifests)["secret.yaml"]
 
@@ -203,6 +228,12 @@ func TestRenderSecretManifest(t *testing.T) {
 
 func TestRenderLBCollectorManifest(t *testing.T) {
 	t.Parallel()
+
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	t.Run("Full Configuration with Pipelines", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoConnectionTemplateData{
@@ -218,7 +249,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		collectorBytes := (manifests)["lb-collector.yaml"]
 
@@ -293,7 +324,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 			DatadogIntegrationData: nil,
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		collectorBytes := (manifests)["lb-collector.yaml"]
 
@@ -323,6 +354,11 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 
 func TestRenderLogCollectorManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	templateData := ArgoConnectionTemplateData{
 		AppName:        "test-app",
 		IsArgoSideload: true,
@@ -335,7 +371,7 @@ func TestRenderLogCollectorManifest(t *testing.T) {
 		},
 	}
 
-	manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 	require.NoError(t, err)
 	collectorBytes := (manifests)["log-collector.yaml"]
 
@@ -386,6 +422,11 @@ func TestRenderLogCollectorManifest(t *testing.T) {
 
 func TestRenderTraceCollectorManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
 	templateData := ArgoConnectionTemplateData{
 		AppName:        "test-app",
 		IsArgoSideload: true,
@@ -398,7 +439,7 @@ func TestRenderTraceCollectorManifest(t *testing.T) {
 		},
 	}
 
-	manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 	require.NoError(t, err)
 	collectorBytes := (manifests)["trace-collector.yaml"]
 
@@ -449,6 +490,10 @@ func TestRenderTraceCollectorManifest(t *testing.T) {
 
 func TestRenderValidatorManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoValidatorTemplateData{
@@ -457,7 +502,7 @@ func TestRenderValidatorManifest(t *testing.T) {
 			ValidatorRunID: "2026-05-05_19-45-46.601132",
 		}
 
-		manifest, err := renderValidatorManifestForConnection(&templateData, YAMLOutputFormat)
+		manifest, err := target.RenderValidatorManifestForConnection(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 
 		var validator map[string]any
@@ -471,6 +516,10 @@ func TestRenderValidatorManifest(t *testing.T) {
 
 func TestRenderObserverManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoConnectionTemplateData{
@@ -483,7 +532,7 @@ func TestRenderObserverManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		bytes := (manifests)["observer.yaml"]
 
@@ -498,6 +547,10 @@ func TestRenderObserverManifest(t *testing.T) {
 
 func TestRenderHubManifest(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
 		templateData := ArgoConnectionTemplateData{
@@ -510,7 +563,7 @@ func TestRenderHubManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := renderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
 		require.NoError(t, err)
 		hubBytes := (manifests)["hub.yaml"]
 
@@ -542,7 +595,10 @@ func TestRenderHubManifest(t *testing.T) {
 
 func TestCreateExportableArgoManifests(t *testing.T) {
 	t.Parallel()
-
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	connection := OctantConnectionData{
 		Destinations: []OctantConnectionDestination{
 			{DestinationType: "datadog", IntegrationName: "test-dd"},
@@ -552,7 +608,7 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 		},
 	}
 
-	manifests, err := CreateExportableArgoManifests(CompressionInput{
+	manifests, err := target.CreateExportableArgoManifests(CompressionInput{
 		MdaiVersion: "0.9.0-dev",
 		Namespace:   "test-namespace",
 		Connection:  "test-app",
@@ -578,6 +634,8 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 	assert.True(t, hasArgoApp, "argo-app.yaml should exist")
 	_, hasMdaiApp := manifests["mdai-app.yaml"]
 	assert.True(t, hasMdaiApp, "mdai-app.yaml should exist")
+	_, hasAdditional := manifests["additional.yaml"]
+	assert.True(t, hasAdditional, "additional.yaml should exist")
 
 	secretBytes, exists := (manifests)["secret.yaml"]
 	require.True(t, exists, "Exportable secret manifest missing")
@@ -595,11 +653,15 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 
 func TestCreateTemplateData(t *testing.T) {
 	t.Parallel()
-
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	t.Run("Multiple Destinations Error", func(t *testing.T) {
 		t.Parallel()
 		f := setupFixture(t)
 		oc := f.build()
+		oc.generator = target
 
 		connection := OctantConnectionData{
 			Destinations: []OctantConnectionDestination{
@@ -618,6 +680,7 @@ func TestCreateTemplateData(t *testing.T) {
 		t.Parallel()
 		f := setupFixture(t)
 		oc := f.build()
+		oc.generator = target
 
 		connection := OctantConnectionData{
 			Destinations: []OctantConnectionDestination{
@@ -635,6 +698,7 @@ func TestCreateTemplateData(t *testing.T) {
 		t.Parallel()
 		f := setupFixture(t)
 		oc := f.build()
+		oc.generator = target
 
 		connection := OctantConnectionData{
 			Destinations: []OctantConnectionDestination{
@@ -657,6 +721,7 @@ func TestCreateTemplateData(t *testing.T) {
 		t.Parallel()
 		f := setupFixture(t)
 		oc := f.build()
+		oc.generator = target
 
 		connection := OctantConnectionData{
 			Destinations: []OctantConnectionDestination{
@@ -680,6 +745,10 @@ func TestCreateTemplateData(t *testing.T) {
 
 func TestToConnectionFormat(t *testing.T) {
 	t.Parallel()
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
 	tests := []struct {
 		des      string
 		in       octantv1alpha.ManifestOutFormat
@@ -691,7 +760,7 @@ func TestToConnectionFormat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.des, func(t *testing.T) {
 			t.Parallel()
-			actual := toConnectionFormat(tt.in)
+			actual := target.toConnectionFormat(tt.in)
 
 			assert.Equal(t, tt.expected, actual)
 		})
