@@ -1,0 +1,34 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .AppName }}-octant-secret-access
+  namespace: {{ .Namespace }}
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "secrets" ]
+    verbs: [ "get" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .AppName }}-octant-secret-access-binding
+  namespace: {{ .Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .ServiceAccount }}
+    namespace: {{ .CurrentNamespace }}
+roleRef:
+  kind: Role
+  name: {{ .AppName }}-octant-secret-access
+  apiGroup: ""
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .AppName }}-mdai-gateway-access
+  namespace: {{ .CurrentNamespace }}
+spec:
+  type: ExternalName
+  externalName: mdai-gateway.{{ .Namespace }}.svc.cluster.local
+  ports:
+  - port: 8081
