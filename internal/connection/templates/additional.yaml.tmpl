@@ -3,16 +3,31 @@ kind: Role
 metadata:
   name: {{ .AppName }}-octant-secret-access
   namespace: {{ .Namespace }}
+  labels:
+    app: {{ .AppName }}
+    app.kubernetes.io/instance: {{ .AppName }}
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-secret-access
+  {{- end }}
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
     verbs: [ "get" ]
+    resourceNames: ["greptimedb-users-auth"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ .AppName }}-octant-secret-access-binding
   namespace: {{ .Namespace }}
+  labels:
+    app: {{ .AppName }}
+    app.kubernetes.io/instance: {{ .AppName }}
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-secret-access-binding
+  {{- end }}
 subjects:
   - kind: ServiceAccount
     name: {{ .ServiceAccount }}
@@ -21,14 +36,3 @@ roleRef:
   kind: Role
   name: {{ .AppName }}-octant-secret-access
   apiGroup: ""
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: {{ .AppName }}-mdai-gateway-access
-  namespace: {{ .CurrentNamespace }}
-spec:
-  type: ExternalName
-  externalName: mdai-gateway.{{ .Namespace }}.svc.cluster.local
-  ports:
-  - port: 8081

@@ -14,7 +14,7 @@ import (
 
 const (
 	contentTypeJSON             = "application/json"
-	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local" // nolint:revive // no, http is fine
+	mdaiGatewayRootURLFormatter = "http://%s.%s.svc.cluster.local:8081" // nolint:revive // no, http is fine
 	mdaiGatewayGetVarFormatter  = "/variables/values/hub/%s/var/%s"
 	mdaiGatewayPostVarFormatter = "/variables/hub/%s/var/%s"
 )
