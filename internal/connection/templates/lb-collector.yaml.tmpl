@@ -57,13 +57,18 @@ spec:
               - delete_key(attributes, "message")
     exporters:
       datadog:
-        idle_conn_timeout: 1s
         api:
           fail_on_invalid_key: false
           key: "00000000000000000000000000000000"
           site: datadoghq.local
         tls:
           insecure_skip_verify: true
+        retry_on_failure:
+          enabled: false
+        sending_queue:
+          enabled: false
+        idle_conn_timeout: 1s
+        timeout: 500ms
       otlp_grpc/tracealyzer:
         endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
         tls:
