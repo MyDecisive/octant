@@ -6,7 +6,6 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
@@ -47,12 +46,7 @@ func (ah *ArgoCDHandler) TestConnection(
 
 	logger.Debug("received request")
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoEndpoint,
-		AuthToken:    argoAccountToken,
-		Insecure:     ah.config.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(ah.config.Env, argoEndpoint, argoAccountToken)
 	success, err := ah.argoClient.TestConnection(ctx, logger, clientOpts)
 	if err != nil {
 		logger.Error("testing argocd connection", zap.Error(err))

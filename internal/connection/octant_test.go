@@ -129,10 +129,8 @@ func TestGetConnectionByName(t *testing.T) {
 	})
 }
 
-func TestSaveConnection(t *testing.T) {
-
+func TestSaveConnection(t *testing.T) { // nolint: paralleltest
 	t.Run("happy path", func(t *testing.T) {
-
 		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoIntegration.EXPECT().
 			GetIntegrationByName(mock.Anything, "argo-test").
@@ -362,102 +360,14 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 	})
 }
 
-//func TestDeleteConnectionValidator(t *testing.T) {
-//	t.Parallel()
-//
-//	t.Run("success - gracefully handles missing configmap", func(t *testing.T) {
-//		t.Parallel()
-//		f := setupFixture(t)
-//		octantConnection := f.build()
-//
-//		err := octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
-//		require.NoError(t, err)
-//	})
-//
-//	t.Run("success - gracefully handles missing connection key", func(t *testing.T) {
-//		t.Parallel()
-//		f := setupFixture(t, &corev1.ConfigMap{
-//			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-//			Data: map[string]string{
-//				"other-team": `{"sourceType": "datadog"}`,
-//			},
-//		})
-//		octantConnection := f.build()
-//
-//		err := octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
-//		require.NoError(t, err)
-//	})
-//
-//	t.Run("success - skips deletion for non-sideload deployments", func(t *testing.T) {
-//		t.Parallel()
-//		validConnection := OctantConnectionData{
-//			Deployment: &Deployment{
-//				Type: ArgoManifestsDeploymentType,
-//			},
-//		}
-//		validConnectionBytes, err := json.Marshal(validConnection)
-//		require.NoError(t, err)
-//
-//		f := setupFixture(t, &corev1.ConfigMap{
-//			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-//			Data: map[string]string{
-//				"team-a": string(validConnectionBytes),
-//			},
-//		})
-//		octantConnection := f.build()
-//
-//		err = octantConnection.DeleteConnectionValidator(context.Background(), defaultNamespace, "team-a")
-//		require.NoError(t, err)
-//	})
-//}
-//
-//func TestGetConnections(t *testing.T) {
-//	t.Parallel()
-//
-//	t.Run("success - returns list of connection names", func(t *testing.T) {
-//		t.Parallel()
-//
-//		f := setupFixture(t, &corev1.ConfigMap{
-//			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-//			Data: map[string]string{
-//				"team-a": "{}",
-//				"team-b": "{}",
-//				"team-c": "{}",
-//			},
-//		})
-//		octantConnection := f.build()
-//
-//		actual, err := octantConnection.GetConnections(context.Background(), defaultNamespace)
-//		require.NoError(t, err)
-//		assert.Len(t, actual, 3)
-//		assert.ElementsMatch(t, []string{"team-a", "team-b", "team-c"}, actual)
-//	})
-//
-//	t.Run("success - returns empty list when configmap is not found", func(t *testing.T) {
-//		t.Parallel()
-//
-//		f := setupFixture(t) // Empty fixture, no configmap
-//		octantConnection := f.build()
-//
-//		actual, err := octantConnection.GetConnections(context.Background(), defaultNamespace)
-//		require.NoError(t, err)
-//		assert.NotNil(t, actual)
-//		assert.Empty(t, actual)
-//	})
-//
-//	t.Run("error - k8s get failure", func(t *testing.T) {
-//		t.Parallel()
-//
-//		f := setupFixture(t)
-//		f.k8sClient.PrependReactor("get", "configmaps", func(action k8stesting.Action) (bool, runtime.Object, error) {
-//			return true, nil, errors.New("injected get error")
-//		})
-//		octantConnection := f.build()
-//
-//		actual, err := octantConnection.GetConnections(context.Background(), defaultNamespace)
-//		require.Error(t, err)
-//		assert.Contains(t, err.Error(), "failed to get configmap")
-//		assert.Contains(t, err.Error(), "injected get error")
-//		assert.Nil(t, actual)
-//	})
-//}
+func TestDeleteConnectionValidator(t *testing.T) {
+	t.Parallel()
+
+	t.Skip("will add tests in ENG-1319")
+}
+
+func TestGetConnections(t *testing.T) {
+	t.Parallel()
+
+	t.Skip("will add tests in ENG-1319")
+}

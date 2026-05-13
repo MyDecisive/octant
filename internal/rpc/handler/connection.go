@@ -51,8 +51,8 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionStatusProcedure),
-		zap.String("namespace", connScope.Namespace),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("namespace", connScope.GetNamespace()),
+		zap.String("connectionName", connScope.GetConnectionName()),
 	)
 
 	logger.Debug("received request")
@@ -60,8 +60,8 @@ func (ch *ConnectionHandler) GetConnectionStatus(
 	connectionStatus, err := ch.octantConnection.GetConnectionStatus(
 		ctx,
 		connection.ConnectionCRUDInput{
-			Namespace:      connScope.Namespace,
-			ConnectionName: connScope.ConnectionName,
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
 			Logger:         logger,
 		},
 		request.Msg.GetValidatorRunId(),
@@ -81,8 +81,8 @@ func (ch *ConnectionHandler) GenerateManifests(
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceGenerateManifestsProcedure),
-		zap.String("namespace", connScope.Namespace),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("namespace", connScope.GetNamespace()),
+		zap.String("connectionName", connScope.GetConnectionName()),
 		zap.String("mdaiVersion", request.Msg.GetMdaiVersion()),
 	)
 
@@ -186,7 +186,7 @@ func (ch *ConnectionHandler) CreateConnection(
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceCreateConnectionProcedure),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("connectionName", connScope.GetConnectionName()),
 	)
 
 	logger.Debug("received request")
@@ -195,8 +195,8 @@ func (ch *ConnectionHandler) CreateConnection(
 		ctx,
 		connData,
 		connection.ConnectionCRUDInput{
-			Namespace:      connScope.Namespace,
-			ConnectionName: connScope.ConnectionName,
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
 			Logger:         logger,
 		},
 	)
@@ -214,7 +214,7 @@ func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceGetConnectionValidatorRunIdsProcedure),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("connectionName", connScope.GetConnectionName()),
 	)
 
 	logger.Debug("received request")
@@ -222,8 +222,8 @@ func (ch *ConnectionHandler) GetConnectionValidatorRunIds( // nolint: revive,lll
 	runs, err := ch.octantConnection.GetConnectionValidatorRuns(
 		ctx,
 		connection.ConnectionCRUDInput{
-			Namespace:      connScope.Namespace,
-			ConnectionName: connScope.ConnectionName,
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
 			Logger:         logger,
 		},
 	)
@@ -243,7 +243,7 @@ func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceCreateConnectionValidatorRunProcedure),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("connectionName", connScope.GetConnectionName()),
 	)
 
 	logger.Debug("received request")
@@ -251,8 +251,8 @@ func (ch *ConnectionHandler) CreateConnectionValidatorRun(
 	runID, err := ch.octantConnection.PutConnectionValidatorRun(
 		ctx,
 		connection.ConnectionCRUDInput{
-			Namespace:      connScope.Namespace,
-			ConnectionName: connScope.ConnectionName,
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
 			Logger:         logger,
 		},
 	)
@@ -298,7 +298,7 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 	connScope := request.Msg.GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceDeleteConnectionValidatorProcedure),
-		zap.String("connectionName", connScope.ConnectionName),
+		zap.String("connectionName", connScope.GetConnectionName()),
 	)
 
 	logger.Debug("received request")
@@ -306,8 +306,8 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 	err := ch.octantConnection.DeleteConnectionValidator(
 		ctx,
 		connection.ConnectionCRUDInput{
-			Namespace:      connScope.Namespace,
-			ConnectionName: connScope.ConnectionName,
+			Namespace:      connScope.GetNamespace(),
+			ConnectionName: connScope.GetConnectionName(),
 			Logger:         logger,
 		},
 	)

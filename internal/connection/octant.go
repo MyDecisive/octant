@@ -90,8 +90,13 @@ func (oc *OctantConnection) GetConnectionStatus(
 	)
 }
 
-func (oc *OctantConnection) GetConnectionByName(ctx context.Context, input ConnectionCRUDInput) (*OctantConnectionData, error) {
-	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+func (oc *OctantConnection) GetConnectionByName(
+	ctx context.Context,
+	input ConnectionCRUDInput,
+) (*OctantConnectionData, error) {
+	configmap, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
@@ -113,7 +118,9 @@ func (oc *OctantConnection) GetConnectionByName(ctx context.Context, input Conne
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
 		if k8serrors.IsNotFound(getCMErr) {
 			return nil
@@ -143,7 +150,9 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	delete(cm.Data, input.ConnectionName)
 
-	if _, err := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+	if _, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
 	}
 
@@ -151,7 +160,9 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, _ ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return []string{}, nil
@@ -166,11 +177,18 @@ func (oc *OctantConnection) GetConnections(ctx context.Context, _ ConnectionCRUD
 	return names, nil
 }
 
-func (oc *OctantConnection) GetConnectionValidatorRuns(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
+func (oc *OctantConnection) GetConnectionValidatorRuns(
+	ctx context.Context,
+	input ConnectionCRUDInput,
+) ([]string, error) {
 	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, input.Namespace, input.ConnectionName)
 }
 
-func (oc *OctantConnection) SaveConnection(ctx context.Context, connection OctantConnectionData, input ConnectionCRUDInput) error {
+func (oc *OctantConnection) SaveConnection(
+	ctx context.Context,
+	connection OctantConnectionData,
+	input ConnectionCRUDInput,
+) error {
 	if connection.Deployment == nil {
 		return errors.New("no deployment object found on octant connection; unable to create connection")
 	}
@@ -182,16 +200,29 @@ func (oc *OctantConnection) SaveConnection(ctx context.Context, connection Octan
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
 		}
-		if createErr := oc.createConnection(ctx, connection, oc.configuration.CurrentNamespace, input.ConnectionName); createErr != nil {
+		if createErr := oc.createConnection(
+			ctx,
+			connection,
+			oc.configuration.CurrentNamespace,
+			input.ConnectionName,
+		); createErr != nil {
 			return createErr
 		}
 	} else {
-		if updateErr := oc.updateConnection(ctx, cm, connection, oc.configuration.CurrentNamespace, input.ConnectionName); updateErr != nil {
+		if updateErr := oc.updateConnection(
+			ctx,
+			cm,
+			connection,
+			oc.configuration.CurrentNamespace,
+			input.ConnectionName,
+		); updateErr != nil {
 			return updateErr
 		}
 	}
@@ -223,7 +254,9 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().ConfigMaps(oc.configuration.CurrentNamespace).Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.k8sClient.CoreV1().
+		ConfigMaps(oc.configuration.CurrentNamespace).
+		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
 		if k8serrors.IsNotFound(getCMErr) {
 			return nil
@@ -245,7 +278,7 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.deleteValidatorResource(ctx, input.Logger, fmt.Sprintf("%s-telemetry-validation", input.ConnectionName), connection)
+		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName+"-telemetry-validation", connection)
 	}
 
 	return nil

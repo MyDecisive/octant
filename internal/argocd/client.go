@@ -8,10 +8,15 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	clientRetryMax = 3
 )
 
 type APIClient interface {
@@ -50,6 +55,15 @@ type Client struct{}
 
 func NewArgoCDClient() *Client {
 	return &Client{}
+}
+
+func CreateClientOpts(env config.Environment, clusterURL, authToken string) *apiclient.ClientOptions {
+	return &apiclient.ClientOptions{
+		HttpRetryMax: clientRetryMax,
+		ServerAddr:   clusterURL,
+		AuthToken:    authToken,
+		Insecure:     env == config.Dev, // ignore certs in localdev
+	}
 }
 
 // TestConnection checks the provided clientOpts are valid argo cd API credentials.

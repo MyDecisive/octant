@@ -4,29 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
-	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/integration"
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
-
-type argoSyncPayload struct {
-	Revision  string           `json:"revision"`
-	Prune     bool             `json:"prune"`
-	DryRun    bool             `json:"dryRun"`
-	Strategy  argoSyncStrategy `json:"strategy"`
-	Manifests []string         `json:"manifests"`
-}
-
-type argoSyncStrategy struct {
-	Apply argoSyncApply `json:"apply"`
-}
-
-type argoSyncApply struct {
-	Force bool `json:"force"`
-}
 
 func (oc *OctantConnection) sideloadConnectionApp(
 	ctx context.Context,
@@ -55,12 +38,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 		return fmt.Errorf("unmarshaling app manifest: %w", err)
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoIntegration.APIUrl,
-		AuthToken:    argoIntegration.AccountToken,
-		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("pushing app install", zap.String("appName", argoApp.Name))
 	if err = oc.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
 		logger.Error("pushing argo app", zap.Error(err))
@@ -103,12 +81,7 @@ func (oc *OctantConnection) doArgoAppSync(
 		manifestsSlice = append(manifestsSlice, string(manifest))
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoIntegration.APIUrl,
-		AuthToken:    argoIntegration.AccountToken,
-		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	// TODO: not sure if templateData.AppName or connection name here...
 	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, templateData.AppName, manifestsSlice)
 }
@@ -144,14 +117,9 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		string(manifest),
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoIntegration.APIUrl,
-		AuthToken:    argoIntegration.AccountToken,
-		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
-	}
-	if err = oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice); err != nil {
-		return "", err
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
+	if syncErr := oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice); syncErr != nil {
+		return "", syncErr
 	}
 	return templateData.ValidatorRunID, nil
 }
@@ -170,12 +138,7 @@ func (oc *OctantConnection) deleteArgoApp(
 		return err
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoIntegration.APIUrl,
-		AuthToken:    argoIntegration.AccountToken,
-		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting argo app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
 }
@@ -194,12 +157,7 @@ func (oc *OctantConnection) deleteValidatorResource(
 		return err
 	}
 
-	clientOpts := &apiclient.ClientOptions{
-		HttpRetryMax: 3,
-		ServerAddr:   argoIntegration.APIUrl,
-		AuthToken:    argoIntegration.AccountToken,
-		Insecure:     oc.configuration.Env == config.Dev, // ignore certs in localdev
-	}
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting telemetry validator app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
 }
