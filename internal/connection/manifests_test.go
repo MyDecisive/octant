@@ -290,7 +290,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.Contains(t, includedLabels, "service.name")
 
 		// Check Dynamic Pipelines
-		for _, tel := range []string{"logs/lb", "logs/validation", "traces/lb", "traces/validation"} {
+		for _, tel := range []string{"logs", "traces"} {
 			receivers, found := getNestedField(otelConfig, "service", "pipelines", tel, "receivers")
 			require.True(t, found, "Pipeline %s should exist", tel)
 			assert.Contains(t, receivers.([]any), "datadog", "Pipeline should include datadog receiver")
@@ -304,7 +304,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 		assert.Equal(t, "mdai-tracealyzer.test-ns.svc.cluster.local:4317", tracealyzerEndpoint)
 
 		traceExporters, hasTraceExporters := getNestedField(
-			otelConfig, "service", "pipelines", "traces/lb", "exporters",
+			otelConfig, "service", "pipelines", "traces", "exporters",
 		)
 		require.True(t, hasTraceExporters, "Traces pipeline exporters should exist")
 		assert.Contains(t,
