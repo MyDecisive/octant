@@ -42,4 +42,6 @@ spec:
             value: "{{ .Values.deployment.port }}"
           - name: PROMETHEUS_ENDPOINT
             value: "{{ .Values.deployment.prometheusEndpoint }}"
+          - name: OCTANT_SERVICE_ACCOUNT
+            value: "{{ .Values.serviceAccount.name }}"
 
