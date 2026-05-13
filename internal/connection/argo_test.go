@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
@@ -13,6 +14,35 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
+
+func manifestKinds(manifests []string) map[string]bool {
+	kinds := make(map[string]bool, len(manifests))
+	for _, m := range manifests {
+		var obj struct {
+			Kind string `json:"kind"`
+		}
+		if err := json.Unmarshal([]byte(m), &obj); err != nil || obj.Kind == "" {
+			return nil
+		}
+		kinds[obj.Kind] = true
+	}
+	return kinds
+}
+
+func connectionSyncManifestsMatcher(manifests []string) bool {
+	kinds := manifestKinds(manifests)
+	for _, want := range []string{"Role", "RoleBinding", "Secret", "MdaiHub", "MdaiObserver", "OpenTelemetryCollector"} {
+		if !kinds[want] {
+			return false
+		}
+	}
+	return true
+}
+
+func validatorSyncManifestsMatcher(manifests []string) bool {
+	kinds := manifestKinds(manifests)
+	return len(kinds) == 1 && kinds["TelemetryValidation"]
+}
 
 func TestDeleteArgoApp(t *testing.T) {
 	t.Parallel()
@@ -165,7 +195,7 @@ func TestSideloadConnectionApp(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "mdai", mock.Anything).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "mdai", mock.MatchedBy(connectionSyncManifestsMatcher)).
 			Return(nil).
 			Once()
 
@@ -213,7 +243,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.Anything).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher)).
 			Return(assert.AnError).
 			Once()
 
@@ -234,7 +264,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.Anything).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher)).
 			Return(nil).
 			Once()
 
