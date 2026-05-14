@@ -19,17 +19,17 @@ func TestValidTimeframe(t *testing.T) {
 	}{
 		{
 			"no valid",
-			time.Now(),
+			time.Now().Add(budgetdata.DayInHR * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_UNSPECIFIED,
 		},
 		{
 			"24h",
 			time.Now().Add(-budgetdata.DayInHR * time.Hour),
-			budgetv1alpha.Timeframe_TIMEFRAME_24HR,
+			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{
 			"month to date",
-			time.Now().Add(-budgetdata.MonthInHR * time.Hour),
+			time.Now().Add(-(budgetdata.MonthInHR - 1) * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{
