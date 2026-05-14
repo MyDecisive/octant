@@ -414,7 +414,9 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 		ingressEgress.getCollectorMLTMetric(telemetryType),
 		ingressEgress.getComponentType(),
 		"datadog", connectionName,
-		connectionName+"-collector",
+		// NOTE: this value HAS TO stay in sync with the `service.telemetry.resource.service.name` value
+		// over in `internal/connection/templates/lb-collector.yaml.tmpl`
+		connectionName+"-sampling-lb-collector",
 	)
 }
 
