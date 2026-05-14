@@ -271,6 +271,7 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 		return nil
 	}
 	if _, exists := cm.Data[input.ConnectionName]; !exists {
+		input.Logger.Warn("connection not found", zap.String("connectionName", input.ConnectionName))
 		return nil
 	}
 
