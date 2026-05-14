@@ -27,7 +27,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 		return err
 	}
 
-	appYAML, err := oc.generator.RenderArgoAppManifest(templateData, YAMLOutputFormat)
+	appYAML, err := oc.generator.RenderArgoAppManifest(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (oc *OctantConnection) doArgoAppSync(
 	templateData *ArgoConnectionTemplateData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
-	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, YAMLOutputFormat)
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, JSONOutputFormat)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		ValidatorRunID: getRunID(),
 	}
 
-	manifest, err := oc.generator.RenderValidatorManifestForConnection(templateData, YAMLOutputFormat)
+	manifest, err := oc.generator.RenderValidatorManifestForConnection(templateData, JSONOutputFormat)
 	if err != nil {
 		return "", err
 	}
