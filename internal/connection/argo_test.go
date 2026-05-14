@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
@@ -15,8 +16,8 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func manifestKinds(manifests []string) map[string]bool {
-	kinds := make(map[string]bool, len(manifests))
+func getManifestKinds(manifests []string) mapset.Set[string] {
+	kinds := mapset.NewSetWithSize[string](len(manifests))
 	for _, m := range manifests {
 		var obj struct {
 			Kind string `json:"kind"`
@@ -24,15 +25,15 @@ func manifestKinds(manifests []string) map[string]bool {
 		if err := json.Unmarshal([]byte(m), &obj); err != nil || obj.Kind == "" {
 			return nil
 		}
-		kinds[obj.Kind] = true
+		kinds.Add(obj.Kind)
 	}
 	return kinds
 }
 
 func connectionSyncManifestsMatcher(manifests []string) bool {
-	kinds := manifestKinds(manifests)
+	kinds := getManifestKinds(manifests)
 	for _, want := range []string{"Role", "RoleBinding", "Secret", "MdaiHub", "MdaiObserver", "OpenTelemetryCollector"} {
-		if !kinds[want] {
+		if !kinds.Contains(want) {
 			return false
 		}
 	}
@@ -40,8 +41,8 @@ func connectionSyncManifestsMatcher(manifests []string) bool {
 }
 
 func validatorSyncManifestsMatcher(manifests []string) bool {
-	kinds := manifestKinds(manifests)
-	return len(kinds) == 1 && kinds["TelemetryValidation"]
+	kinds := getManifestKinds(manifests)
+	return kinds.Cardinality() == 1 && kinds.Contains("TelemetryValidation")
 }
 
 func TestDeleteArgoApp(t *testing.T) {

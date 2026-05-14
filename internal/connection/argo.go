@@ -16,28 +16,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {
-	reader := kyaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(yamlBytes)))
-	var out []string
-	for {
-		doc, err := reader.Read()
-		if errors.Is(err, io.EOF) {
-			return out, nil
-		}
-		if err != nil {
-			return nil, fmt.Errorf("reading yaml document: %w", err)
-		}
-		if len(bytes.TrimSpace(doc)) == 0 {
-			continue
-		}
-		j, err := yaml.YAMLToJSON(doc)
-		if err != nil {
-			return nil, fmt.Errorf("converting yaml to json: %w", err)
-		}
-		out = append(out, string(j))
-	}
-}
-
 func (oc *OctantConnection) sideloadConnectionApp(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -105,9 +83,9 @@ func (oc *OctantConnection) doArgoAppSync(
 
 	var manifestsSlice []string
 	for _, manifest := range manifests {
-		docs, err := yamlDocsToJSON(manifest)
-		if err != nil {
-			return fmt.Errorf("preparing manifests for argo sync: %w", err)
+		docs, convertErr := yamlDocsToJSON(manifest)
+		if convertErr != nil {
+			return fmt.Errorf("preparing manifests for argo sync: %w", convertErr)
 		}
 		manifestsSlice = append(manifestsSlice, docs...)
 	}
@@ -192,4 +170,26 @@ func (oc *OctantConnection) deleteValidatorResource(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting telemetry validator app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
+}
+
+func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {
+	reader := kyaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(yamlBytes)))
+	var out []string
+	for {
+		doc, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			return out, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("reading yaml document: %w", err)
+		}
+		if len(bytes.TrimSpace(doc)) == 0 {
+			continue
+		}
+		j, err := yaml.YAMLToJSON(doc)
+		if err != nil {
+			return nil, fmt.Errorf("converting yaml to json: %w", err)
+		}
+		out = append(out, string(j))
+	}
 }
