@@ -168,8 +168,8 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
-	logger.Debug("deleting telemetry validator app", zap.String("appName", name))
-	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
+	logger.Debug("deleting telemetry validator resource", zap.String("resourceName", name))
+	return oc.argoClient.DeleteArgoResource(ctx, logger, clientOpts, connection.MdaiNamespace, name)
 }
 
 func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {
