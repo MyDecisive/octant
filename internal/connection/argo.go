@@ -1,13 +1,18 @@
 package connection
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/integration"
 	"go.uber.org/zap"
+	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 )
 
@@ -78,7 +83,11 @@ func (oc *OctantConnection) doArgoAppSync(
 
 	var manifestsSlice []string
 	for _, manifest := range manifests {
-		manifestsSlice = append(manifestsSlice, string(manifest))
+		docs, convertErr := yamlDocsToJSON(manifest)
+		if convertErr != nil {
+			return fmt.Errorf("preparing manifests for argo sync: %w", convertErr)
+		}
+		manifestsSlice = append(manifestsSlice, docs...)
 	}
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
@@ -113,8 +122,9 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		return "", err
 	}
 
-	manifestsSlice := []string{
-		string(manifest),
+	manifestsSlice, err := yamlDocsToJSON(manifest)
+	if err != nil {
+		return "", fmt.Errorf("preparing validator manifest for argo sync: %w", err)
 	}
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
@@ -160,4 +170,26 @@ func (oc *OctantConnection) deleteValidatorResource(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting telemetry validator app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
+}
+
+func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {
+	reader := kyaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(yamlBytes)))
+	var out []string
+	for {
+		doc, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			return out, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("reading yaml document: %w", err)
+		}
+		if len(bytes.TrimSpace(doc)) == 0 {
+			continue
+		}
+		j, err := yaml.YAMLToJSON(doc)
+		if err != nil {
+			return nil, fmt.Errorf("converting yaml to json: %w", err)
+		}
+		out = append(out, string(j))
+	}
 }

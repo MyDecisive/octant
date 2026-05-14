@@ -13,6 +13,7 @@ require (
 	github.com/MyDecisive/octant-contracts/go v0.6.0-alpha
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/argoproj/gitops-engine v0.7.1-0.20250908182407-97ad5b59a627
+	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/go-faker/faker/v4 v4.7.0
 	github.com/go-jet/jet/v2 v2.14.1
 	github.com/go-sql-driver/mysql v1.9.3
