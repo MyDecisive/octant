@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -47,6 +48,10 @@ const (
 	signalPolicyFidelityMetric    fidelityMetric = "mdai_fidelity_required_signal_checks_total"
 	attributeParityFidelityMetric fidelityMetric = "mdai_fidelity_attribute_checks_total"
 	attributePolicyFidelityMetric fidelityMetric = "mdai_fidelity_required_attribute_checks_total"
+)
+
+const (
+	ValidatorRunIDFormat = "2006-01-02_15-04-05.999999"
 )
 
 type ValidationResult struct {
@@ -490,5 +495,18 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 		}
 	}
 
+	// sort the validator runID timestamps newest to oldest
+	slices.SortFunc(runIDs, func(a, b string) int {
+		t1, _ := time.Parse(ValidatorRunIDFormat, a)
+		t2, _ := time.Parse(ValidatorRunIDFormat, b)
+
+		if t1.Before(t2) {
+			return 1
+		}
+		if t1.After(t2) {
+			return -1
+		}
+		return 0
+	})
 	return runIDs, nil
 }
