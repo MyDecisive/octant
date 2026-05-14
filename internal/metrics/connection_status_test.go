@@ -3,6 +3,7 @@ package metrics
 import (
 	"strings"
 	"testing"
+	"time"
 
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	v1mock "github.com/mydecisive/octant/internal/mock/v1"
@@ -795,14 +796,19 @@ func TestBuildQuery(t *testing.T) {
 func TestGetConnectionValidatorRuns(t *testing.T) {
 	t.Parallel()
 
+	currentTime := time.Now().UTC()
+	runID := currentTime.Format(ValidatorRunIDFormat)
+
 	t.Run("success - returns unique run IDs and ignores empty/duplicates", func(t *testing.T) {
 		t.Parallel()
 		mockPromAPI := v1mock.NewMockAPI(t)
+		fiveMinsAgo := currentTime.Add(-5 * time.Minute).Format(ValidatorRunIDFormat)
+		fiveHoursAgo := currentTime.Add(-5 * time.Hour).Format(ValidatorRunIDFormat)
 
 		vector := model.Vector{
-			{Metric: model.Metric{"telemetry_validation_run_id": "run-123"}},
-			{Metric: model.Metric{"telemetry_validation_run_id": "run-123"}}, // Duplicate should be ignored
-			{Metric: model.Metric{"telemetry_validation_run_id": "run-456"}},
+			{Metric: model.Metric{"telemetry_validation_run_id": model.LabelValue(runID)}},
+			{Metric: model.Metric{"telemetry_validation_run_id": model.LabelValue(fiveMinsAgo)}},
+			{Metric: model.Metric{"telemetry_validation_run_id": model.LabelValue(fiveHoursAgo)}},
 			{Metric: model.Metric{"other_label": "no-run-id-here"}}, // Missing ID should be ignored
 		}
 
@@ -820,8 +826,12 @@ func TestGetConnectionValidatorRuns(t *testing.T) {
 		runs, err := cs.GetConnectionValidatorRuns(t.Context(), "test-ns", "test-conn")
 
 		require.NoError(t, err)
-		assert.Len(t, runs, 2)
-		assert.ElementsMatch(t, []string{"run-123", "run-456"}, runs)
+
+		// validate the runIDs come back sorted newest to oldest
+		require.Len(t, runs, 3)
+		assert.Equal(t, runID, runs[0])
+		assert.Equal(t, fiveMinsAgo, runs[1])
+		assert.Equal(t, fiveHoursAgo, runs[2])
 	})
 
 	t.Run("error - prometheus client failure", func(t *testing.T) {

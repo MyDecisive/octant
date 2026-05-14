@@ -12,6 +12,7 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
+	"github.com/mydecisive/octant/internal/metrics"
 	"sigs.k8s.io/yaml"
 )
 
@@ -72,7 +73,7 @@ const (
 )
 
 func getRunID() string {
-	return time.Now().UTC().Format("2006-01-02_15-04-05.999999")
+	return time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
 }
 
 func (oc *OctantConnection) createTemplateData(
