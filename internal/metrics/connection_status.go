@@ -403,7 +403,7 @@ func queryVector(ctx context.Context, promClient promv1.API, query string) (mode
 
 func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetryType telemetry.MLT) string {
 	return fmt.Sprintf(
-		"increase(%s{%s=%q, mdai_connection=%q, service_name=%q}[10m])",
+		"%s{%s=%q, mdai_connection=%q, service_name=%q} > 0",
 		ingressEgress.getCollectorMLTMetric(telemetryType),
 		ingressEgress.getComponentType(),
 		"datadog", connectionName,
@@ -413,7 +413,7 @@ func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetr
 
 func buildValidationQuery(metricName fidelityMetric, connectionName string, validatorRunID string) string {
 	return fmt.Sprintf(
-		`increase(%s{mdai_connection="%s-telemetry-validation", telemetry_validation_run_id=%q}[10m])`,
+		`%s{mdai_connection="%s-telemetry-validation", telemetry_validation_run_id=%q} > 0`,
 		metricName,
 		connectionName,
 		validatorRunID,

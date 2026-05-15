@@ -53,32 +53,32 @@ func TestBuildQuery(t *testing.T) {
 
 	t.Run("Logs Ingress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_receiver_accepted_log_records_total{` +
-			`receiver="datadog", mdai_connection="my-conn", service_name="my-conn-sampling-lb-collector"}[10m])`
+		expected := `otelcol_receiver_accepted_log_records_total{` +
+			`receiver="datadog", mdai_connection="my-conn", service_name="my-conn-sampling-lb-collector"} > 0`
 		actual := buildFlowQuery("my-conn", Ingress, telemetry.Logs)
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Trace Ingress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_receiver_accepted_spans_total{` +
-			`receiver="datadog", mdai_connection="my-conn", service_name="my-conn-sampling-lb-collector"}[10m])`
+		expected := `otelcol_receiver_accepted_spans_total{` +
+			`receiver="datadog", mdai_connection="my-conn", service_name="my-conn-sampling-lb-collector"} > 0`
 		actual := buildFlowQuery("my-conn", Ingress, telemetry.Traces)
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Logs Egress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_exporter_sent_log_records_total{` +
-			`exporter="datadog", mdai_connection="my-conn", service_name="my-conn-log-sampling-collector"}[10m])`
+		expected := `otelcol_exporter_sent_log_records_total{` +
+			`exporter="datadog", mdai_connection="my-conn", service_name="my-conn-log-sampling-collector"} > 0`
 		actual := buildFlowQuery("my-conn", Egress, telemetry.Logs)
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Traces Egress", func(t *testing.T) {
 		t.Parallel()
-		expected := `increase(otelcol_exporter_sent_spans_total{` +
-			`exporter="datadog", mdai_connection="my-conn", service_name="my-conn-trace-sampling-collector"}[10m])`
+		expected := `otelcol_exporter_sent_spans_total{` +
+			`exporter="datadog", mdai_connection="my-conn", service_name="my-conn-trace-sampling-collector"} > 0`
 		actual := buildFlowQuery("my-conn", Egress, telemetry.Traces)
 		assert.Equal(t, expected, actual)
 	})
