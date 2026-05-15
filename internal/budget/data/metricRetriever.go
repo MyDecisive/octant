@@ -303,7 +303,13 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
 ) BoolExpression {
-	return CAST(timestampCol).AS_FLOAT().GT_EQ(
+	if timeframe != budgetv1alpha.Timeframe_TIMEFRAME_LM {
+		return CAST(timestampCol).AS_FLOAT().LT_EQ(
+			CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
+		)
+	}
+	return CAST(timestampCol).AS_FLOAT().BETWEEN(
+		CAST(NOW().SUB(INTERVAL(gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_LM), HOUR))).AS_FLOAT(),
 		CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
 	)
 }
