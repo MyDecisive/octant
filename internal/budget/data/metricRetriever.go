@@ -182,6 +182,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 		ORDER_BY(Raw("`log.amount` DESC")).
 		LIMIT(int64(input.Size + 1))
 
+	zap.L().Debug(stmt.DebugSql())
 	var result []Log
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
 		return nil, "", err
@@ -223,6 +224,8 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 		GROUP_BY(table.RootID).
 		ORDER_BY(Raw("`root_span.count` DESC")).
 		LIMIT(int64(input.Size + 1))
+
+	zap.L().Debug(stmt.DebugSql())
 
 	var result []RootSpan
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
@@ -271,6 +274,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 		SUM(valueCol.DIV(Float(divisor))),
 	).FROM(table).WHERE(gdr.timeRangeExpression(timeframe, timestampCol))
 
+	zap.L().Debug(stmt.DebugSql())
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
 		return -1, err
@@ -289,6 +293,7 @@ func (*GreptimeDataRetriever) tableExists(
 ) (bool, error) {
 	stmt := RawStatement(fmt.Sprintf(showTableFormatter, table.TableName()))
 
+	zap.L().Debug(stmt.DebugSql())
 	var res []string
 	if err := stmt.QueryContext(ctx, db, &res); err != nil {
 		return false, err
