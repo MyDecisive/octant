@@ -281,7 +281,11 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName+"-telemetry-validation", connection)
+		templateData, err := oc.createTemplateData(ctx, input.ConnectionName, connection)
+		if err != nil {
+			return err
+		}
+		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName, templateData)
 	}
 
 	return nil

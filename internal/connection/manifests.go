@@ -72,6 +72,18 @@ const (
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
 
+var (
+	appTemplates = map[string]string{
+		"lb-collector":    lbCollectorTemplate,
+		"log-collector":   logCollectorTemplate,
+		"trace-collector": traceCollectorTemplate,
+		"hub":             hubTemplate,
+		"observer":        observerTemplate,
+		"secret":          secretTemplate,
+		"additional":      additionalTemplate,
+	}
+)
+
 func getRunID() string {
 	return time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
 }
@@ -123,6 +135,7 @@ type ManifestGenerator interface {
 	RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error)
 	RenderCollectorDeploymentManifests(
 		templateData *ArgoConnectionTemplateData,
+		manifestTemplates map[string]string,
 		outputFormat ManifestOutputFormat,
 	) (map[string][]byte, error)
 	RenderValidatorManifestForConnection(
@@ -160,7 +173,7 @@ func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 		return nil, err
 	}
 
-	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, format)
+	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, appTemplates, format)
 	if err != nil {
 		return nil, err
 	}
@@ -272,24 +285,15 @@ func (*ConnectionManifestGenerator) RenderArgoAppManifest(
 
 func (cmg *ConnectionManifestGenerator) RenderCollectorDeploymentManifests(
 	templateData *ArgoConnectionTemplateData,
+	manifestTemplates map[string]string,
 	outputFormat ManifestOutputFormat,
 ) (map[string][]byte, error) {
 	if outputFormat == "" {
 		return nil, errors.New("no output format specified")
 	}
 
-	templates := map[string]string{
-		"lb-collector":    lbCollectorTemplate,
-		"log-collector":   logCollectorTemplate,
-		"trace-collector": traceCollectorTemplate,
-		"hub":             hubTemplate,
-		"observer":        observerTemplate,
-		"secret":          secretTemplate,
-		"additional":      additionalTemplate,
-	}
-
 	manifests := make(map[string][]byte)
-	for templateName, templateString := range templates {
+	for templateName, templateString := range manifestTemplates {
 		appManifestTemplate, err := template.New(templateName).Parse(templateString)
 		if err != nil {
 			return manifests, err

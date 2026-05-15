@@ -37,12 +37,6 @@ type APIClient interface {
 		clientOpts *apiclient.ClientOptions,
 		appName string,
 	) error
-	DeleteArgoResource(
-		ctx context.Context,
-		logger *zap.Logger,
-		clientOpts *apiclient.ClientOptions,
-		namespace, resourceName string,
-	) error
 	GetAppStatus(
 		ctx context.Context,
 		logger *zap.Logger,
@@ -54,6 +48,7 @@ type APIClient interface {
 		clientOpts *apiclient.ClientOptions,
 		appName string,
 		manifests []string,
+		prune bool,
 	) error
 }
 
@@ -143,43 +138,6 @@ func (*Client) PushArgoApp(
 	return nil
 }
 
-func (*Client) DeleteArgoResource(
-	ctx context.Context,
-	logger *zap.Logger,
-	clientOpts *apiclient.ClientOptions,
-	namespace, resourceName string,
-) error {
-	argoClient, err := apiclient.NewClient(clientOpts)
-	if err != nil {
-		logger.Error("creating argo api client", zap.Error(err))
-		return err
-	}
-	closer, applicationClient, err := argoClient.NewApplicationClient()
-	if err != nil {
-		logger.Error("creating argo application client", zap.Error(err))
-		return err
-	}
-	defer func() {
-		if err = closer.Close(); err != nil {
-			logger.Warn("closing argo api client", zap.Error(err))
-		}
-	}()
-
-	// argocd admin settings rbac can apiUser delete applications "default/mdai" --namespace argocd
-	if _, err = applicationClient.DeleteResource(ctx, &application.ApplicationResourceDeleteRequest{
-		AppNamespace: lo.ToPtr(namespace), // optional
-		Kind:         lo.ToPtr("TelemetryValidation"),
-		Version:      lo.ToPtr("hub.mydecisive.ai/v1"),
-		Name:         lo.ToPtr(resourceName),
-		ResourceName: lo.ToPtr(resourceName),
-		Project:      lo.ToPtr("default"), // optional
-	}); err != nil {
-		logger.Error("deleting argo app", zap.Error(err))
-		return err
-	}
-	return nil
-}
-
 func (*Client) DeleteArgoApp(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -219,6 +177,7 @@ func (*Client) SyncApplication(
 	clientOpts *apiclient.ClientOptions,
 	appName string,
 	manifests []string,
+	prune bool,
 ) error {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
@@ -239,7 +198,7 @@ func (*Client) SyncApplication(
 	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
 		Name:     lo.ToPtr(appName),
 		Revision: lo.ToPtr("HEAD"),
-		Prune:    lo.ToPtr(false),
+		Prune:    lo.ToPtr(prune),
 		DryRun:   lo.ToPtr(false),
 		Strategy: &argoapp.SyncStrategy{
 			Apply: &argoapp.SyncStrategyApply{
