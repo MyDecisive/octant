@@ -278,7 +278,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 	if len(result) > 0 {
 		return result[0], nil
 	}
-	return -1, budgetdb.ErrMissing
+	return 0, nil
 }
 
 // tableExists returns true of the given table exists in greptimedb.
