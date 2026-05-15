@@ -196,12 +196,12 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 	t.Parallel()
 
 	input := MetricDataInput{
-		Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_LM,
+		Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		Size:      1,
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -294,7 +294,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS FLOAT) BETWEEN CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT) AND CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))
@@ -467,13 +467,13 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 	t.Run("success search", func(t *testing.T) {
 		t.Parallel()
 		inputSearch := MetricDataInput{
-			Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_LM,
+			Timeframe: budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 			Size:      1,
 			Namespace: faker.Word(),
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE (CAST(trace_root_topology_1m.time_window AS FLOAT) <= CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (trace_root_topology_1m.root_id LIKE ?) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "SELECT trace_root_topology_1m.root_id AS \"root_span.name\", SUM(CAST(trace_root_topology_1m.trace_count AS FLOAT) / ?) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / ?) AS \"root_span.invocation\" FROM public.trace_root_topology_1m WHERE (CAST(trace_root_topology_1m.time_window AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT)) AND (trace_root_topology_1m.root_id LIKE ?) GROUP BY trace_root_topology_1m.root_id ORDER BY `root_span.count` DESC LIMIT ?;" //nolint:lll
 
 		var expected RootSpan
 		require.NoError(t, faker.FakeData(&expected))
