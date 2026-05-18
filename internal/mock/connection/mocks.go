@@ -888,8 +888,8 @@ func (_c *MockManifestGenerator_RenderArgoAppManifest_Call) RunAndReturn(run fun
 }
 
 // RenderCollectorDeploymentManifests provides a mock function for the type MockManifestGenerator
-func (_mock *MockManifestGenerator) RenderCollectorDeploymentManifests(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) (map[string][]byte, error) {
-	ret := _mock.Called(templateData, outputFormat)
+func (_mock *MockManifestGenerator) RenderCollectorDeploymentManifests(templateData *connection.ArgoConnectionTemplateData, manifestTemplates map[string]string, outputFormat connection.ManifestOutputFormat) (map[string][]byte, error) {
+	ret := _mock.Called(templateData, manifestTemplates, outputFormat)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RenderCollectorDeploymentManifests")
@@ -897,18 +897,18 @@ func (_mock *MockManifestGenerator) RenderCollectorDeploymentManifests(templateD
 
 	var r0 map[string][]byte
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) (map[string][]byte, error)); ok {
-		return returnFunc(templateData, outputFormat)
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, map[string]string, connection.ManifestOutputFormat) (map[string][]byte, error)); ok {
+		return returnFunc(templateData, manifestTemplates, outputFormat)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) map[string][]byte); ok {
-		r0 = returnFunc(templateData, outputFormat)
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, map[string]string, connection.ManifestOutputFormat) map[string][]byte); ok {
+		r0 = returnFunc(templateData, manifestTemplates, outputFormat)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string][]byte)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) error); ok {
-		r1 = returnFunc(templateData, outputFormat)
+	if returnFunc, ok := ret.Get(1).(func(*connection.ArgoConnectionTemplateData, map[string]string, connection.ManifestOutputFormat) error); ok {
+		r1 = returnFunc(templateData, manifestTemplates, outputFormat)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -922,24 +922,30 @@ type MockManifestGenerator_RenderCollectorDeploymentManifests_Call struct {
 
 // RenderCollectorDeploymentManifests is a helper method to define mock.On call
 //   - templateData *connection.ArgoConnectionTemplateData
+//   - manifestTemplates map[string]string
 //   - outputFormat connection.ManifestOutputFormat
-func (_e *MockManifestGenerator_Expecter) RenderCollectorDeploymentManifests(templateData interface{}, outputFormat interface{}) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
-	return &MockManifestGenerator_RenderCollectorDeploymentManifests_Call{Call: _e.mock.On("RenderCollectorDeploymentManifests", templateData, outputFormat)}
+func (_e *MockManifestGenerator_Expecter) RenderCollectorDeploymentManifests(templateData interface{}, manifestTemplates interface{}, outputFormat interface{}) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
+	return &MockManifestGenerator_RenderCollectorDeploymentManifests_Call{Call: _e.mock.On("RenderCollectorDeploymentManifests", templateData, manifestTemplates, outputFormat)}
 }
 
-func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) Run(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat)) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
+func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) Run(run func(templateData *connection.ArgoConnectionTemplateData, manifestTemplates map[string]string, outputFormat connection.ManifestOutputFormat)) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *connection.ArgoConnectionTemplateData
 		if args[0] != nil {
 			arg0 = args[0].(*connection.ArgoConnectionTemplateData)
 		}
-		var arg1 connection.ManifestOutputFormat
+		var arg1 map[string]string
 		if args[1] != nil {
-			arg1 = args[1].(connection.ManifestOutputFormat)
+			arg1 = args[1].(map[string]string)
+		}
+		var arg2 connection.ManifestOutputFormat
+		if args[2] != nil {
+			arg2 = args[2].(connection.ManifestOutputFormat)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -950,7 +956,7 @@ func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) Return(
 	return _c
 }
 
-func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) RunAndReturn(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) (map[string][]byte, error)) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
+func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) RunAndReturn(run func(templateData *connection.ArgoConnectionTemplateData, manifestTemplates map[string]string, outputFormat connection.ManifestOutputFormat) (map[string][]byte, error)) *MockManifestGenerator_RenderCollectorDeploymentManifests_Call {
 	_c.Call.Return(run)
 	return _c
 }

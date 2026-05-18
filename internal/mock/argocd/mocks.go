@@ -260,16 +260,16 @@ func (_c *MockAPIClient_PushArgoApp_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // SyncApplication provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) SyncApplication(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string) error {
-	ret := _mock.Called(ctx, logger, clientOpts, appName, manifests)
+func (_mock *MockAPIClient) SyncApplication(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool) error {
+	ret := _mock.Called(ctx, logger, clientOpts, appName, manifests, prune)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SyncApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string, []string) error); ok {
-		r0 = returnFunc(ctx, logger, clientOpts, appName, manifests)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string, []string, bool) error); ok {
+		r0 = returnFunc(ctx, logger, clientOpts, appName, manifests, prune)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -287,11 +287,12 @@ type MockAPIClient_SyncApplication_Call struct {
 //   - clientOpts *apiclient.ClientOptions
 //   - appName string
 //   - manifests []string
-func (_e *MockAPIClient_Expecter) SyncApplication(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}, manifests interface{}) *MockAPIClient_SyncApplication_Call {
-	return &MockAPIClient_SyncApplication_Call{Call: _e.mock.On("SyncApplication", ctx, logger, clientOpts, appName, manifests)}
+//   - prune bool
+func (_e *MockAPIClient_Expecter) SyncApplication(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}, manifests interface{}, prune interface{}) *MockAPIClient_SyncApplication_Call {
+	return &MockAPIClient_SyncApplication_Call{Call: _e.mock.On("SyncApplication", ctx, logger, clientOpts, appName, manifests, prune)}
 }
 
-func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string)) *MockAPIClient_SyncApplication_Call {
+func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool)) *MockAPIClient_SyncApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -313,12 +314,17 @@ func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, 
 		if args[4] != nil {
 			arg4 = args[4].([]string)
 		}
+		var arg5 bool
+		if args[5] != nil {
+			arg5 = args[5].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
 			arg4,
+			arg5,
 		)
 	})
 	return _c
@@ -329,7 +335,7 @@ func (_c *MockAPIClient_SyncApplication_Call) Return(err error) *MockAPIClient_S
 	return _c
 }
 
-func (_c *MockAPIClient_SyncApplication_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string) error) *MockAPIClient_SyncApplication_Call {
+func (_c *MockAPIClient_SyncApplication_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool) error) *MockAPIClient_SyncApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }

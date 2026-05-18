@@ -605,6 +605,7 @@ func TestSyncApplication(t *testing.T) {
 				clientOpts,
 				"mdai",
 				[]string{"manifest 1 content", "manifest 2 content"},
+				false,
 			)
 			testCase.validateResult(testErr)
 		})

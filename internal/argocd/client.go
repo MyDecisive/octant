@@ -48,6 +48,7 @@ type APIClient interface {
 		clientOpts *apiclient.ClientOptions,
 		appName string,
 		manifests []string,
+		prune bool,
 	) error
 }
 
@@ -158,7 +159,6 @@ func (*Client) DeleteArgoApp(
 			logger.Warn("closing argo api client", zap.Error(err))
 		}
 	}()
-
 	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
 		Name:              lo.ToPtr(appName),
 		AppNamespace:      lo.ToPtr("argocd"),
@@ -177,6 +177,7 @@ func (*Client) SyncApplication(
 	clientOpts *apiclient.ClientOptions,
 	appName string,
 	manifests []string,
+	prune bool,
 ) error {
 	argoClient, err := apiclient.NewClient(clientOpts)
 	if err != nil {
@@ -197,7 +198,7 @@ func (*Client) SyncApplication(
 	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
 		Name:     lo.ToPtr(appName),
 		Revision: lo.ToPtr("HEAD"),
-		Prune:    lo.ToPtr(false),
+		Prune:    lo.ToPtr(prune),
 		DryRun:   lo.ToPtr(false),
 		Strategy: &argoapp.SyncStrategy{
 			Apply: &argoapp.SyncStrategyApply{
