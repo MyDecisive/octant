@@ -72,18 +72,6 @@ const (
 	JSONOutputFormat ManifestOutputFormat = "json"
 )
 
-var (
-	appTemplates = map[string]string{
-		"lb-collector":    lbCollectorTemplate,
-		"log-collector":   logCollectorTemplate,
-		"trace-collector": traceCollectorTemplate,
-		"hub":             hubTemplate,
-		"observer":        observerTemplate,
-		"secret":          secretTemplate,
-		"additional":      additionalTemplate,
-	}
-)
-
 func getRunID() string {
 	return time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
 }
@@ -163,6 +151,18 @@ func NewConnectionManifestGenerator(con *config.Configuration) *ConnectionManife
 	}
 }
 
+func getDefaultAppTemplates() map[string]string {
+	return map[string]string{
+		"lb-collector":    lbCollectorTemplate,
+		"log-collector":   logCollectorTemplate,
+		"trace-collector": traceCollectorTemplate,
+		"hub":             hubTemplate,
+		"observer":        observerTemplate,
+		"secret":          secretTemplate,
+		"additional":      additionalTemplate,
+	}
+}
+
 func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 	input CompressionInput,
 	connection OctantConnectionData,
@@ -173,7 +173,7 @@ func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 		return nil, err
 	}
 
-	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, appTemplates, format)
+	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, getDefaultAppTemplates(), format)
 	if err != nil {
 		return nil, err
 	}

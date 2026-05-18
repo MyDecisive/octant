@@ -76,7 +76,11 @@ func (oc *OctantConnection) doArgoAppSync(
 	templateData *ArgoConnectionTemplateData,
 	argoIntegration *integration.ArgoCDIntegrationData,
 ) error {
-	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, appTemplates, YAMLOutputFormat)
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(
+		templateData,
+		getDefaultAppTemplates(),
+		YAMLOutputFormat,
+	)
 	if err != nil {
 		return err
 	}
@@ -91,7 +95,12 @@ func (oc *OctantConnection) doArgoAppSync(
 	}
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
-	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, templateData.ConnectionData.Deployment.IntegrationName, manifestsSlice, false)
+	return oc.argoClient.SyncApplication(
+		ctx,
+		logger,
+		clientOpts,
+		templateData.ConnectionData.Deployment.IntegrationName,
+		manifestsSlice, false)
 }
 
 func (oc *OctantConnection) sideloadValidatorForConnection(
@@ -127,7 +136,12 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	}
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
-	if syncErr := oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice, false); syncErr != nil {
+	if syncErr := oc.argoClient.SyncApplication(
+		ctx,
+		logger,
+		clientOpts,
+		connectionName,
+		manifestsSlice, false); syncErr != nil {
 		return "", syncErr
 	}
 	return templateData.ValidatorRunID, nil
@@ -167,7 +181,11 @@ func (oc *OctantConnection) deleteValidatorResource(
 	}
 
 	// the appTemplates is everything BUT the validator resource, so we'll sync to that and prune out the validator.
-	manifests, err := oc.generator.RenderCollectorDeploymentManifests(templateData, appTemplates, YAMLOutputFormat)
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(
+		templateData,
+		getDefaultAppTemplates(),
+		YAMLOutputFormat,
+	)
 	if err != nil {
 		return err
 	}

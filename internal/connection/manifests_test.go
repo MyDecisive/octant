@@ -64,7 +64,7 @@ func TestRenderManifestFormats(t *testing.T) {
 	for _, format := range formats {
 		t.Run(string(format), func(t *testing.T) {
 			t.Parallel()
-			manifests, err := target.RenderCollectorDeploymentManifests(&templateData, format)
+			manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), format)
 			require.NoError(t, err)
 
 			expectedFiles := []string{
@@ -175,7 +175,7 @@ func TestRenderSecretManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		secretBytes := (manifests)["secret.yaml"]
 
@@ -203,7 +203,7 @@ func TestRenderSecretManifest(t *testing.T) {
 			DatadogIntegrationData: nil,
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		secretBytes := (manifests)["secret.yaml"]
 
@@ -246,7 +246,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		collectorBytes := (manifests)["lb-collector.yaml"]
 
@@ -321,7 +321,7 @@ func TestRenderLBCollectorManifest(t *testing.T) {
 			DatadogIntegrationData: nil,
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		collectorBytes := (manifests)["lb-collector.yaml"]
 
@@ -368,7 +368,7 @@ func TestRenderLogCollectorManifest(t *testing.T) {
 		},
 	}
 
-	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 	require.NoError(t, err)
 	collectorBytes := (manifests)["log-collector.yaml"]
 
@@ -436,7 +436,7 @@ func TestRenderTraceCollectorManifest(t *testing.T) {
 		},
 	}
 
-	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+	manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 	require.NoError(t, err)
 	collectorBytes := (manifests)["trace-collector.yaml"]
 
@@ -529,7 +529,7 @@ func TestRenderObserverManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		bytes := (manifests)["observer.yaml"]
 
@@ -560,7 +560,7 @@ func TestRenderHubManifest(t *testing.T) {
 			},
 		}
 
-		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, YAMLOutputFormat)
+		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
 		require.NoError(t, err)
 		hubBytes := (manifests)["hub.yaml"]
 

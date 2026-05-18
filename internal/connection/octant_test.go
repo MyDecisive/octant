@@ -149,7 +149,7 @@ func TestSaveConnection(t *testing.T) { // nolint: paralleltest
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -347,7 +347,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
 			Return(nil).
 			Once()
 

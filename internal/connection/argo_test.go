@@ -10,6 +10,7 @@ import (
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -83,12 +84,58 @@ func TestDeleteArgoApp(t *testing.T) {
 	})
 }
 
+func TestDeleteValidatorResource(t *testing.T) {
+	t.Parallel()
+
+	templateData := &ArgoConnectionTemplateData{
+		AppName:          "coolIntegration",
+		Namespace:        "mdai",
+		ServiceAccount:   "coolServiceAccount",
+		CurrentNamespace: "default",
+		ConnectionData: OctantConnectionData{
+			Deployment: &Deployment{
+				Type:            ArgoSideloadDeploymentType,
+				IntegrationName: "coolIntegration",
+			},
+			SourceType: "datadog",
+			Destinations: []OctantConnectionDestination{
+				{
+					DestinationType: "datadog",
+					IntegrationName: "coolIntegration",
+				},
+			},
+			TelemetryTypes: []telemetry.MLT{
+				telemetry.Logs,
+				telemetry.Traces,
+			},
+			MdaiNamespace: "mdai",
+		},
+		IsArgoSideload: true,
+	}
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(argoIntegrationData, nil).
+			Once()
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+		mockArgoClient.EXPECT().
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(connectionSyncManifestsMatcher), true).
+			Return(nil).
+			Once()
+
+		oc := NewOctantConnection(nil, mockArgoIntegration, nil, nil, testConfig, mockArgoClient, NewConnectionManifestGenerator(testConfig))
+		require.NoError(t, oc.deleteValidatorResource(t.Context(), zaptest.NewLogger(t), "coolIntegration", templateData))
+	})
+}
+
 func TestSideloadConnectionApp(t *testing.T) {
 	t.Parallel()
 
-	testConfig := &config.Configuration{
-		Env: config.Dev,
-	}
 	generator := NewConnectionManifestGenerator(testConfig)
 	ocd := OctantConnectionData{
 		Deployment: &Deployment{IntegrationName: "coolIntegration"},
@@ -98,14 +145,6 @@ func TestSideloadConnectionApp(t *testing.T) {
 				IntegrationName: "coolIntegration",
 			},
 		},
-	}
-	argoIntegrationData := &integration.ArgoCDIntegrationData{
-		APIUrl:       "http://argo.com",
-		AccountToken: "abc123",
-	}
-	ddIntegrationData := &integration.DataDogIntegrationData{
-		APIKey: "abc123",
-		DDUrl:  "http://dd.com",
 	}
 
 	t.Run("error creating template data", func(t *testing.T) {
@@ -196,27 +235,19 @@ func TestSideloadConnectionApp(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "mdai", mock.MatchedBy(connectionSyncManifestsMatcher)).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(connectionSyncManifestsMatcher), false).
 			Return(nil).
 			Once()
 
 		oc := NewOctantConnection(nil, mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
-		require.NoError(t, oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "mdai", ocd))
+		require.NoError(t, oc.sideloadConnectionApp(t.Context(), zaptest.NewLogger(t), "coolIntegration", ocd))
 	})
 }
 
 func TestSideloadValidatorForConnection(t *testing.T) {
 	t.Parallel()
 
-	testConfig := &config.Configuration{
-		Env: config.Dev,
-	}
 	generator := NewConnectionManifestGenerator(testConfig)
-	argoIntegrationData := &integration.ArgoCDIntegrationData{
-		APIUrl:       "http://argo.com",
-		AccountToken: "abc123",
-	}
-	defaultNamespace := "default"
 
 	t.Run("error getting argo integration data", func(t *testing.T) {
 		t.Parallel()
@@ -244,7 +275,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher)).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher), false).
 			Return(assert.AnError).
 			Once()
 
@@ -265,7 +296,7 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher)).
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "coolIntegration", mock.MatchedBy(validatorSyncManifestsMatcher), false).
 			Return(nil).
 			Once()
 
