@@ -13,9 +13,14 @@ import (
 )
 
 func Start(con *config.Configuration, rpcServer *rpc.Server) error {
-	uiHandler, err := web.Handler()
+	uiHandler, err := web.OctantUIHandler()
 	if err != nil {
 		return fmt.Errorf("ui server: %w", err)
+	}
+
+	swaggerUIHandler, err := web.SwaggerUIHandler()
+	if err != nil {
+		return fmt.Errorf("creating swagger ui handler: %w", err)
 	}
 
 	handler, err := rpcServer.Handler()
@@ -25,6 +30,15 @@ func Start(con *config.Configuration, rpcServer *rpc.Server) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", uiHandler)
+	mux.Handle("/docs/", http.StripPrefix("/docs/", swaggerUIHandler))
+	mux.HandleFunc("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		data, readErr := web.SwaggerUI.ReadFile("octant_docs.swagger.json")
+		if readErr != nil {
+			zap.L().Error("Error reading docs file", zap.Error(readErr))
+		}
+		w.Write(data)
+	})
 	mux.Handle("/api/", http.StripPrefix("/api", handler))
 
 	zap.L().Info("starting web and rpc server", zap.Uint16("port", con.Port))

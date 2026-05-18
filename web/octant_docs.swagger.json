@@ -1,0 +1,638 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "budget/v1alpha/type.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "BudgetService"
+    },
+    {
+      "name": "FilterService"
+    },
+    {
+      "name": "TimeframeService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/budget.v1alpha.BudgetService/Log": {
+      "post": {
+        "summary": "Log returns budget stats for logs.",
+        "operationId": "BudgetService_Log",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaLogRequest"
+            }
+          }
+        ],
+        "tags": [
+          "BudgetService"
+        ]
+      }
+    },
+    "/budget.v1alpha.BudgetService/Overall": {
+      "post": {
+        "summary": "Overall returns budeget stats.",
+        "operationId": "BudgetService_Overall",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaOverallResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaOverallRequest"
+            }
+          }
+        ],
+        "tags": [
+          "BudgetService"
+        ]
+      }
+    },
+    "/budget.v1alpha.BudgetService/Trace": {
+      "post": {
+        "summary": "Trace returns budget stats for traces.",
+        "operationId": "BudgetService_Trace",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaTraceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaTraceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "BudgetService"
+        ]
+      }
+    },
+    "/budget.v1alpha.FilterService/GetFilter": {
+      "post": {
+        "summary": "GetFilter returns the current filter setting of the given filter type.\nIf  an update is in progress, this will return with an error code `unavailable`.",
+        "operationId": "FilterService_GetFilter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetFilterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetFilterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FilterService"
+        ]
+      }
+    },
+    "/budget.v1alpha.FilterService/UpdateFilter": {
+      "post": {
+        "summary": "UpdateFilter attempts to update filter setting of the given filter type.\nIf an update is in progress, this will immediately return with an error code `unavailable`.\nOtherwise, this will continuously give update until the update is complete or errored.",
+        "operationId": "FilterService_UpdateFilter",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1alphaUpdateFilterResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/googleRpcStatus"
+                }
+              },
+              "title": "Stream result of v1alphaUpdateFilterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaUpdateFilterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FilterService"
+        ]
+      }
+    },
+    "/budget.v1alpha.TimeframeService/TimeframeStatus": {
+      "post": {
+        "summary": "TimeframeStatus returns timeframe status for each timeframe.",
+        "operationId": "TimeframeService_TimeframeStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaTimeframeStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaTimeframeStatusRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TimeframeService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "OverallMetric": {
+      "type": "object",
+      "properties": {
+        "received": {
+          "type": "number",
+          "format": "double",
+          "description": "received represents the total amount of data recieved.\nFor log, the unit is in GB; For trace, the unit is in mm Events."
+        },
+        "sent": {
+          "type": "number",
+          "format": "double",
+          "description": "sent represents the total amount of data send.\nFor log, the unit is in GB; For trace, the unit is in mm Events."
+        },
+        "filtered": {
+          "type": "number",
+          "format": "double",
+          "description": "filtered represents the difference between sent and recieved.\nFor log, the unit is in GB; For trace, the unit is in mm Events."
+        },
+        "costRate": {
+          "type": "number",
+          "format": "float",
+          "description": "cost_rate contains the per GB (for log) or the per mm Events (for traces) cost rate.\nRemember to round to the nearest two decimal places."
+        },
+        "pct": {
+          "type": "number",
+          "format": "float",
+          "description": "pct contains the percentage of total overall cost (e.g., 1.2345%).\nRemember to round to the nearest two decimal places."
+        },
+        "cost": {
+          "type": "number",
+          "format": "double",
+          "description": "cost contains the total cost.\nRemember to round to the nearest two decimal places."
+        }
+      }
+    },
+    "TimeframeStatusResponseCode": {
+      "type": "string",
+      "enum": [
+        "CODE_UNSPECIFIED",
+        "CODE_OK",
+        "CODE_NO_DATA",
+        "CODE_NOT_ENOUGH"
+      ],
+      "default": "CODE_UNSPECIFIED",
+      "description": "Code represents the status code of a given timeframe.\n\n - CODE_OK: CODE_OK means user is allow to select the given timeframe.\n - CODE_NO_DATA: CODE_NO_DATA means connection is not set, so no data to show.\n - CODE_NOT_ENOUGH: CODE_NOT_ENOUGH means there are not enough data to show for the given timeframe."
+    },
+    "budgetV1alphaLog": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name is the service name."
+        },
+        "sent": {
+          "type": "number",
+          "format": "double",
+          "description": "sent represents the amount of data send (in GB)."
+        },
+        "pct": {
+          "type": "number",
+          "format": "float",
+          "description": "pct contains the percentage of total log cost (e.g., 1.2345%).\nRemember to round to the nearest two decimal places."
+        },
+        "cost": {
+          "type": "number",
+          "format": "double",
+          "description": "cost contains the total cost.\nRemember to round to the nearest two decimal places."
+        }
+      }
+    },
+    "budgetV1alphaOverall": {
+      "type": "object",
+      "properties": {
+        "cost": {
+          "type": "number",
+          "format": "double",
+          "description": "cost contains the total cost for log and trace.\nRemember to round to the nearest two decimal places."
+        },
+        "log": {
+          "$ref": "#/definitions/OverallMetric",
+          "description": "log contains overall metric data for logs."
+        },
+        "trace": {
+          "$ref": "#/definitions/OverallMetric",
+          "description": "trace contains overall metric data for traces."
+        }
+      }
+    },
+    "googleRpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "v1alphaFilter": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1alphaFilterType",
+          "description": "type contains the filter type."
+        },
+        "pctSampled": {
+          "type": "integer",
+          "format": "int64",
+          "description": "pct_sampled contains the sampling percentage."
+        },
+        "includeErr": {
+          "type": "boolean",
+          "description": "include_err indcates if errors should be included."
+        }
+      }
+    },
+    "v1alphaFilterType": {
+      "type": "string",
+      "enum": [
+        "FILTER_TYPE_UNSPECIFIED",
+        "FILTER_TYPE_LOG",
+        "FILTER_TYPE_TRACE"
+      ],
+      "default": "FILTER_TYPE_UNSPECIFIED",
+      "description": "FilterType represents the type of filters supported."
+    },
+    "v1alphaGetFilterRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1alphaFilterType",
+          "description": "type contains the type of the filter to retrieve."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        },
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of this connection and its resources in argo/k8s"
+        }
+      }
+    },
+    "v1alphaGetFilterResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/v1alphaFilter"
+        }
+      }
+    },
+    "v1alphaLogRequest": {
+      "type": "object",
+      "properties": {
+        "timeframe": {
+          "$ref": "#/definitions/v1alphaTimeframe",
+          "description": "timeframe tells the server timeframe of the data to retrieve."
+        },
+        "size": {
+          "type": "integer",
+          "format": "int64",
+          "description": "size limits number of services to retrieve."
+        },
+        "pageToken": {
+          "type": "string",
+          "description": "page_token (pagination) used to grab next page of data."
+        },
+        "search": {
+          "type": "string",
+          "description": "search is used to filter the data so that only services with name containing the given search term will be returned."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        },
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of this connection and its resources in argo/k8s"
+        }
+      }
+    },
+    "v1alphaLogResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/budgetV1alphaLog"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alphaOverallRequest": {
+      "type": "object",
+      "properties": {
+        "timeframe": {
+          "$ref": "#/definitions/v1alphaTimeframe",
+          "description": "timeframe tells the server timeframe of the data to retrieve."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        }
+      }
+    },
+    "v1alphaOverallResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/budgetV1alphaOverall"
+        }
+      }
+    },
+    "v1alphaSpan": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name is the trace root span name."
+        },
+        "breadth": {
+          "type": "number",
+          "format": "double",
+          "description": "breadth contains the span breadth."
+        },
+        "depth": {
+          "type": "number",
+          "format": "double",
+          "description": "depth contains the span depth."
+        },
+        "invocations": {
+          "type": "number",
+          "format": "double",
+          "description": "invocations contains the number of invocations."
+        },
+        "cost": {
+          "type": "number",
+          "format": "double",
+          "description": "cost contains the total cost.\nRemember to round to the nearest two decimal places."
+        }
+      }
+    },
+    "v1alphaTimeframe": {
+      "type": "string",
+      "enum": [
+        "TIMEFRAME_UNSPECIFIED",
+        "TIMEFRAME_24HR",
+        "TIMEFRAME_MTD",
+        "TIMEFRAME_LM"
+      ],
+      "default": "TIMEFRAME_UNSPECIFIED",
+      "description": "Timeframe represents possible timeframes.\n\n - TIMEFRAME_24HR: TIMEFRAME_24HR means the last 24 hours.\n - TIMEFRAME_MTD: TIMEFRAME_MTD means month to date.\n - TIMEFRAME_LM: TIMEFRAME_LM means last month."
+    },
+    "v1alphaTimeframeStatusRequest": {
+      "type": "object",
+      "properties": {
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of this connection and its resources in argo/k8s"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        }
+      }
+    },
+    "v1alphaTimeframeStatusResponse": {
+      "type": "object",
+      "properties": {
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alphaTimeframeStatusResponseStatus"
+          },
+          "description": "statuses contains status of each timeframe.\nNote: this array will not contain duplicate timeframes."
+        },
+        "trace": {
+          "type": "boolean",
+          "description": "trace will contain true if there are data for traces.\nOtherwise, this will contain false.\nNote: this containing true just means there are data,\nand it doesn't necessarily mean there will be data\nfor the user's selected timeframe."
+        },
+        "log": {
+          "type": "boolean",
+          "description": "log will contain true if there are data for logs.\nOtherwise, this will contain false.\nNote: this containing true just means there are data,\nand it doesn't necessarily mean there will be data\nfor the user's selected timeframe."
+        }
+      }
+    },
+    "v1alphaTimeframeStatusResponseStatus": {
+      "type": "object",
+      "properties": {
+        "timeframe": {
+          "$ref": "#/definitions/v1alphaTimeframe",
+          "description": "timeframe contains the timeframe."
+        },
+        "status": {
+          "$ref": "#/definitions/TimeframeStatusResponseCode",
+          "description": "status contains the status code of the timeframe."
+        }
+      }
+    },
+    "v1alphaTraceRequest": {
+      "type": "object",
+      "properties": {
+        "timeframe": {
+          "$ref": "#/definitions/v1alphaTimeframe",
+          "description": "timeframe tells the server timeframe of the data to retrieve."
+        },
+        "size": {
+          "type": "integer",
+          "format": "int64",
+          "description": "size limits number of trace root spans to retrieve."
+        },
+        "pageToken": {
+          "type": "string",
+          "description": "page_token (pagination) used to grab next page of data."
+        },
+        "search": {
+          "type": "string",
+          "description": "search is used to filter the data so that only trace root span with name containing the given search term will be returned."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        },
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of this connection and its resources in argo/k8s"
+        }
+      }
+    },
+    "v1alphaTraceResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alphaSpan"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alphaUpdateFilterRequest": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/v1alphaFilter",
+          "description": "data contains the filter setting data to update.\n`type` indicates which filter type should be updated."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        },
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of this connection and its resources in argo/k8s"
+        }
+      }
+    },
+    "v1alphaUpdateFilterResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1alphaUpdateFilterResponseStatus"
+        }
+      }
+    },
+    "v1alphaUpdateFilterResponseStatus": {
+      "type": "string",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "STATUS_VALUE_UPDATED",
+        "STATUS_WAIT_PROPAGATION",
+        "STATUS_COMPLETED"
+      ],
+      "default": "STATUS_UNSPECIFIED",
+      "description": " - STATUS_VALUE_UPDATED: STATUS_VALUE_UPDATED means the data have been updated in MDAI gateway.\n - STATUS_WAIT_PROPAGATION: STATUS_WAIT_PROPAGATION means we are waiting for the collectors to restart with the new values.\n - STATUS_COMPLETED: STATUS_COMPLETED means collectors are all updated."
+    }
+  }
+}
