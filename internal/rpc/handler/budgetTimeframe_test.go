@@ -29,17 +29,17 @@ func TestBudgetTimeframeHandler_TimeframeStatus(t *testing.T) {
 	}{
 		{
 			"success not enough",
-			time.Now().Add(-(1 * time.Hour)),
+			time.Now().Add(1 * time.Hour),
 			budgetv1alpha.Timeframe_TIMEFRAME_UNSPECIFIED,
 		},
 		{
 			"success up to 24h",
 			time.Now().Add(-(24 * time.Hour)),
-			budgetv1alpha.Timeframe_TIMEFRAME_24HR,
+			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{
 			"success up to month to date",
-			time.Now().Add(-(730 * time.Hour)),
+			time.Now().Add(-(729 * time.Hour)),
 			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
 		},
 		{

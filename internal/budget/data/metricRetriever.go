@@ -17,7 +17,15 @@ const (
 	toMil = 1000000.0
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
-	showTableFormatter     = "SHOW TABLES LIKE '%s'"
+
+	whereTimeLessThanFormatter = "(CAST(%s AS FLOAT) <= CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))"
+	whereTimeBetweenFormatter  = "(CAST(%s AS FLOAT) BETWEEN CAST((NOW() - INTERVAL %d HOUR) AS FLOAT) AND CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))" //nolint:lll
+	whereSearchKeyword         = "$keyword"
+	whereSearchFormatter       = "(%s LIKE $keyword)"
+
+	showTableFormatter    = "SHOW TABLES LIKE '%s'"
+	getLogDataFormatter   = "SELECT %[2]s AS \"%[3]s\", SUM(%[4]s / %[6]f) AS \"%[5]s\" FROM %[1]s WHERE %[7]s GROUP BY %[2]s ORDER BY `%[5]s` DESC LIMIT %[8]d"                                                                                                 //nolint:lll
+	getTraceDataFormatter = "SELECT %[2]s AS \"%[3]s\", SUM(CAST(%[4]s AS FLOAT) / %[6]f) AS \"%[5]s\", (%[7]s) AS \"%[8]s\", (%[9]s) AS \"%[10]s\", ((%[11]s) / %[6]f) AS \"%[12]s\" FROM %[1]s WHERE %[13]s GROUP BY %[2]s ORDER BY `%[5]s` DESC LIMIT %[14]d" //nolint:lll
 )
 
 const (
@@ -163,6 +171,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 	input MetricDataInput,
 ) ([]Log, string, error) {
 	table := BytesSentByServiceTotal
+	args := RawArgs{}
 
 	conn, err := gdr.builder.Build(ctx, input.Namespace)
 	if err != nil {
@@ -171,16 +180,17 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
 	if input.Search != "" {
-		where = where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
+		where += " AND " + fmt.Sprintf(whereSearchFormatter, table.Service.Name())
+		args[whereSearchKeyword] = fmt.Sprintf("%%%s%%", input.Search)
 	}
-	stmt := SELECT(
-		table.Service.AS("log.name"),
-		SUM(table.GreptimeValue.DIV(Float(toGB))).AS("log.amount"),
-	).FROM(table).
-		WHERE(where).
-		GROUP_BY(table.Service).
-		ORDER_BY(Raw("`log.amount` DESC")).
-		LIMIT(int64(input.Size + 1))
+
+	stmt := RawStatement(fmt.Sprintf(getLogDataFormatter,
+		table.TableName(),
+		table.Service.Name(), "log.name",
+		table.GreptimeValue.Name(), "log.amount",
+		toGB,
+		where,
+		input.Size+1), args)
 
 	var result []Log
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
@@ -201,6 +211,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	input MetricDataInput,
 ) ([]RootSpan, string, error) {
 	table := TraceRootTopology1m
+	args := RawArgs{}
 
 	conn, err := gdr.builder.Build(ctx, input.Namespace)
 	if err != nil {
@@ -209,20 +220,19 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
 	if input.Search != "" {
-		where = where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
+		where += " AND " + fmt.Sprintf(whereSearchFormatter, table.RootID.Name())
+		args[whereSearchKeyword] = fmt.Sprintf("%%%s%%", input.Search)
 	}
-	stmt := SELECT(
-		table.RootID.AS("root_span.name"),
-		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMil))).AS("root_span.count"),
-		RawFloat(gdr.uddsketchCalc(table.BreadthSketch)).AS("root_span.breadth"),
-		RawFloat(gdr.uddsketchCalc(table.DepthSketch)).AS("root_span.depth"),
-		RawFloat(gdr.uddsketchCalc(table.DurationSketch)).DIV(Float(toMil)).
-			AS("root_span.invocation"),
-	).FROM(table).
-		WHERE(where).
-		GROUP_BY(table.RootID).
-		ORDER_BY(Raw("`root_span.count` DESC")).
-		LIMIT(int64(input.Size + 1))
+
+	stmt := RawStatement(fmt.Sprintf(getTraceDataFormatter,
+		table.TableName(),
+		table.RootID.Name(), "root_span.name",
+		table.TraceCount.Name(), "root_span.count", toMil,
+		gdr.uddsketchCalc(table.BreadthSketch), "root_span.breadth",
+		gdr.uddsketchCalc(table.DepthSketch), "root_span.depth",
+		gdr.uddsketchCalc(table.DurationSketch), "root_span.invocation",
+		where,
+		input.Size+1), args)
 
 	var result []RootSpan
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
@@ -269,7 +279,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 ) (float64, error) {
 	stmt := SELECT(
 		SUM(valueCol.DIV(Float(divisor))),
-	).FROM(table).WHERE(gdr.timeRangeExpression(timeframe, timestampCol))
+	).FROM(table).WHERE(RawBool(gdr.timeRangeExpression(timeframe, timestampCol)))
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
@@ -278,7 +288,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 	if len(result) > 0 {
 		return result[0], nil
 	}
-	return -1, budgetdb.ErrMissing
+	return 0, nil
 }
 
 // tableExists returns true of the given table exists in greptimedb.
@@ -302,9 +312,12 @@ func (*GreptimeDataRetriever) tableExists(
 func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
-) BoolExpression {
-	return CAST(timestampCol).AS_FLOAT().GT_EQ(
-		CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
+) string {
+	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
+		return fmt.Sprintf(whereTimeLessThanFormatter, timestampCol.Name(), gdr.toHr(timeframe))
+	}
+	return fmt.Sprintf(whereTimeBetweenFormatter,
+		timestampCol.Name(), gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), gdr.toHr(timeframe),
 	)
 }
 

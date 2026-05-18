@@ -15,13 +15,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type IngressEgress int
-
-const (
-	Ingress IngressEgress = iota
-	Egress
-)
-
 const (
 	fidelityCheckFail = "fail"
 	fidelityCheckPass = "pass"
@@ -410,19 +403,17 @@ func queryVector(ctx context.Context, promClient promv1.API, query string) (mode
 
 func buildFlowQuery(connectionName string, ingressEgress IngressEgress, telemetryType telemetry.MLT) string {
 	return fmt.Sprintf(
-		"increase(%s{%s=%q, mdai_connection=%q, service_name=%q}[10m])",
+		"%s{%s=%q, mdai_connection=%q, service_name=%q} > 0",
 		ingressEgress.getCollectorMLTMetric(telemetryType),
 		ingressEgress.getComponentType(),
 		"datadog", connectionName,
-		// NOTE: this value HAS TO stay in sync with the `service.telemetry.resource.service.name` value
-		// over in `internal/connection/templates/lb-collector.yaml.tmpl`
-		connectionName+"-sampling-lb-collector",
+		ingressEgress.getServiceName(telemetryType, connectionName),
 	)
 }
 
 func buildValidationQuery(metricName fidelityMetric, connectionName string, validatorRunID string) string {
 	return fmt.Sprintf(
-		`increase(%s{mdai_connection="%s-telemetry-validation", telemetry_validation_run_id=%q}[10m])`,
+		`%s{mdai_connection="%s-telemetry-validation", telemetry_validation_run_id=%q} > 0`,
 		metricName,
 		connectionName,
 		validatorRunID,
@@ -431,35 +422,6 @@ func buildValidationQuery(metricName fidelityMetric, connectionName string, vali
 
 func buildConnectedClientsQuery(connectionName string) string {
 	return fmt.Sprintf("increase(envoy_cluster_upstream_cx_total{mdai_connection=%q}[5m])", connectionName)
-}
-
-func (ie IngressEgress) getCollectorMLTMetric(telemetryType telemetry.MLT) collectorMetric {
-	switch telemetryType {
-	case telemetry.Logs:
-		if ie == Ingress {
-			return logsAcceptedMetric
-		}
-		return logsSentMetric
-	case telemetry.Metrics:
-		if ie == Ingress {
-			return metricsAcceptedMetric
-		}
-		return metricsSentMetric
-	case telemetry.Traces:
-		if ie == Ingress {
-			return spansAcceptedMetric
-		}
-		return spansSentMetric
-	default:
-		return ""
-	}
-}
-
-func (ie IngressEgress) getComponentType() string {
-	if ie == Ingress {
-		return "receiver"
-	}
-	return "exporter"
 }
 
 func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(

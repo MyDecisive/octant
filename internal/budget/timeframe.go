@@ -16,15 +16,11 @@ import (
 // e.g., if this returns `Timeframe_TIMEFRAME_UNSPECIFIED`, then that means no timeframe have data.
 func ValidTimeframe(creationTime time.Time) budgetv1alpha.Timeframe {
 	delta := time.Since(creationTime)
-	if delta < budgetdata.DayInHR*time.Hour {
+	if delta < 0 {
 		return budgetv1alpha.Timeframe_TIMEFRAME_UNSPECIFIED
 	}
 
-	if delta < budgetdata.MonthInHR*time.Hour {
-		return budgetv1alpha.Timeframe_TIMEFRAME_24HR
-	}
-
-	if delta < budgetdata.LastMonthInHR*time.Hour {
+	if delta <= budgetdata.MonthInHR*time.Hour {
 		return budgetv1alpha.Timeframe_TIMEFRAME_MTD
 	}
 
