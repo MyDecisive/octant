@@ -76,28 +76,26 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return "", err
 	}
 
-	var result map[string]json.RawMessage
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
+	var result map[string]any
+	if unmarshalErr := json.Unmarshal(body, &result); unmarshalErr != nil {
+		return "", unmarshalErr
 	}
 
-	raw, ok := result[varName]
-	if !ok || string(raw) == "null" {
+	raw, varExists := result[varName]
+	if !varExists {
 		return "", nil
 	}
 
-	var stringValue string
-	if err := json.Unmarshal(raw, &stringValue); err == nil {
-		return stringValue, nil
+	switch val := raw.(type) {
+	case string:
+		return val, nil
+	case bool:
+		return strconv.FormatBool(val), nil
+	case nil:
+		return "", nil
+	default:
+		return "", fmt.Errorf("%w: variable %q has unsupported JSON value %v", ErrInvalid, varName, val)
 	}
-
-	var boolValue bool
-	if err := json.Unmarshal(raw, &boolValue); err == nil {
-		return strconv.FormatBool(boolValue), nil
-	}
-
-	return "", fmt.Errorf("%w: variable %q has unsupported JSON value %s", ErrInvalid, varName, string(raw))
-
 }
 
 // UpdateVariable updates the value of the given variable in MDAI gateway.
