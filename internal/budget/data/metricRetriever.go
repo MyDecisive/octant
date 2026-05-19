@@ -3,6 +3,7 @@ package budgetdata
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
@@ -30,6 +31,11 @@ const (
 	DayInHR       = 24   // 1 day
 	MonthInHR     = 730  // 30 days (i.e., closest approx. to a month)
 	LastMonthInHR = 1460 // 60 days (i.e., closest approx. to 2 month)
+)
+
+var (
+	ErrQuery      = errors.New("query error")
+	ErrConnection = errors.New("connection error")
 )
 
 // MetricDataRetriever is used to retrieve metric data from the data store.
@@ -149,7 +155,7 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	return gdr.getTotal(
@@ -281,7 +287,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 	if len(result) > 0 {
 		return result[0], nil
