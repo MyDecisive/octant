@@ -6,6 +6,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	"github.com/go-faker/faker/v4"
+	"github.com/go-jet/jet/v2/mysql"
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	budgetdbmock "github.com/mydecisive/octant/internal/mock/db"
 	"github.com/stretchr/testify/assert"
@@ -697,4 +698,53 @@ func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
 		assert.False(t, actual)
 		assert.Error(t, err)
 	})
+}
+
+func TestTimeRangeExpression(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name         string
+		timeframe    budgetv1alpha.Timeframe
+		timestampCol mysql.ColumnString
+		expected     string
+	}{
+		{
+			name:         "the last 24 hours",
+			timeframe:    budgetv1alpha.Timeframe_TIMEFRAME_24HR,
+			timestampCol: mysql.StringColumn("greptime_timestamp"),
+			expected:     "(greptime_timestamp >= NOW() - INTERVAL '24 HOUR')",
+		},
+		{
+			name:         "month to date",
+			timeframe:    budgetv1alpha.Timeframe_TIMEFRAME_MTD,
+			timestampCol: mysql.StringColumn("greptime_timestamp"),
+			expected:     "(greptime_timestamp >= NOW() - INTERVAL '730 HOUR')",
+		},
+		{
+			name:         "the last month",
+			timeframe:    budgetv1alpha.Timeframe_TIMEFRAME_LM,
+			timestampCol: mysql.StringColumn("greptime_timestamp"),
+			expected:     "(greptime_timestamp BETWEEN NOW() - INTERVAL '1460 HOUR' AND NOW() - INTERVAL '730 HOUR')",
+		},
+		{
+			name:         "unspecified timeframe",
+			timeframe:    budgetv1alpha.Timeframe_TIMEFRAME_UNSPECIFIED,
+			timestampCol: mysql.StringColumn("greptime_timestamp"),
+			expected:     "(greptime_timestamp >= NOW() - INTERVAL '1460 HOUR')",
+		},
+		{
+			name:         "unknown enum at or above LM uses the last-month window",
+			timeframe:    budgetv1alpha.Timeframe(99),
+			timestampCol: mysql.StringColumn("greptime_timestamp"),
+			expected:     "(greptime_timestamp BETWEEN NOW() - INTERVAL '1460 HOUR' AND NOW() - INTERVAL '730 HOUR')",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := timeRangeExpression(tc.timeframe, tc.timestampCol)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
 }
