@@ -13,6 +13,18 @@
     },
     {
       "name": "TimeframeService"
+    },
+    {
+      "name": "ArgoCDService"
+    },
+    {
+      "name": "ConnectionService"
+    },
+    {
+      "name": "DatadogService"
+    },
+    {
+      "name": "InstallService"
     }
   ],
   "consumes": [
@@ -228,6 +240,527 @@
           "TimeframeService"
         ]
       }
+    },
+    "/octant.v1alpha.ArgoCDService/SaveArgoConnection": {
+      "post": {
+        "summary": "SaveArgoConnection saves the argo connection details.",
+        "operationId": "ArgoCDService_SaveArgoConnection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaSaveArgoConnectionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArgoCDService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ArgoCDService/TestConnection": {
+      "post": {
+        "summary": "TestConnection uses the provided request data to test the argo connection.",
+        "operationId": "ArgoCDService_TestConnection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaTestConnectionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaTestConnectionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ArgoCDService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/CreateConnection": {
+      "post": {
+        "summary": "CreateConnection creates a connection and deploys it",
+        "operationId": "ConnectionService_CreateConnection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaCreateConnectionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/CreateConnectionValidatorRun": {
+      "post": {
+        "summary": "CreateConnectionValidatorRun creates a new validator run for the given connection. Will create a new validator run if one already exists.",
+        "operationId": "ConnectionService_CreateConnectionValidatorRun",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaCreateConnectionValidatorRunResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaCreateConnectionValidatorRunRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/DeleteConnection": {
+      "post": {
+        "summary": "DeleteConnection removes an existing connection and its associated resources",
+        "operationId": "ConnectionService_DeleteConnection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaDeleteConnectionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/DeleteConnectionValidator": {
+      "post": {
+        "summary": "DeleteConnectionValidator deletes connection validator resources",
+        "operationId": "ConnectionService_DeleteConnectionValidator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaDeleteConnectionValidatorRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/GenerateManifests": {
+      "post": {
+        "summary": "GenerateManifests generates the manifest base on the given input and this will returns\nthe compressed zip file containing the manifests as a stream of raw bytes.\nNote: To create a download link in the FE, the stream of file content data should be stored\nin a typed blob and then https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL_static\nshould be used.",
+        "operationId": "ConnectionService_GenerateManifests",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1alphaGenerateManifestsResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/googleRpcStatus"
+                }
+              },
+              "title": "Stream result of v1alphaGenerateManifestsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGenerateManifestsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/GetConnection": {
+      "post": {
+        "summary": "GetConnection gets details about a connection",
+        "operationId": "ConnectionService_GetConnection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/GetConnectionStatus": {
+      "post": {
+        "summary": "GetConnectionStatus gets the status of a connection based on dataflow and validation metrics",
+        "operationId": "ConnectionService_GetConnectionStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionStatusRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/GetConnectionValidatorRunIds": {
+      "post": {
+        "summary": "GetConnectionValidatorRuns gets the validator runs that exist in the validation dataset",
+        "operationId": "ConnectionService_GetConnectionValidatorRunIds",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionValidatorRunIdsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionValidatorRunIdsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.ConnectionService/GetConnections": {
+      "post": {
+        "summary": "GetConnections gets all existing connection names",
+        "operationId": "ConnectionService_GetConnections",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetConnectionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ],
+        "tags": [
+          "ConnectionService"
+        ]
+      }
+    },
+    "/octant.v1alpha.DatadogService/GetDatadogIntegrations": {
+      "post": {
+        "summary": "GetDatadogIntegrations returns list of datadog integration names.",
+        "operationId": "DatadogService_GetDatadogIntegrations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetDatadogIntegrationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ],
+        "tags": [
+          "DatadogService"
+        ]
+      }
+    },
+    "/octant.v1alpha.DatadogService/SaveDatadogIntegration": {
+      "post": {
+        "summary": "SaveDatadogIntegration saves the given datadog integration.\nIf the integration already exists, this will override the saved data with the one provided.",
+        "operationId": "DatadogService_SaveDatadogIntegration",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaSaveDatadogIntegrationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "DatadogService"
+        ]
+      }
+    },
+    "/octant.v1alpha.InstallService/GetInstallStatus": {
+      "post": {
+        "summary": "GetInstallStatus creates a response stream with mdai install status updates.",
+        "operationId": "InstallService_GetInstallStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1alphaGetInstallStatusResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/googleRpcStatus"
+                }
+              },
+              "title": "Stream result of v1alphaGetInstallStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetInstallStatusRequest"
+            }
+          }
+        ],
+        "tags": [
+          "InstallService"
+        ]
+      }
+    },
+    "/octant.v1alpha.InstallService/InstallMDAIHub": {
+      "post": {
+        "summary": "InstallMDAIHub initiates installing the mdai smart hub with the provided request data.",
+        "operationId": "InstallService_InstallMDAIHub",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googleRpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaInstallMDAIHubRequest"
+            }
+          }
+        ],
+        "tags": [
+          "InstallService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -347,6 +880,108 @@
       },
       "additionalProperties": {}
     },
+    "v1alphaConnectionScope": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "title": "namespace that the connection is installed in/will be installed into"
+        },
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of the connection"
+        }
+      },
+      "title": "ConnectionScope contains identifiers for a connection"
+    },
+    "v1alphaCreateConnectionRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        },
+        "telemetryTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alphaMLTType"
+          },
+          "description": "telemetry_types is used to generate the manifests."
+        },
+        "deployment": {
+          "$ref": "#/definitions/v1alphaDeployment",
+          "title": "deployment contains information required for deploying the connection"
+        },
+        "destinations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alphaTelemetryDestination"
+          },
+          "title": "destinations are where telemetry from this connection is sent and options needed to send it there"
+        }
+      },
+      "title": "CreateConnectionRequest contains options for creating a connection"
+    },
+    "v1alphaCreateConnectionValidatorRunRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        }
+      },
+      "title": "CreateConnectionValidatorRunRequest has options for creating a connection validator"
+    },
+    "v1alphaCreateConnectionValidatorRunResponse": {
+      "type": "object",
+      "properties": {
+        "validatorRunId": {
+          "type": "string",
+          "title": "validator_run_id is the created validator_run_id for the new validator run"
+        }
+      },
+      "title": "CreateConnectionValidatorRunResponse contains a response for validator creation"
+    },
+    "v1alphaDeleteConnectionRequest": {
+      "type": "object",
+      "properties": {
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of the connection to delete"
+        }
+      }
+    },
+    "v1alphaDeleteConnectionValidatorRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        }
+      },
+      "title": "DeleteConnectionValidatorRequest contains options for deleting a connection validator"
+    },
+    "v1alphaDeployment": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1alphaDeploymentType",
+          "title": "type indicates what type of deployment mechanism/system to use"
+        },
+        "integrationName": {
+          "type": "string",
+          "title": "integration_name is the name of the previously created deployment integration to use"
+        }
+      },
+      "title": "Deployment is information needed to deploy a connection"
+    },
+    "v1alphaDeploymentType": {
+      "type": "string",
+      "enum": [
+        "DEPLOYMENT_TYPE_UNSPECIFIED",
+        "DEPLOYMENT_TYPE_ARGO_SIDELOAD",
+        "DEPLOYMENT_TYPE_ARGO_MANIFEST"
+      ],
+      "default": "DEPLOYMENT_TYPE_UNSPECIFIED"
+    },
     "v1alphaFilter": {
       "type": "object",
       "properties": {
@@ -375,6 +1010,172 @@
       "default": "FILTER_TYPE_UNSPECIFIED",
       "description": "FilterType represents the type of filters supported."
     },
+    "v1alphaGenerateManifestsRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        },
+        "format": {
+          "$ref": "#/definitions/v1alphaManifestOutFormat",
+          "description": "format contains output format of the manifests."
+        },
+        "deploymentType": {
+          "$ref": "#/definitions/v1alphaDeploymentType",
+          "description": "deployment_type use to tell the type of manifest to generate."
+        },
+        "telemetryTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alphaMLTType"
+          },
+          "description": "telemetry_types is used to generate the manifests."
+        },
+        "mdaiVersion": {
+          "type": "string",
+          "description": "mdai_version is the mdai hub version to use for app install."
+        }
+      }
+    },
+    "v1alphaGenerateManifestsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "data contains a chunk of the file content as raw bytes."
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64",
+          "description": "total is the total number of bytes for current file."
+        },
+        "type": {
+          "type": "string",
+          "title": "type is the MIME type of the file. (e.g., zip)"
+        }
+      }
+    },
+    "v1alphaGetConnectionRequest": {
+      "type": "object",
+      "properties": {
+        "connectionName": {
+          "type": "string",
+          "title": "connection_name is the name of the connection"
+        }
+      },
+      "title": "GetConnectionRequest are fields required to fetch a connection"
+    },
+    "v1alphaGetConnectionResponse": {
+      "type": "object",
+      "properties": {
+        "telemetryTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alphaMLTType"
+          },
+          "title": "telemetry_types are the MLT telemetry types for this connection"
+        },
+        "deploymentType": {
+          "$ref": "#/definitions/v1alphaDeploymentType",
+          "title": "deployment_type is the deployment mechanism"
+        },
+        "destinations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alphaTelemetryDestination"
+          },
+          "title": "destinations are where telemetry for this connection flows to"
+        }
+      },
+      "title": "GetConnectionResponse has details on a connection"
+    },
+    "v1alphaGetConnectionStatusRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        },
+        "validatorRunId": {
+          "type": "string",
+          "description": "validator_run_id is the Validator Run ID to get validation metrics for. Omitting this will yield empty/false validation results in the response."
+        }
+      },
+      "title": "GetConnectionStatusRequest contains options for getting a connections validator run results"
+    },
+    "v1alphaGetConnectionStatusResponse": {
+      "type": "object",
+      "properties": {
+        "receivingData": {
+          "type": "boolean",
+          "title": "receiving_data indicates if the Connection's Collector is receiving telemetry for its configured Telemetry types"
+        },
+        "sendingData": {
+          "type": "boolean",
+          "title": "sending_data indicates if the Connection's Collector is sending telemetry for its configured Telemetry types"
+        },
+        "dataIntegrity": {
+          "type": "boolean",
+          "title": "sending_data indicates if the data coming to the Collector fulfills validator parity or policy requirements"
+        },
+        "clientsConnected": {
+          "type": "boolean",
+          "title": "clients_connected indicates if the Connection's Collector is connected for its configured Telemetry types"
+        },
+        "validationResults": {
+          "$ref": "#/definitions/v1alphaValidationResultsBySignal",
+          "title": "validation_results is a map of granular validation details per data type (MLT)"
+        }
+      }
+    },
+    "v1alphaGetConnectionValidatorRunIdsRequest": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1alphaConnectionScope"
+        }
+      },
+      "title": "GetConnectionValidatorRunIdsRequest is a request to get all available connection validator runs"
+    },
+    "v1alphaGetConnectionValidatorRunIdsResponse": {
+      "type": "object",
+      "properties": {
+        "validatorRunIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "validator_run_ids is the list of validator_run_ids currently available in the metrics set"
+        }
+      },
+      "title": "GetConnectionValidatorRunIdsResponse provides all the validator run ids for a connection"
+    },
+    "v1alphaGetConnectionsResponse": {
+      "type": "object",
+      "properties": {
+        "connectionNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "connection_names are the connection names found in the namespace"
+        }
+      },
+      "title": "GetConnectionsResponse contains a list of all the connections in a namespace"
+    },
+    "v1alphaGetDatadogIntegrationsResponse": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "names contains the list of datadog integration names"
+        }
+      }
+    },
     "v1alphaGetFilterRequest": {
       "type": "object",
       "properties": {
@@ -399,6 +1200,70 @@
           "$ref": "#/definitions/v1alphaFilter"
         }
       }
+    },
+    "v1alphaGetInstallStatusRequest": {
+      "type": "object",
+      "properties": {
+        "connectionName": {
+          "type": "string",
+          "description": "connection_name is the name of the octant connection to check install status for."
+        }
+      }
+    },
+    "v1alphaGetInstallStatusResponse": {
+      "type": "object",
+      "properties": {
+        "installStatus": {
+          "$ref": "#/definitions/v1alphaInstallStatus",
+          "description": "install_status is the status of the installation."
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alphaResourceDetails"
+          },
+          "description": "details will contain any necessary details for states that have extra information."
+        }
+      }
+    },
+    "v1alphaInstallMDAIHubRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "namespace is the kubernetes namespace to install into."
+        },
+        "connectionName": {
+          "type": "string",
+          "description": "connection_name is the named octant connection configuration to use for install."
+        },
+        "mdaiVersion": {
+          "type": "string",
+          "description": "mdai_version is the mdai hub version to use for install."
+        }
+      }
+    },
+    "v1alphaInstallStatus": {
+      "type": "string",
+      "enum": [
+        "INSTALL_STATUS_UNSPECIFIED",
+        "INSTALL_STATUS_INSTALLING",
+        "INSTALL_STATUS_ERROR",
+        "INSTALL_STATUS_INSTALLED",
+        "INSTALL_STATUS_TIMEOUT"
+      ],
+      "default": "INSTALL_STATUS_UNSPECIFIED"
+    },
+    "v1alphaIntegrationType": {
+      "type": "string",
+      "enum": [
+        "INTEGRATION_TYPE_UNSPECIFIED",
+        "INTEGRATION_TYPE_DATADOG"
+      ],
+      "default": "INTEGRATION_TYPE_UNSPECIFIED",
+      "description": "- INTEGRATION_TYPE_UNSPECIFIED: INTEGRATION_TYPE_UNSPECIFIED is unsupported and should not be used\n - INTEGRATION_TYPE_DATADOG: INTEGRATION_TYPE_DATADOG is for datadog telemetry destinations",
+      "title": "IntegrationType is the type of integration for destinations or deployments"
     },
     "v1alphaLogRequest": {
       "type": "object",
@@ -445,6 +1310,25 @@
         }
       }
     },
+    "v1alphaMLTType": {
+      "type": "string",
+      "enum": [
+        "MLT_TYPE_UNSPECIFIED",
+        "MLT_TYPE_METRIC",
+        "MLT_TYPE_TRACE",
+        "MLT_TYPE_LOG"
+      ],
+      "default": "MLT_TYPE_UNSPECIFIED"
+    },
+    "v1alphaManifestOutFormat": {
+      "type": "string",
+      "enum": [
+        "MANIFEST_OUT_FORMAT_UNSPECIFIED",
+        "MANIFEST_OUT_FORMAT_JSON",
+        "MANIFEST_OUT_FORMAT_YAML"
+      ],
+      "default": "MANIFEST_OUT_FORMAT_UNSPECIFIED"
+    },
     "v1alphaOverallRequest": {
       "type": "object",
       "properties": {
@@ -463,6 +1347,51 @@
       "properties": {
         "data": {
           "$ref": "#/definitions/budgetV1alphaOverall"
+        }
+      }
+    },
+    "v1alphaResourceDetails": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "name is the name of the resource (pod name, etc.)"
+        },
+        "message": {
+          "type": "string",
+          "description": "message describes the state of the resource."
+        }
+      }
+    },
+    "v1alphaSaveArgoConnectionRequest": {
+      "type": "object",
+      "properties": {
+        "argoEndpoint": {
+          "type": "string",
+          "description": "argo_endpoint is the endpoint to the argo cd cluster to communicate with."
+        },
+        "argoAccountToken": {
+          "type": "string",
+          "description": "argo_account_token is the generated token for the account to use for communicating with the argo cd API."
+        },
+        "name": {
+          "type": "string",
+          "title": "name contains name of the argocd integration to save"
+        }
+      }
+    },
+    "v1alphaSaveDatadogIntegrationRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "name contains name of the datadog integration to save"
+        },
+        "apiKey": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
         }
       }
     },
@@ -492,6 +1421,42 @@
           "type": "number",
           "format": "double",
           "description": "cost contains the total cost.\nRemember to round to the nearest two decimal places."
+        }
+      }
+    },
+    "v1alphaTelemetryDestination": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1alphaIntegrationType",
+          "title": "type is the integration type for this integration"
+        },
+        "integrationName": {
+          "type": "string",
+          "title": "integration_name is the name of a previously created integration with information needed to send telemetry"
+        }
+      },
+      "title": "TelemetryDestination is information for an integration to send telemetry to from a connection"
+    },
+    "v1alphaTestConnectionRequest": {
+      "type": "object",
+      "properties": {
+        "argoEndpoint": {
+          "type": "string",
+          "description": "argo_endpoint is the endpoint to the argo cd cluster to communicate with."
+        },
+        "argoAccountToken": {
+          "type": "string",
+          "description": "argo_account_token is the generated token for the account to use for communicating with the argo cd API."
+        }
+      }
+    },
+    "v1alphaTestConnectionResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "success indicates whether the operation was succesful or not."
         }
       }
     },
@@ -633,6 +1598,56 @@
       ],
       "default": "STATUS_UNSPECIFIED",
       "description": " - STATUS_VALUE_UPDATED: STATUS_VALUE_UPDATED means the data have been updated in MDAI gateway.\n - STATUS_WAIT_PROPAGATION: STATUS_WAIT_PROPAGATION means we are waiting for the collectors to restart with the new values.\n - STATUS_COMPLETED: STATUS_COMPLETED means collectors are all updated."
+    },
+    "v1alphaValidationAttributes": {
+      "type": "object",
+      "properties": {
+        "parity": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "parity indicates if the ingress attribute matches the attribute on egress"
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "parity indicates if the attribute fulfills the MDAI validator policy for this attribute"
+        }
+      }
+    },
+    "v1alphaValidationResult": {
+      "type": "object",
+      "properties": {
+        "parity": {
+          "type": "boolean",
+          "title": "parity indicates if the ingress telemetry payloads match the egress telemetry payloads"
+        },
+        "policy": {
+          "type": "boolean",
+          "title": "parity indicates if the egress telemetry payloads fulfill the MDAI validator policy"
+        },
+        "attributes": {
+          "$ref": "#/definitions/v1alphaValidationAttributes",
+          "title": "attributes is a map of attributes to per-attribute parity/policy checks"
+        }
+      }
+    },
+    "v1alphaValidationResultsBySignal": {
+      "type": "object",
+      "properties": {
+        "logs": {
+          "$ref": "#/definitions/v1alphaValidationResult"
+        },
+        "metrics": {
+          "$ref": "#/definitions/v1alphaValidationResult"
+        },
+        "traces": {
+          "$ref": "#/definitions/v1alphaValidationResult"
+        }
+      }
     }
   }
 }
