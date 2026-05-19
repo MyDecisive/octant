@@ -3,6 +3,7 @@ package budgetdata
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
@@ -18,10 +19,8 @@ const (
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
 
-	whereTimeLessThanFormatter = "(CAST(%s AS FLOAT) <= CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))"
-	whereTimeBetweenFormatter  = "(CAST(%s AS FLOAT) BETWEEN CAST((NOW() - INTERVAL %d HOUR) AS FLOAT) AND CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))" //nolint:lll
-	whereSearchKeyword         = "$keyword"
-	whereSearchFormatter       = "(%s LIKE $keyword)"
+	whereSearchKeyword   = "$keyword"
+	whereSearchFormatter = "(%s LIKE $keyword)"
 
 	showTableFormatter    = "SHOW TABLES LIKE '%s'"
 	getLogDataFormatter   = "SELECT %[2]s AS \"%[3]s\", SUM(%[4]s / %[6]f) AS \"%[5]s\" FROM %[1]s WHERE %[7]s GROUP BY %[2]s ORDER BY `%[5]s` DESC LIMIT %[8]d"                                                                                                 //nolint:lll
@@ -32,6 +31,11 @@ const (
 	DayInHR       = 24   // 1 day
 	MonthInHR     = 730  // 30 days (i.e., closest approx. to a month)
 	LastMonthInHR = 1460 // 60 days (i.e., closest approx. to 2 month)
+)
+
+var (
+	ErrQuery      = errors.New("query error")
+	ErrConnection = errors.New("connection error")
 )
 
 // MetricDataRetriever is used to retrieve metric data from the data store.
@@ -151,7 +155,7 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	return gdr.getTotal(
@@ -283,7 +287,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 	if len(result) > 0 {
 		return result[0], nil
@@ -314,10 +318,15 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timestampCol ColumnString,
 ) string {
 	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
-		return fmt.Sprintf(whereTimeLessThanFormatter, timestampCol.Name(), gdr.toHr(timeframe))
+		return fmt.Sprintf("(%s >= NOW() - INTERVAL '%d HOUR')",
+			timestampCol.Name(),
+			gdr.toHr(timeframe),
+		)
 	}
-	return fmt.Sprintf(whereTimeBetweenFormatter,
-		timestampCol.Name(), gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), gdr.toHr(timeframe),
+	return fmt.Sprintf("(%s BETWEEN NOW() - INTERVAL '%d HOUR' AND NOW() - INTERVAL '%d HOUR')",
+		timestampCol.Name(),
+		gdr.toHr(timeframe),
+		gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD),
 	)
 }
 
@@ -329,6 +338,7 @@ func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	case budgetv1alpha.Timeframe_TIMEFRAME_MTD:
 		return MonthInHR
 	default:
+		zap.L().Warn("unrecognized timeframe, defaulting to last month", zap.Int("timeframe", int(timeframe)))
 		return LastMonthInHR
 	}
 }
