@@ -96,7 +96,8 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return strconv.FormatBool(boolValue), nil
 	}
 
-	return "", nil
+	return "", fmt.Errorf("%w: variable %q has unsupported JSON value %s", ErrInvalid, varName, string(raw))
+
 }
 
 // UpdateVariable updates the value of the given variable in MDAI gateway.
