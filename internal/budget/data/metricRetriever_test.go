@@ -39,6 +39,7 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 		}, nil).Once()
 
 		dbmock.ExpectQuery(expectedLogRecSQL).
+			WithArgs(toGB).
 			WillReturnRows(sqlmock.NewRows([]string{"total"}).
 				AddRow(expected.LogReceived))
 
@@ -593,7 +594,7 @@ func TestGreptimeDataRetriever_RootSpansExist(t *testing.T) {
 			DB:        fakedb,
 		}, nil).Once()
 
-		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnError(assert.AnError)
+		dbmock.ExpectQuery(expectedSQL).WillReturnError(assert.AnError)
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.RootSpansExist(t.Context(), namespace)
@@ -675,7 +676,7 @@ func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
 			DB:        fakedb,
 		}, nil).Once()
 
-		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnError(assert.AnError)
+		dbmock.ExpectQuery(expectedSQL).WillReturnError(assert.AnError)
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.LogsExist(t.Context(), namespace)
