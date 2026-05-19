@@ -81,7 +81,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		return nil, err
 	}
 
-	logRec, err := gdr.getTotal(
+	logRec, err := getTotal(
 		ctx,
 		conn.DB,
 		timeframe,
@@ -95,7 +95,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		logRec = 0
 	}
 
-	logSent, err := gdr.getTotal(
+	logSent, err := getTotal(
 		ctx,
 		conn.DB,
 		timeframe,
@@ -109,7 +109,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		logSent = 0
 	}
 
-	spanRec, err := gdr.getTotal(
+	spanRec, err := getTotal(
 		ctx,
 		conn.DB,
 		timeframe,
@@ -123,7 +123,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		spanRec = 0
 	}
 
-	spanSent, err := gdr.getTotal(
+	spanSent, err := getTotal(
 		ctx,
 		conn.DB,
 		timeframe,
@@ -158,7 +158,7 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 		return 0, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
-	return gdr.getTotal(
+	return getTotal(
 		ctx,
 		conn.DB,
 		timeframe,
@@ -182,7 +182,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 		return nil, "", err
 	}
 
-	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
+	where := timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
 	if input.Search != "" {
 		where += " AND " + fmt.Sprintf(whereSearchFormatter, table.Service.Name())
 		args[whereSearchKeyword] = fmt.Sprintf("%%%s%%", input.Search)
@@ -222,7 +222,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 		return nil, "", err
 	}
 
-	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
+	where := timeRangeExpression(input.Timeframe, table.TimeWindow)
 	if input.Search != "" {
 		where += " AND " + fmt.Sprintf(whereSearchFormatter, table.RootID.Name())
 		args[whereSearchKeyword] = fmt.Sprintf("%%%s%%", input.Search)
@@ -272,7 +272,7 @@ func (gdr *GreptimeDataRetriever) LogsExist(ctx context.Context, namespace strin
 }
 
 // getTotal returns total sum of the valueCol divided by the divisor.
-func (gdr *GreptimeDataRetriever) getTotal(
+func getTotal(
 	ctx context.Context,
 	db *sql.DB,
 	timeframe budgetv1alpha.Timeframe,
@@ -283,7 +283,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 ) (float64, error) {
 	stmt := SELECT(
 		SUM(valueCol.DIV(Float(divisor))),
-	).FROM(table).WHERE(RawBool(gdr.timeRangeExpression(timeframe, timestampCol)))
+	).FROM(table).WHERE(RawBool(timeRangeExpression(timeframe, timestampCol)))
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
@@ -313,25 +313,25 @@ func (*GreptimeDataRetriever) tableExists(
 
 // timeRangeExpression generates a bool expression that can be used
 // to only retrieve data within the given timeframe.
-func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
+func timeRangeExpression(
 	timeframe budgetv1alpha.Timeframe,
 	timestampCol ColumnString,
 ) string {
 	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
 		return fmt.Sprintf("(%s >= NOW() - INTERVAL '%d HOUR')",
 			timestampCol.Name(),
-			gdr.toHr(timeframe),
+			toHr(timeframe),
 		)
 	}
 	return fmt.Sprintf("(%s BETWEEN NOW() - INTERVAL '%d HOUR' AND NOW() - INTERVAL '%d HOUR')",
 		timestampCol.Name(),
-		gdr.toHr(timeframe),
-		gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD),
+		toHr(timeframe),
+		toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD),
 	)
 }
 
 // toHr converts timeframe enum to number of hours.
-func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
+func toHr(timeframe budgetv1alpha.Timeframe) int {
 	switch timeframe {
 	case budgetv1alpha.Timeframe_TIMEFRAME_24HR:
 		return DayInHR
