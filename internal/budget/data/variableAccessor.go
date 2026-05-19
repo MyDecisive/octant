@@ -61,18 +61,17 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return "", err
 	}
 	defer resp.Body.Close() //nolint:errcheck
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		return "", nil
 	}
 
 	if resp.StatusCode >= http.StatusMultipleChoices {
-		return "", fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w:status %d: %s", ErrInvalid, resp.StatusCode, body)
 	}
 
 	var result map[string]string
@@ -104,9 +103,13 @@ func (mdai *MDAIGateway) UpdateVariable(namespace string, hubName string, varNam
 		return err
 	}
 	defer resp.Body.Close() //nolint:errcheck
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	if resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("%w:status %d", ErrInvalid, resp.StatusCode)
+		return fmt.Errorf("%w:status %d: %s", ErrInvalid, resp.StatusCode, body)
 	}
 	return nil
 }
