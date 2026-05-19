@@ -338,6 +338,7 @@ func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	case budgetv1alpha.Timeframe_TIMEFRAME_MTD:
 		return MonthInHR
 	default:
+		zap.L().Warn("unrecognized timeframe, defaulting to last month", zap.Int("timeframe", int(timeframe)))
 		return LastMonthInHR
 	}
 }
