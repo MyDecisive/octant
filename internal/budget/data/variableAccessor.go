@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/wrapper"
@@ -74,16 +75,26 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return "", fmt.Errorf("%w:status %d: %s", ErrInvalid, resp.StatusCode, body)
 	}
 
-	var result map[string]string
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
+	var result map[string]any
+	if unmarshalErr := json.Unmarshal(body, &result); unmarshalErr != nil {
+		return "", unmarshalErr
 	}
 
-	if val, ok := result[varName]; ok {
+	raw, varExists := result[varName]
+	if !varExists {
+		return "", nil
+	}
+
+	switch val := raw.(type) {
+	case string:
 		return val, nil
+	case bool:
+		return strconv.FormatBool(val), nil
+	case nil:
+		return "", nil
+	default:
+		return "", fmt.Errorf("%w: variable %q has unsupported JSON value %v", ErrInvalid, varName, val)
 	}
-
-	return "", nil
 }
 
 // UpdateVariable updates the value of the given variable in MDAI gateway.
