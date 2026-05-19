@@ -13,7 +13,7 @@ import (
 //go:embed dist/*
 var App embed.FS
 
-//go:embed swagger.json
+//go:embed swagger.yaml
 var swaggerSpec embed.FS
 
 func OctantUIHandler() (http.Handler, error) {
@@ -36,10 +36,10 @@ func withFrameOptions(h http.Handler) http.Handler {
 
 // ServeSwaggerUI serves the Swagger UI and JSON spec.
 func ServeSwaggerUI(mux *http.ServeMux) {
-	mux.Handle("/swagger.json", withFrameOptions(http.FileServer(http.FS(swaggerSpec))))
+	mux.Handle("/swagger.yaml", withFrameOptions(http.FileServer(http.FS(swaggerSpec))))
 	mux.Handle("/docs/", withFrameOptions(middleware.Redoc(middleware.RedocOpts{
 		BasePath: "/",
-		SpecURL:  "/swagger.json",
+		SpecURL:  "/swagger.yaml",
 		Path:     "docs",
 		Title:    "Octant API Docs",
 	}, http.NotFoundHandler())))
