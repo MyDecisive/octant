@@ -743,6 +743,7 @@ func TestTimeRangeExpression(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			got := timeRangeExpression(tc.timeframe, tc.timestampCol)
 			assert.Equal(t, tc.expected, got)
 		})
