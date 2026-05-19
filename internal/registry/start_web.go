@@ -13,7 +13,7 @@ import (
 )
 
 func Start(con *config.Configuration, rpcServer *rpc.Server) error {
-	uiHandler, err := web.Handler()
+	uiHandler, err := web.OctantUIHandler()
 	if err != nil {
 		return fmt.Errorf("ui server: %w", err)
 	}
@@ -25,6 +25,9 @@ func Start(con *config.Configuration, rpcServer *rpc.Server) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", uiHandler)
+
+	web.ServeSwaggerUI(mux)
+
 	mux.Handle("/api/", http.StripPrefix("/api", handler))
 
 	zap.L().Info("starting web and rpc server", zap.Uint16("port", con.Port))

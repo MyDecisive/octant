@@ -1,0 +1,2471 @@
+openapi: 3.1.0
+info: {}
+paths:
+  /budget.v1alpha.BudgetService/Log:
+    get:
+      tags:
+        - BudgetService
+      summary: Log
+      description: Log returns budget stats for logs.
+      operationId: budget.v1alpha.BudgetService.Log.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.LogRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.LogResponse'
+    post:
+      tags:
+        - BudgetService
+      summary: Log
+      description: Log returns budget stats for logs.
+      operationId: budget.v1alpha.BudgetService.Log
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.LogRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.LogResponse'
+  /budget.v1alpha.BudgetService/Overall:
+    get:
+      tags:
+        - BudgetService
+      summary: Overall
+      description: Overall returns budeget stats.
+      operationId: budget.v1alpha.BudgetService.Overall.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.OverallRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.OverallResponse'
+    post:
+      tags:
+        - BudgetService
+      summary: Overall
+      description: Overall returns budeget stats.
+      operationId: budget.v1alpha.BudgetService.Overall
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.OverallRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.OverallResponse'
+  /budget.v1alpha.BudgetService/Trace:
+    get:
+      tags:
+        - BudgetService
+      summary: Trace
+      description: Trace returns budget stats for traces.
+      operationId: budget.v1alpha.BudgetService.Trace.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TraceRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TraceResponse'
+    post:
+      tags:
+        - BudgetService
+      summary: Trace
+      description: Trace returns budget stats for traces.
+      operationId: budget.v1alpha.BudgetService.Trace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.TraceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TraceResponse'
+  /budget.v1alpha.FilterService/GetFilter:
+    get:
+      tags:
+        - FilterService
+      summary: GetFilter
+      description: |-
+        GetFilter returns the current filter setting of the given filter type.
+         If  an update is in progress, this will return with an error code `unavailable`.
+      operationId: budget.v1alpha.FilterService.GetFilter.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.GetFilterRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.GetFilterResponse'
+    post:
+      tags:
+        - FilterService
+      summary: GetFilter
+      description: |-
+        GetFilter returns the current filter setting of the given filter type.
+         If  an update is in progress, this will return with an error code `unavailable`.
+      operationId: budget.v1alpha.FilterService.GetFilter
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.GetFilterRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.GetFilterResponse'
+  /budget.v1alpha.FilterService/UpdateFilter:
+    post:
+      tags:
+        - FilterService
+      summary: UpdateFilter
+      description: |-
+        UpdateFilter attempts to update filter setting of the given filter type.
+         If an update is in progress, this will immediately return with an error code `unavailable`.
+         Otherwise, this will continuously give update until the update is complete or errored.
+      operationId: budget.v1alpha.FilterService.UpdateFilter
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/connect+json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/connect+proto:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc+proto:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc+json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc-web:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc-web+proto:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+          application/grpc-web+json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.UpdateFilterRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse'
+  /budget.v1alpha.TimeframeService/TimeframeStatus:
+    get:
+      tags:
+        - TimeframeService
+      summary: TimeframeStatus
+      description: TimeframeStatus returns timeframe status for each timeframe.
+      operationId: budget.v1alpha.TimeframeService.TimeframeStatus.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusResponse'
+    post:
+      tags:
+        - TimeframeService
+      summary: TimeframeStatus
+      description: TimeframeStatus returns timeframe status for each timeframe.
+      operationId: budget.v1alpha.TimeframeService.TimeframeStatus
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusResponse'
+  /octant.v1alpha.ArgoCDService/SaveArgoConnection:
+    post:
+      tags:
+        - ArgoCDService
+      summary: SaveArgoConnection
+      description: SaveArgoConnection saves the argo connection details.
+      operationId: octant.v1alpha.ArgoCDService.SaveArgoConnection
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.SaveArgoConnectionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.ArgoCDService/TestConnection:
+    post:
+      tags:
+        - ArgoCDService
+      summary: TestConnection
+      description: TestConnection uses the provided request data to test the argo connection.
+      operationId: octant.v1alpha.ArgoCDService.TestConnection
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.TestConnectionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.TestConnectionResponse'
+  /octant.v1alpha.ConnectionService/CreateConnection:
+    post:
+      tags:
+        - ConnectionService
+      summary: CreateConnection
+      description: CreateConnection creates a connection and deploys it
+      operationId: octant.v1alpha.ConnectionService.CreateConnection
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.CreateConnectionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.ConnectionService/CreateConnectionValidatorRun:
+    post:
+      tags:
+        - ConnectionService
+      summary: CreateConnectionValidatorRun
+      description: CreateConnectionValidatorRun creates a new validator run for the given connection. Will create a new validator run if one already exists.
+      operationId: octant.v1alpha.ConnectionService.CreateConnectionValidatorRun
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.CreateConnectionValidatorRunRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.CreateConnectionValidatorRunResponse'
+  /octant.v1alpha.ConnectionService/DeleteConnection:
+    post:
+      tags:
+        - ConnectionService
+      summary: DeleteConnection
+      description: DeleteConnection removes an existing connection and its associated resources
+      operationId: octant.v1alpha.ConnectionService.DeleteConnection
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.DeleteConnectionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.ConnectionService/DeleteConnectionValidator:
+    post:
+      tags:
+        - ConnectionService
+      summary: DeleteConnectionValidator
+      description: DeleteConnectionValidator deletes connection validator resources
+      operationId: octant.v1alpha.ConnectionService.DeleteConnectionValidator
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.DeleteConnectionValidatorRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.ConnectionService/GenerateManifests:
+    post:
+      tags:
+        - ConnectionService
+      summary: GenerateManifests
+      description: |-
+        GenerateManifests generates the manifest base on the given input and this will returns
+         the compressed zip file containing the manifests as a stream of raw bytes.
+         Note: To create a download link in the FE, the stream of file content data should be stored
+         in a typed blob and then https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL_static
+         should be used.
+      operationId: octant.v1alpha.ConnectionService.GenerateManifests
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/connect+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/connect+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc-web:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc-web+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+          application/grpc-web+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GenerateManifestsResponse'
+  /octant.v1alpha.ConnectionService/GetConnection:
+    get:
+      tags:
+        - ConnectionService
+      summary: GetConnection
+      description: GetConnection gets details about a connection
+      operationId: octant.v1alpha.ConnectionService.GetConnection.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionResponse'
+    post:
+      tags:
+        - ConnectionService
+      summary: GetConnection
+      description: GetConnection gets details about a connection
+      operationId: octant.v1alpha.ConnectionService.GetConnection
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetConnectionRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionResponse'
+  /octant.v1alpha.ConnectionService/GetConnectionStatus:
+    get:
+      tags:
+        - ConnectionService
+      summary: GetConnectionStatus
+      description: GetConnectionStatus gets the status of a connection based on dataflow and validation metrics
+      operationId: octant.v1alpha.ConnectionService.GetConnectionStatus.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionStatusRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionStatusResponse'
+    post:
+      tags:
+        - ConnectionService
+      summary: GetConnectionStatus
+      description: GetConnectionStatus gets the status of a connection based on dataflow and validation metrics
+      operationId: octant.v1alpha.ConnectionService.GetConnectionStatus
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetConnectionStatusRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionStatusResponse'
+  /octant.v1alpha.ConnectionService/GetConnectionValidatorRunIds:
+    get:
+      tags:
+        - ConnectionService
+      summary: GetConnectionValidatorRunIds
+      description: GetConnectionValidatorRuns gets the validator runs that exist in the validation dataset
+      operationId: octant.v1alpha.ConnectionService.GetConnectionValidatorRunIds.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionValidatorRunIdsRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionValidatorRunIdsResponse'
+    post:
+      tags:
+        - ConnectionService
+      summary: GetConnectionValidatorRunIds
+      description: GetConnectionValidatorRuns gets the validator runs that exist in the validation dataset
+      operationId: octant.v1alpha.ConnectionService.GetConnectionValidatorRunIds
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetConnectionValidatorRunIdsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionValidatorRunIdsResponse'
+  /octant.v1alpha.ConnectionService/GetConnections:
+    get:
+      tags:
+        - ConnectionService
+      summary: GetConnections
+      description: GetConnections gets all existing connection names
+      operationId: octant.v1alpha.ConnectionService.GetConnections.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionsResponse'
+    post:
+      tags:
+        - ConnectionService
+      summary: GetConnections
+      description: GetConnections gets all existing connection names
+      operationId: octant.v1alpha.ConnectionService.GetConnections
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/google.protobuf.Empty'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetConnectionsResponse'
+  /octant.v1alpha.DatadogService/GetDatadogIntegrations:
+    get:
+      tags:
+        - DatadogService
+      summary: GetDatadogIntegrations
+      description: GetDatadogIntegrations returns list of datadog integration names.
+      operationId: octant.v1alpha.DatadogService.GetDatadogIntegrations.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationsResponse'
+    post:
+      tags:
+        - DatadogService
+      summary: GetDatadogIntegrations
+      description: GetDatadogIntegrations returns list of datadog integration names.
+      operationId: octant.v1alpha.DatadogService.GetDatadogIntegrations
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/google.protobuf.Empty'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationsResponse'
+  /octant.v1alpha.DatadogService/SaveDatadogIntegration:
+    post:
+      tags:
+        - DatadogService
+      summary: SaveDatadogIntegration
+      description: |-
+        SaveDatadogIntegration saves the given datadog integration.
+         If the integration already exists, this will override the saved data with the one provided.
+      operationId: octant.v1alpha.DatadogService.SaveDatadogIntegration
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.SaveDatadogIntegrationRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.InstallService/GetInstallStatus:
+    post:
+      tags:
+        - InstallService
+      summary: GetInstallStatus
+      description: GetInstallStatus creates a response stream with mdai install status updates.
+      operationId: octant.v1alpha.InstallService.GetInstallStatus
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/connect+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/connect+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc-web:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc-web+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+          application/grpc-web+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetInstallStatusResponse'
+  /octant.v1alpha.InstallService/InstallMDAIHub:
+    post:
+      tags:
+        - InstallService
+      summary: InstallMDAIHub
+      description: InstallMDAIHub initiates installing the mdai smart hub with the provided request data.
+      operationId: octant.v1alpha.InstallService.InstallMDAIHub
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.InstallMDAIHubRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+components:
+  schemas:
+    base64:
+      type: boolean
+      title: base64
+      description: Specifies if the message query param is base64 encoded, which may be required for binary data
+    budget.v1alpha.Filter:
+      type: object
+      properties:
+        type:
+          title: type
+          description: type contains the filter type.
+          $ref: '#/components/schemas/budget.v1alpha.FilterType'
+        pctSampled:
+          type: integer
+          title: pct_sampled
+          description: pct_sampled contains the sampling percentage.
+        includeErr:
+          type: boolean
+          title: include_err
+          description: include_err indcates if errors should be included.
+      title: Filter
+      additionalProperties: false
+    budget.v1alpha.FilterType:
+      type: string
+      title: FilterType
+      enum:
+        - FILTER_TYPE_UNSPECIFIED
+        - FILTER_TYPE_LOG
+        - FILTER_TYPE_TRACE
+      description: FilterType represents the type of filters supported.
+    budget.v1alpha.GetFilterRequest:
+      type: object
+      properties:
+        type:
+          title: type
+          description: type contains the type of the filter to retrieve.
+          $ref: '#/components/schemas/budget.v1alpha.FilterType'
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of this connection and its resources in argo/k8s
+      title: GetFilterRequest
+      additionalProperties: false
+    budget.v1alpha.GetFilterResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/budget.v1alpha.Filter'
+      title: GetFilterResponse
+      additionalProperties: false
+    budget.v1alpha.Log:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name is the service name.
+        sent:
+          type: number
+          title: sent
+          format: double
+          description: sent represents the amount of data send (in GB).
+        pct:
+          type: number
+          title: pct
+          format: float
+          description: |-
+            pct contains the percentage of total log cost (e.g., 1.2345%).
+             Remember to round to the nearest two decimal places.
+        cost:
+          type: number
+          title: cost
+          format: double
+          description: |-
+            cost contains the total cost.
+             Remember to round to the nearest two decimal places.
+      title: Log
+      additionalProperties: false
+    budget.v1alpha.LogRequest:
+      type: object
+      properties:
+        timeframe:
+          title: timeframe
+          description: timeframe tells the server timeframe of the data to retrieve.
+          $ref: '#/components/schemas/budget.v1alpha.Timeframe'
+        size:
+          type: integer
+          title: size
+          description: size limits number of services to retrieve.
+        pageToken:
+          type: string
+          title: page_token
+          description: page_token (pagination) used to grab next page of data.
+        search:
+          type: string
+          title: search
+          description: search is used to filter the data so that only services with name containing the given search term will be returned.
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of this connection and its resources in argo/k8s
+      title: LogRequest
+      additionalProperties: false
+    budget.v1alpha.LogResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/budget.v1alpha.Log'
+          title: data
+        nextPageToken:
+          type: string
+          title: next_page_token
+      title: LogResponse
+      additionalProperties: false
+    budget.v1alpha.Overall:
+      type: object
+      properties:
+        cost:
+          type: number
+          title: cost
+          format: double
+          description: |-
+            cost contains the total cost for log and trace.
+             Remember to round to the nearest two decimal places.
+        log:
+          title: log
+          description: log contains overall metric data for logs.
+          $ref: '#/components/schemas/budget.v1alpha.Overall.Metric'
+        trace:
+          title: trace
+          description: trace contains overall metric data for traces.
+          $ref: '#/components/schemas/budget.v1alpha.Overall.Metric'
+      title: Overall
+      additionalProperties: false
+    budget.v1alpha.Overall.Metric:
+      type: object
+      properties:
+        received:
+          type: number
+          title: received
+          format: double
+          description: |-
+            received represents the total amount of data recieved.
+             For log, the unit is in GB; For trace, the unit is in mm Events.
+        sent:
+          type: number
+          title: sent
+          format: double
+          description: |-
+            sent represents the total amount of data send.
+             For log, the unit is in GB; For trace, the unit is in mm Events.
+        filtered:
+          type: number
+          title: filtered
+          format: double
+          description: |-
+            filtered represents the difference between sent and recieved.
+             For log, the unit is in GB; For trace, the unit is in mm Events.
+        costRate:
+          type: number
+          title: cost_rate
+          format: float
+          description: |-
+            cost_rate contains the per GB (for log) or the per mm Events (for traces) cost rate.
+             Remember to round to the nearest two decimal places.
+        pct:
+          type: number
+          title: pct
+          format: float
+          description: |-
+            pct contains the percentage of total overall cost (e.g., 1.2345%).
+             Remember to round to the nearest two decimal places.
+        cost:
+          type: number
+          title: cost
+          format: double
+          description: |-
+            cost contains the total cost.
+             Remember to round to the nearest two decimal places.
+      title: Metric
+      additionalProperties: false
+    budget.v1alpha.OverallRequest:
+      type: object
+      properties:
+        timeframe:
+          title: timeframe
+          description: timeframe tells the server timeframe of the data to retrieve.
+          $ref: '#/components/schemas/budget.v1alpha.Timeframe'
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+      title: OverallRequest
+      additionalProperties: false
+    budget.v1alpha.OverallResponse:
+      type: object
+      properties:
+        data:
+          title: data
+          $ref: '#/components/schemas/budget.v1alpha.Overall'
+      title: OverallResponse
+      additionalProperties: false
+    budget.v1alpha.Span:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name is the trace root span name.
+        breadth:
+          type: number
+          title: breadth
+          format: double
+          description: breadth contains the span breadth.
+        depth:
+          type: number
+          title: depth
+          format: double
+          description: depth contains the span depth.
+        invocations:
+          type: number
+          title: invocations
+          format: double
+          description: invocations contains the number of invocations.
+        cost:
+          type: number
+          title: cost
+          format: double
+          description: |-
+            cost contains the total cost.
+             Remember to round to the nearest two decimal places.
+      title: Span
+      additionalProperties: false
+    budget.v1alpha.Timeframe:
+      type: string
+      title: Timeframe
+      enum:
+        - TIMEFRAME_UNSPECIFIED
+        - TIMEFRAME_24HR
+        - TIMEFRAME_MTD
+        - TIMEFRAME_LM
+      description: Timeframe represents possible timeframes.
+    budget.v1alpha.TimeframeStatusRequest:
+      type: object
+      properties:
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of this connection and its resources in argo/k8s
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+      title: TimeframeStatusRequest
+      additionalProperties: false
+    budget.v1alpha.TimeframeStatusResponse:
+      type: object
+      properties:
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusResponse.Status'
+          title: statuses
+          description: |-
+            statuses contains status of each timeframe.
+             Note: this array will not contain duplicate timeframes.
+        trace:
+          type: boolean
+          title: trace
+          description: |-
+            trace will contain true if there are data for traces.
+             Otherwise, this will contain false.
+             Note: this containing true just means there are data,
+             and it doesn't necessarily mean there will be data
+             for the user's selected timeframe.
+        log:
+          type: boolean
+          title: log
+          description: |-
+            log will contain true if there are data for logs.
+             Otherwise, this will contain false.
+             Note: this containing true just means there are data,
+             and it doesn't necessarily mean there will be data
+             for the user's selected timeframe.
+      title: TimeframeStatusResponse
+      additionalProperties: false
+    budget.v1alpha.TimeframeStatusResponse.Code:
+      type: string
+      title: Code
+      enum:
+        - CODE_UNSPECIFIED
+        - CODE_OK
+        - CODE_NO_DATA
+        - CODE_NOT_ENOUGH
+      description: Code represents the status code of a given timeframe.
+    budget.v1alpha.TimeframeStatusResponse.Status:
+      type: object
+      properties:
+        timeframe:
+          title: timeframe
+          description: timeframe contains the timeframe.
+          $ref: '#/components/schemas/budget.v1alpha.Timeframe'
+        status:
+          title: status
+          description: status contains the status code of the timeframe.
+          $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusResponse.Code'
+      title: Status
+      additionalProperties: false
+    budget.v1alpha.TraceRequest:
+      type: object
+      properties:
+        timeframe:
+          title: timeframe
+          description: timeframe tells the server timeframe of the data to retrieve.
+          $ref: '#/components/schemas/budget.v1alpha.Timeframe'
+        size:
+          type: integer
+          title: size
+          description: size limits number of trace root spans to retrieve.
+        pageToken:
+          type: string
+          title: page_token
+          description: page_token (pagination) used to grab next page of data.
+        search:
+          type: string
+          title: search
+          description: search is used to filter the data so that only trace root span with name containing the given search term will be returned.
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of this connection and its resources in argo/k8s
+      title: TraceRequest
+      additionalProperties: false
+    budget.v1alpha.TraceResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/budget.v1alpha.Span'
+          title: data
+        nextPageToken:
+          type: string
+          title: next_page_token
+      title: TraceResponse
+      additionalProperties: false
+    budget.v1alpha.UpdateFilterRequest:
+      type: object
+      properties:
+        data:
+          title: data
+          description: |-
+            data contains the filter setting data to update.
+             `type` indicates which filter type should be updated.
+          $ref: '#/components/schemas/budget.v1alpha.Filter'
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of this connection and its resources in argo/k8s
+      title: UpdateFilterRequest
+      additionalProperties: false
+    budget.v1alpha.UpdateFilterResponse:
+      type: object
+      properties:
+        status:
+          title: status
+          $ref: '#/components/schemas/budget.v1alpha.UpdateFilterResponse.Status'
+      title: UpdateFilterResponse
+      additionalProperties: false
+    budget.v1alpha.UpdateFilterResponse.Status:
+      type: string
+      title: Status
+      enum:
+        - STATUS_UNSPECIFIED
+        - STATUS_VALUE_UPDATED
+        - STATUS_WAIT_PROPAGATION
+        - STATUS_COMPLETED
+    compression:
+      title: compression
+      enum:
+        - identity
+        - gzip
+        - br
+      description: Which compression algorithm to use for this request
+    connect:
+      title: connect
+      enum:
+        - v1
+      description: Define the version of the Connect protocol
+    connect-protocol-version:
+      type: number
+      title: Connect-Protocol-Version
+      enum:
+        - 1
+      description: Define the version of the Connect protocol
+      const: 1
+    connect-timeout-header:
+      type: number
+      title: Connect-Timeout-Ms
+      description: Define the timeout, in ms
+    connect.error:
+      type: object
+      properties:
+        code:
+          type: string
+          examples:
+            - not_found
+          enum:
+            - canceled
+            - unknown
+            - invalid_argument
+            - deadline_exceeded
+            - not_found
+            - already_exists
+            - permission_denied
+            - resource_exhausted
+            - failed_precondition
+            - aborted
+            - out_of_range
+            - unimplemented
+            - internal
+            - unavailable
+            - data_loss
+            - unauthenticated
+          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+        message:
+          type: string
+          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/connect.error_details.Any'
+          description: A list of messages that carry the error details. There is no limit on the number of messages.
+      title: Connect Error
+      additionalProperties: true
+      description: 'Error type returned by Connect: https://connectrpc.com/docs/go/errors/#http-representation'
+    connect.error_details.Any:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`. This is used to determine the schema of the data in the `value` field and is the discriminator for the `debug` field.'
+        value:
+          type: string
+          format: binary
+          description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
+        debug:
+          oneOf:
+            - type: object
+              title: Any
+              additionalProperties: true
+              description: Detailed error information.
+          discriminator:
+            propertyName: type
+          title: Debug
+          description: Deserialized error detail payload. The 'type' field indicates the schema. This field is for easier debugging and should not be relied upon for application logic.
+      additionalProperties: true
+      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message, with an additional debug field for ConnectRPC error details.
+    encoding:
+      title: encoding
+      enum:
+        - proto
+        - json
+      description: Define which encoding or 'Message-Codec' to use
+    google.protobuf.Empty:
+      type: object
+      description: |-
+        A generic empty message that you can re-use to avoid defining duplicated
+         empty messages in your APIs. A typical example is to use it as the request
+         or the response type of an API method. For instance:
+
+             service Foo {
+               rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+             }
+    octant.v1alpha.ConnectionScope:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          description: namespace that the connection is installed in/will be installed into
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of the connection
+      title: ConnectionScope
+      additionalProperties: false
+      description: ConnectionScope contains identifiers for a connection
+    octant.v1alpha.CreateConnectionRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+        telemetryTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.MLTType'
+          title: telemetry_types
+          description: telemetry_types is used to generate the manifests.
+        deployment:
+          title: deployment
+          description: deployment contains information required for deploying the connection
+          $ref: '#/components/schemas/octant.v1alpha.Deployment'
+        destinations:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.TelemetryDestination'
+          title: destinations
+          description: destinations are where telemetry from this connection is sent and options needed to send it there
+      title: CreateConnectionRequest
+      additionalProperties: false
+      description: CreateConnectionRequest contains options for creating a connection
+    octant.v1alpha.CreateConnectionValidatorRunRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+      title: CreateConnectionValidatorRunRequest
+      additionalProperties: false
+      description: CreateConnectionValidatorRunRequest has options for creating a connection validator
+    octant.v1alpha.CreateConnectionValidatorRunResponse:
+      type: object
+      properties:
+        validatorRunId:
+          type: string
+          title: validator_run_id
+          description: validator_run_id is the created validator_run_id for the new validator run
+      title: CreateConnectionValidatorRunResponse
+      additionalProperties: false
+      description: CreateConnectionValidatorRunResponse contains a response for validator creation
+    octant.v1alpha.DeleteConnectionRequest:
+      type: object
+      properties:
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of the connection to delete
+      title: DeleteConnectionRequest
+      additionalProperties: false
+    octant.v1alpha.DeleteConnectionValidatorRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+      title: DeleteConnectionValidatorRequest
+      additionalProperties: false
+      description: DeleteConnectionValidatorRequest contains options for deleting a connection validator
+    octant.v1alpha.Deployment:
+      type: object
+      properties:
+        type:
+          title: type
+          description: type indicates what type of deployment mechanism/system to use
+          $ref: '#/components/schemas/octant.v1alpha.DeploymentType'
+        integrationName:
+          type: string
+          title: integration_name
+          description: integration_name is the name of the previously created deployment integration to use
+      title: Deployment
+      additionalProperties: false
+      description: Deployment is information needed to deploy a connection
+    octant.v1alpha.DeploymentType:
+      type: string
+      title: DeploymentType
+      enum:
+        - DEPLOYMENT_TYPE_UNSPECIFIED
+        - DEPLOYMENT_TYPE_ARGO_SIDELOAD
+        - DEPLOYMENT_TYPE_ARGO_MANIFEST
+    octant.v1alpha.GenerateManifestsRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+        format:
+          title: format
+          description: format contains output format of the manifests.
+          $ref: '#/components/schemas/octant.v1alpha.ManifestOutFormat'
+        deploymentType:
+          title: deployment_type
+          description: deployment_type use to tell the type of manifest to generate.
+          $ref: '#/components/schemas/octant.v1alpha.DeploymentType'
+        telemetryTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.MLTType'
+          title: telemetry_types
+          description: telemetry_types is used to generate the manifests.
+        mdaiVersion:
+          type: string
+          title: mdai_version
+          description: mdai_version is the mdai hub version to use for app install.
+      title: GenerateManifestsRequest
+      additionalProperties: false
+    octant.v1alpha.GenerateManifestsResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          title: data
+          format: byte
+          description: data contains a chunk of the file content as raw bytes.
+        total:
+          type:
+            - integer
+            - string
+          title: total
+          format: int64
+          description: total is the total number of bytes for current file.
+        type:
+          type: string
+          title: type
+          description: type is the MIME type of the file. (e.g., zip)
+      title: GenerateManifestsResponse
+      additionalProperties: false
+    octant.v1alpha.GetConnectionRequest:
+      type: object
+      properties:
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of the connection
+      title: GetConnectionRequest
+      additionalProperties: false
+      description: GetConnectionRequest are fields required to fetch a connection
+    octant.v1alpha.GetConnectionResponse:
+      type: object
+      properties:
+        telemetryTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.MLTType'
+          title: telemetry_types
+          description: telemetry_types are the MLT telemetry types for this connection
+        deploymentType:
+          title: deployment_type
+          description: deployment_type is the deployment mechanism
+          $ref: '#/components/schemas/octant.v1alpha.DeploymentType'
+        destinations:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.TelemetryDestination'
+          title: destinations
+          description: destinations are where telemetry for this connection flows to
+      title: GetConnectionResponse
+      additionalProperties: false
+      description: GetConnectionResponse has details on a connection
+    octant.v1alpha.GetConnectionStatusRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+        validatorRunId:
+          type: string
+          title: validator_run_id
+          description: validator_run_id is the Validator Run ID to get validation metrics for. Omitting this will yield empty/false validation results in the response.
+      title: GetConnectionStatusRequest
+      additionalProperties: false
+      description: GetConnectionStatusRequest contains options for getting a connections validator run results
+    octant.v1alpha.GetConnectionStatusResponse:
+      type: object
+      properties:
+        receivingData:
+          type: boolean
+          title: receiving_data
+          description: receiving_data indicates if the Connection's Collector is receiving telemetry for its configured Telemetry types
+        sendingData:
+          type: boolean
+          title: sending_data
+          description: sending_data indicates if the Connection's Collector is sending telemetry for its configured Telemetry types
+        dataIntegrity:
+          type: boolean
+          title: data_integrity
+          description: sending_data indicates if the data coming to the Collector fulfills validator parity or policy requirements
+        clientsConnected:
+          type: boolean
+          title: clients_connected
+          description: clients_connected indicates if the Connection's Collector is connected for its configured Telemetry types
+        validationResults:
+          title: validation_results
+          description: validation_results is a map of granular validation details per data type (MLT)
+          $ref: '#/components/schemas/octant.v1alpha.ValidationResultsBySignal'
+      title: GetConnectionStatusResponse
+      additionalProperties: false
+    octant.v1alpha.GetConnectionValidatorRunIdsRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+      title: GetConnectionValidatorRunIdsRequest
+      additionalProperties: false
+      description: GetConnectionValidatorRunIdsRequest is a request to get all available connection validator runs
+    octant.v1alpha.GetConnectionValidatorRunIdsResponse:
+      type: object
+      properties:
+        validatorRunIds:
+          type: array
+          items:
+            type: string
+          title: validator_run_ids
+          description: validator_run_ids is the list of validator_run_ids currently available in the metrics set
+      title: GetConnectionValidatorRunIdsResponse
+      additionalProperties: false
+      description: GetConnectionValidatorRunIdsResponse provides all the validator run ids for a connection
+    octant.v1alpha.GetConnectionsResponse:
+      type: object
+      properties:
+        connectionNames:
+          type: array
+          items:
+            type: string
+          title: connection_names
+          description: connection_names are the connection names found in the namespace
+      title: GetConnectionsResponse
+      additionalProperties: false
+      description: GetConnectionsResponse contains a list of all the connections in a namespace
+    octant.v1alpha.GetDatadogIntegrationsResponse:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: names contains the list of datadog integration names
+      title: GetDatadogIntegrationsResponse
+      additionalProperties: false
+    octant.v1alpha.GetInstallStatusRequest:
+      type: object
+      properties:
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of the octant connection to check install status for.
+      title: GetInstallStatusRequest
+      additionalProperties: false
+    octant.v1alpha.GetInstallStatusResponse:
+      type: object
+      properties:
+        installStatus:
+          title: install_status
+          description: install_status is the status of the installation.
+          $ref: '#/components/schemas/octant.v1alpha.InstallStatus'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.ResourceDetails'
+          title: details
+          description: details will contain any necessary details for states that have extra information.
+      title: GetInstallStatusResponse
+      additionalProperties: false
+    octant.v1alpha.InstallMDAIHubRequest:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          description: namespace is the kubernetes namespace to install into.
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the named octant connection configuration to use for install.
+        mdaiVersion:
+          type: string
+          title: mdai_version
+          description: mdai_version is the mdai hub version to use for install.
+      title: InstallMDAIHubRequest
+      additionalProperties: false
+    octant.v1alpha.InstallStatus:
+      type: string
+      title: InstallStatus
+      enum:
+        - INSTALL_STATUS_UNSPECIFIED
+        - INSTALL_STATUS_INSTALLING
+        - INSTALL_STATUS_ERROR
+        - INSTALL_STATUS_INSTALLED
+        - INSTALL_STATUS_TIMEOUT
+    octant.v1alpha.IntegrationType:
+      type: string
+      title: IntegrationType
+      enum:
+        - INTEGRATION_TYPE_UNSPECIFIED
+        - INTEGRATION_TYPE_DATADOG
+      description: IntegrationType is the type of integration for destinations or deployments
+    octant.v1alpha.MLTType:
+      type: string
+      title: MLTType
+      enum:
+        - MLT_TYPE_UNSPECIFIED
+        - MLT_TYPE_METRIC
+        - MLT_TYPE_TRACE
+        - MLT_TYPE_LOG
+    octant.v1alpha.ManifestOutFormat:
+      type: string
+      title: ManifestOutFormat
+      enum:
+        - MANIFEST_OUT_FORMAT_UNSPECIFIED
+        - MANIFEST_OUT_FORMAT_JSON
+        - MANIFEST_OUT_FORMAT_YAML
+    octant.v1alpha.ResourceDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name is the name of the resource (pod name, etc.)
+        message:
+          type: string
+          title: message
+          description: message describes the state of the resource.
+      title: ResourceDetails
+      additionalProperties: false
+    octant.v1alpha.SaveArgoConnectionRequest:
+      type: object
+      properties:
+        argoEndpoint:
+          type: string
+          title: argo_endpoint
+          description: argo_endpoint is the endpoint to the argo cd cluster to communicate with.
+        argoAccountToken:
+          type: string
+          title: argo_account_token
+          description: argo_account_token is the generated token for the account to use for communicating with the argo cd API.
+        name:
+          type: string
+          title: name
+          description: name contains name of the argocd integration to save
+      title: SaveArgoConnectionRequest
+      additionalProperties: false
+    octant.v1alpha.SaveDatadogIntegrationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name contains name of the datadog integration to save
+        apiKey:
+          type: string
+          title: api_key
+        url:
+          type: string
+          title: url
+      title: SaveDatadogIntegrationRequest
+      additionalProperties: false
+    octant.v1alpha.TelemetryDestination:
+      type: object
+      properties:
+        type:
+          title: type
+          description: type is the integration type for this integration
+          $ref: '#/components/schemas/octant.v1alpha.IntegrationType'
+        integrationName:
+          type: string
+          title: integration_name
+          description: integration_name is the name of a previously created integration with information needed to send telemetry
+      title: TelemetryDestination
+      additionalProperties: false
+      description: TelemetryDestination is information for an integration to send telemetry to from a connection
+    octant.v1alpha.TestConnectionRequest:
+      type: object
+      properties:
+        argoEndpoint:
+          type: string
+          title: argo_endpoint
+          description: argo_endpoint is the endpoint to the argo cd cluster to communicate with.
+        argoAccountToken:
+          type: string
+          title: argo_account_token
+          description: argo_account_token is the generated token for the account to use for communicating with the argo cd API.
+      title: TestConnectionRequest
+      additionalProperties: false
+    octant.v1alpha.TestConnectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          title: success
+          description: success indicates whether the operation was succesful or not.
+      title: TestConnectionResponse
+      additionalProperties: false
+    octant.v1alpha.ValidationAttributes:
+      type: object
+      properties:
+        parity:
+          type: object
+          title: parity
+          additionalProperties:
+            type: boolean
+            title: value
+          description: parity indicates if the ingress attribute matches the attribute on egress
+        policy:
+          type: object
+          title: policy
+          additionalProperties:
+            type: boolean
+            title: value
+          description: parity indicates if the attribute fulfills the MDAI validator policy for this attribute
+      title: ValidationAttributes
+      additionalProperties: false
+    octant.v1alpha.ValidationAttributes.ParityEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: boolean
+          title: value
+      title: ParityEntry
+      additionalProperties: false
+    octant.v1alpha.ValidationAttributes.PolicyEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: boolean
+          title: value
+      title: PolicyEntry
+      additionalProperties: false
+    octant.v1alpha.ValidationResult:
+      type: object
+      properties:
+        parity:
+          type: boolean
+          title: parity
+          description: parity indicates if the ingress telemetry payloads match the egress telemetry payloads
+        policy:
+          type: boolean
+          title: policy
+          description: parity indicates if the egress telemetry payloads fulfill the MDAI validator policy
+        attributes:
+          title: attributes
+          description: attributes is a map of attributes to per-attribute parity/policy checks
+          $ref: '#/components/schemas/octant.v1alpha.ValidationAttributes'
+      title: ValidationResult
+      additionalProperties: false
+    octant.v1alpha.ValidationResultsBySignal:
+      type: object
+      properties:
+        logs:
+          title: logs
+          $ref: '#/components/schemas/octant.v1alpha.ValidationResult'
+        metrics:
+          title: metrics
+          $ref: '#/components/schemas/octant.v1alpha.ValidationResult'
+        traces:
+          title: traces
+          $ref: '#/components/schemas/octant.v1alpha.ValidationResult'
+      title: ValidationResultsBySignal
+      additionalProperties: false
+security: []
+tags:
+  - name: BudgetService
+  - name: FilterService
+  - name: TimeframeService
+  - name: ArgoCDService
+    description: ArgoCDService provides an interface for managing an argo cd integration.
+  - name: ConnectionService
+    description: ConnectService allows for interacting with MDAI Octant Connections
+  - name: DatadogService
+  - name: InstallService
+    description: InstallService provides an interface for managing the MDAI smart hub installation.
