@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/wrapper"
@@ -75,13 +76,24 @@ func (mdai *MDAIGateway) GetVariable(namespace string, hubName string, varName s
 		return "", err
 	}
 
-	var result map[string]string
+	var result map[string]json.RawMessage
 	if err := json.Unmarshal(body, &result); err != nil {
 		return "", err
 	}
 
-	if val, ok := result[varName]; ok {
-		return val, nil
+	raw, ok := result[varName]
+	if !ok || string(raw) == "null" {
+		return "", nil
+	}
+
+	var stringValue string
+	if err := json.Unmarshal(raw, &stringValue); err == nil {
+		return stringValue, nil
+	}
+
+	var boolValue bool
+	if err := json.Unmarshal(raw, &boolValue); err == nil {
+		return strconv.FormatBool(boolValue), nil
 	}
 
 	return "", nil
