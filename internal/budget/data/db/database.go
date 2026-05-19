@@ -65,15 +65,12 @@ func NewGreptimeDB(
 		}
 	}
 
-	dsn := fmt.Sprintf("tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		string(secret.Data[greptimeDBSecretUserKey]),
+		string(secret.Data[greptimeDBSecretPasswordKey]),
 		host,
 		string(secret.Data[greptimeDBSecretPortKey]),
 		string(secret.Data[greptimeDBSecretDBKey]),
-	)
-	dsn = fmt.Sprintf("%s:%s@%s",
-		string(secret.Data[greptimeDBSecretUserKey]),
-		string(secret.Data[greptimeDBSecretPasswordKey]),
-		dsn,
 	)
 
 	db, err := sql.Open("mysql", dsn)
