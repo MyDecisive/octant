@@ -18,10 +18,8 @@ const (
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
 
-	whereTimeLessThanFormatter = "(CAST(%s AS FLOAT) <= CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))"
-	whereTimeBetweenFormatter  = "(CAST(%s AS FLOAT) BETWEEN CAST((NOW() - INTERVAL %d HOUR) AS FLOAT) AND CAST((NOW() - INTERVAL %d HOUR) AS FLOAT))" //nolint:lll
-	whereSearchKeyword         = "$keyword"
-	whereSearchFormatter       = "(%s LIKE $keyword)"
+	whereSearchKeyword   = "$keyword"
+	whereSearchFormatter = "(%s LIKE $keyword)"
 
 	showTableFormatter    = "SHOW TABLES LIKE '%s'"
 	getLogDataFormatter   = "SELECT %[2]s AS \"%[3]s\", SUM(%[4]s / %[6]f) AS \"%[5]s\" FROM %[1]s WHERE %[7]s GROUP BY %[2]s ORDER BY `%[5]s` DESC LIMIT %[8]d"                                                                                                 //nolint:lll
@@ -314,10 +312,15 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timestampCol ColumnString,
 ) string {
 	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
-		return fmt.Sprintf(whereTimeLessThanFormatter, timestampCol.Name(), gdr.toHr(timeframe))
+		return fmt.Sprintf("(%s >= NOW() - INTERVAL '%d HOUR')",
+			timestampCol.Name(),
+			gdr.toHr(timeframe),
+		)
 	}
-	return fmt.Sprintf(whereTimeBetweenFormatter,
-		timestampCol.Name(), gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), gdr.toHr(timeframe),
+	return fmt.Sprintf("(%s BETWEEN NOW() - INTERVAL '%d HOUR' AND NOW() - INTERVAL '%d HOUR')",
+		timestampCol.Name(),
+		gdr.toHr(timeframe),
+		gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD),
 	)
 }
 

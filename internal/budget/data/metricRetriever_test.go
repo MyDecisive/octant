@@ -18,10 +18,10 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT));" //nolint:lll
-	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT));"        //nolint:lll
-	expectedSpanRecSQL := "SELECT SUM(received_span_root_count_total.greptime_value / ?) FROM public.received_span_root_count_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT));"  //nolint:lll
-	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT));"                   //nolint:lll
+	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR');" //nolint:lll
+	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR');"        //nolint:lll
+	expectedSpanRecSQL := "SELECT SUM(received_span_root_count_total.greptime_value / ?) FROM public.received_span_root_count_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR');"  //nolint:lll
+	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR');"                   //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -112,7 +112,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT));" //nolint:lll
+	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR');" //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -200,7 +200,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT service AS \"log.name\", SUM(greptime_value / 1073741824.000000) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE (CAST(greptime_timestamp AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT)) GROUP BY service ORDER BY `log.amount` DESC LIMIT 2;" //nolint:lll
+	expectedSQL := "SELECT service AS \"log.name\", SUM(greptime_value / 1073741824.000000) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE (greptime_timestamp >= NOW() - INTERVAL '730 HOUR') GROUP BY service ORDER BY `log.amount` DESC LIMIT 2;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -290,7 +290,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT service AS \"log.name\", SUM(greptime_value / 1073741824.000000) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE (CAST(greptime_timestamp AS FLOAT) BETWEEN CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT) AND CAST((NOW() - INTERVAL 1460 HOUR) AS FLOAT)) AND (service LIKE ?) GROUP BY service ORDER BY `log.amount` DESC LIMIT 2;" //nolint:lll
+		expectedSearchSQL := "SELECT service AS \"log.name\", SUM(greptime_value / 1073741824.000000) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE (greptime_timestamp BETWEEN NOW() - INTERVAL '1460 HOUR' AND NOW() - INTERVAL '730 HOUR') AND (service LIKE ?) GROUP BY service ORDER BY `log.amount` DESC LIMIT 2;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))
@@ -362,7 +362,7 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT root_id AS \"root_span.name\", SUM(CAST(trace_count AS FLOAT) / 1000000.000000) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / 1000000.000000) AS \"root_span.invocation\" FROM trace_root_topology_1m WHERE (CAST(time_window AS FLOAT) <= CAST((NOW() - INTERVAL 24 HOUR) AS FLOAT)) GROUP BY root_id ORDER BY `root_span.count` DESC LIMIT 2;" //nolint:lll
+	expectedSQL := "SELECT root_id AS \"root_span.name\", SUM(CAST(trace_count AS FLOAT) / 1000000.000000) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / 1000000.000000) AS \"root_span.invocation\" FROM trace_root_topology_1m WHERE (time_window >= NOW() - INTERVAL '24 HOUR') GROUP BY root_id ORDER BY `root_span.count` DESC LIMIT 2;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -464,7 +464,7 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT root_id AS \"root_span.name\", SUM(CAST(trace_count AS FLOAT) / 1000000.000000) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / 1000000.000000) AS \"root_span.invocation\" FROM trace_root_topology_1m WHERE (CAST(time_window AS FLOAT) <= CAST((NOW() - INTERVAL 730 HOUR) AS FLOAT)) AND (root_id LIKE ?) GROUP BY root_id ORDER BY `root_span.count` DESC LIMIT 2;" //nolint:lll
+		expectedSearchSQL := "SELECT root_id AS \"root_span.name\", SUM(CAST(trace_count AS FLOAT) / 1000000.000000) AS \"root_span.count\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, breadth_sketch))) AS \"root_span.breadth\", (uddsketch_calc(0.50, uddsketch_merge(128, 0.01, depth_sketch))) AS \"root_span.depth\", ((uddsketch_calc(0.50, uddsketch_merge(128, 0.01, duration_sketch))) / 1000000.000000) AS \"root_span.invocation\" FROM trace_root_topology_1m WHERE (time_window >= NOW() - INTERVAL '730 HOUR') AND (root_id LIKE ?) GROUP BY root_id ORDER BY `root_span.count` DESC LIMIT 2;" //nolint:lll
 
 		var expected RootSpan
 		require.NoError(t, faker.FakeData(&expected))
