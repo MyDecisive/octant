@@ -113,6 +113,64 @@ func (_c *MockSettingController_GetFilter_Call) RunAndReturn(run func(filterType
 	return _c
 }
 
+// InitializeFilter provides a mock function for the type MockSettingController
+func (_mock *MockSettingController) InitializeFilter(ctx context.Context, namespace string, connection string, out chan budgetfilter.UpdateFilterResult) {
+	_mock.Called(ctx, namespace, connection, out)
+	return
+}
+
+// MockSettingController_InitializeFilter_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InitializeFilter'
+type MockSettingController_InitializeFilter_Call struct {
+	*mock.Call
+}
+
+// InitializeFilter is a helper method to define mock.On call
+//   - ctx context.Context
+//   - namespace string
+//   - connection string
+//   - out chan budgetfilter.UpdateFilterResult
+func (_e *MockSettingController_Expecter) InitializeFilter(ctx interface{}, namespace interface{}, connection interface{}, out interface{}) *MockSettingController_InitializeFilter_Call {
+	return &MockSettingController_InitializeFilter_Call{Call: _e.mock.On("InitializeFilter", ctx, namespace, connection, out)}
+}
+
+func (_c *MockSettingController_InitializeFilter_Call) Run(run func(ctx context.Context, namespace string, connection string, out chan budgetfilter.UpdateFilterResult)) *MockSettingController_InitializeFilter_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 chan budgetfilter.UpdateFilterResult
+		if args[3] != nil {
+			arg3 = args[3].(chan budgetfilter.UpdateFilterResult)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSettingController_InitializeFilter_Call) Return() *MockSettingController_InitializeFilter_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockSettingController_InitializeFilter_Call) RunAndReturn(run func(ctx context.Context, namespace string, connection string, out chan budgetfilter.UpdateFilterResult)) *MockSettingController_InitializeFilter_Call {
+	_c.Run(run)
+	return _c
+}
+
 // UpdateFilter provides a mock function for the type MockSettingController
 func (_mock *MockSettingController) UpdateFilter(ctx context.Context, namespace string, connection string, updates *budgetv1alpha.Filter, out chan budgetfilter.UpdateFilterResult) {
 	_mock.Called(ctx, namespace, connection, updates, out)

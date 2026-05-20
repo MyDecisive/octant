@@ -2,14 +2,19 @@ package rpchandler
 
 import (
 	"bytes"
+	"context"
 	"net/http/httptest"
 	"testing"
 
 	"connectrpc.com/connect"
+	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/go-faker/faker/v4"
+	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	budgetfiltermock "github.com/mydecisive/octant/internal/mock/budgetfilter"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +33,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := connectionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(bytes.NewBufferString(expected), nil)
 
-		target := NewConnectionHandler(nil, nil, mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockCompressor, nil)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -59,7 +64,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := connectionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
-		target := NewConnectionHandler(nil, nil, mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockCompressor, nil)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -97,7 +102,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(expectedRuns, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil)
 		resp, err := target.GetConnectionValidatorRunIds(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionValidatorRunIdsRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -120,7 +125,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(expectedRunID, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil)
 		resp, err := target.CreateConnectionValidatorRun(t.Context(), connect.NewRequest(&octantv1alpha.CreateConnectionValidatorRunRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -142,7 +147,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil)
 		_, err := target.DeleteConnectionValidator(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionValidatorRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -170,7 +175,7 @@ func TestConnectionHandler_GetConnectionStatus(t *testing.T) {
 		}), "test-run").
 		Return(expectedResponse, nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil)
 	resp, err := target.GetConnectionStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionStatusRequest{
 		Scope: &octantv1alpha.ConnectionScope{
 			Namespace:      "test-ns",
@@ -193,7 +198,7 @@ func TestConnectionHandler_GetConnections(t *testing.T) {
 		GetConnections(mock.Anything, mock.Anything).
 		Return(expectedConns, nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil)
 	resp, err := target.GetConnections(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 
 	require.NoError(t, err)
@@ -224,7 +229,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			})).
 			Return(mockData, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil)
 		resp, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
 			ConnectionName: "test-conn",
 		}))
@@ -245,7 +250,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			})).
 			Return(nil, nil) // returns nil, nil when not found
 
-		target := NewConnectionHandler(nil, mockConn, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil)
 		_, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
 			ConnectionName: "missing-conn",
 		}))
@@ -258,19 +263,13 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 func TestConnectionHandler_CreateConnection(t *testing.T) {
 	t.Parallel()
 
-	mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
-	mockConn.EXPECT().
-		SaveConnection(mock.Anything, mock.MatchedBy(func(data connection.OctantConnectionData) bool {
-			return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
-				len(data.Destinations) == 1 &&
-				len(data.TelemetryTypes) == 1
-		}), mock.MatchedBy(func(input connection.ConnectionCRUDInput) bool {
-			return input.Namespace == "test-ns" && input.ConnectionName == "test-conn"
-		})).
-		Return(nil)
+	conf := &config.Configuration{
+		Budget: config.Budget{
+			FilterSettingUpdateTimeout: 1,
+		},
+	}
 
-	target := NewConnectionHandler(nil, mockConn, nil)
-	_, err := target.CreateConnection(t.Context(), connect.NewRequest(&octantv1alpha.CreateConnectionRequest{
+	input := &octantv1alpha.CreateConnectionRequest{
 		Scope: &octantv1alpha.ConnectionScope{
 			Namespace:      "test-ns",
 			ConnectionName: "test-conn",
@@ -286,9 +285,117 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 				IntegrationName: "test-dd",
 			},
 		},
-	}))
+	}
 
-	require.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			SaveConnection(mock.Anything, mock.MatchedBy(func(data connection.OctantConnectionData) bool {
+				return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
+					len(data.Destinations) == 1 &&
+					len(data.TelemetryTypes) == 1
+			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
+				return actual.Namespace == input.GetScope().GetNamespace() &&
+					actual.ConnectionName == input.GetScope().GetConnectionName()
+			})).
+			Return(nil)
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().InitializeFilter(
+			mock.Anything,
+			input.GetScope().GetNamespace(),
+			input.GetScope().GetConnectionName(),
+			mock.Anything,
+		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
+			out <- budgetfilter.UpdateFilterResult{
+				Type:   budgetv1alpha.FilterType_FILTER_TYPE_LOG,
+				Status: budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED,
+			}
+			close(out)
+		})
+
+		target := NewConnectionHandler(conf, mockConn, nil, mockCtrl)
+		_, err := target.CreateConnection(t.Context(), connect.NewRequest(input))
+
+		require.NoError(t, err)
+	})
+
+	t.Run("err init trace filter setting", func(t *testing.T) {
+		t.Parallel()
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			SaveConnection(mock.Anything, mock.MatchedBy(func(data connection.OctantConnectionData) bool {
+				return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
+					len(data.Destinations) == 1 &&
+					len(data.TelemetryTypes) == 1
+			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
+				return actual.Namespace == input.GetScope().GetNamespace() &&
+					actual.ConnectionName == input.GetScope().GetConnectionName()
+			})).
+			Return(nil)
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().InitializeFilter(
+			mock.Anything,
+			input.GetScope().GetNamespace(),
+			input.GetScope().GetConnectionName(),
+			mock.Anything,
+		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
+			out <- budgetfilter.UpdateFilterResult{
+				Type: budgetv1alpha.FilterType_FILTER_TYPE_LOG,
+				Err:  assert.AnError,
+			}
+			out <- budgetfilter.UpdateFilterResult{
+				Type:   budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
+				Status: budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED,
+			}
+			close(out)
+		})
+
+		target := NewConnectionHandler(conf, mockConn, nil, mockCtrl)
+		_, err := target.CreateConnection(t.Context(), connect.NewRequest(input))
+
+		require.ErrorContains(t, err, budgetv1alpha.FilterType_FILTER_TYPE_LOG.String())
+	})
+	t.Run("err init both filter setting", func(t *testing.T) {
+		t.Parallel()
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockConn.EXPECT().
+			SaveConnection(mock.Anything, mock.MatchedBy(func(data connection.OctantConnectionData) bool {
+				return data.Deployment.Type == connection.ArgoSideloadDeploymentType &&
+					len(data.Destinations) == 1 &&
+					len(data.TelemetryTypes) == 1
+			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
+				return actual.Namespace == input.GetScope().GetNamespace() &&
+					actual.ConnectionName == input.GetScope().GetConnectionName()
+			})).
+			Return(nil)
+
+		mockCtrl := budgetfiltermock.NewMockSettingController(t)
+		mockCtrl.EXPECT().InitializeFilter(
+			mock.Anything,
+			input.GetScope().GetNamespace(),
+			input.GetScope().GetConnectionName(),
+			mock.Anything,
+		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
+			out <- budgetfilter.UpdateFilterResult{
+				Type: budgetv1alpha.FilterType_FILTER_TYPE_LOG,
+				Err:  assert.AnError,
+			}
+			out <- budgetfilter.UpdateFilterResult{
+				Type: budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
+				Err:  assert.AnError,
+			}
+			close(out)
+		})
+
+		target := NewConnectionHandler(conf, mockConn, nil, mockCtrl)
+		_, err := target.CreateConnection(t.Context(), connect.NewRequest(input))
+
+		require.ErrorContains(t, err, budgetv1alpha.FilterType_FILTER_TYPE_LOG.String())
+		require.ErrorContains(t, err, budgetv1alpha.FilterType_FILTER_TYPE_TRACE.String())
+	})
 }
 
 func TestConnectionHandler_DeleteConnection(t *testing.T) {
@@ -301,7 +408,7 @@ func TestConnectionHandler_DeleteConnection(t *testing.T) {
 		})).
 		Return(nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil)
 	_, err := target.DeleteConnection(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionRequest{
 		ConnectionName: "test-conn",
 	}))

@@ -186,6 +186,317 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	})
 }
 
+func TestMDAISettingController_InitializeFilter(t *testing.T) {
+	t.Parallel()
+
+	namespace := faker.Word()
+	connection := faker.Word()
+
+	c := &config.Configuration{
+		Budget: config.Budget{
+			FilterSettingUpdateTimeout:  1,
+			FilterSettingUpdateInterval: 1,
+			DefaultLogSamplingRatio:     99,
+			DefaultLogIncludeErr:        true,
+			DefaultTraceSamplingRatio:   100,
+			DefaultTraceIncludeErr:      false,
+		},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varLogsRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultLogSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsPersistErrors, c.Budget.DefaultLogIncludeErr).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varTracesRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultTraceSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, c.Budget.DefaultTraceIncludeErr).Return(nil).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+		mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
+		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
+		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
+		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorLogNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorTraceNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			require.NoError(t, result.Err)
+			if result.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				count++
+			}
+		}
+		assert.Equal(t, 2, count)
+	})
+
+	t.Run("success trace err log", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varLogsRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultLogSamplingRatio), 10),
+		).Return(assert.AnError).Once()
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varTracesRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultTraceSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, c.Budget.DefaultTraceIncludeErr).Return(nil).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+		mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
+		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
+		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
+		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorTraceNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		var actualErr error
+		for result := range actual {
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_LOG && result.Err != nil {
+				actualErr = result.Err
+			}
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_TRACE &&
+				result.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count)
+		assert.Error(t, actualErr)
+	})
+
+	t.Run("success log err trace", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varLogsRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultLogSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsPersistErrors, c.Budget.DefaultLogIncludeErr).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varTracesRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultTraceSamplingRatio), 10),
+		).Return(assert.AnError).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+		mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
+		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
+		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
+		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorLogNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		var actualErr error
+		for result := range actual {
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_TRACE && result.Err != nil {
+				actualErr = result.Err
+			}
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_LOG &&
+				result.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count)
+		assert.Error(t, actualErr)
+	})
+
+	t.Run("err both", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varLogsRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultLogSamplingRatio), 10),
+		).Return(assert.AnError).Once()
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varTracesRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultTraceSamplingRatio), 10),
+		).Return(assert.AnError).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		for result := range actual {
+			if result.Err != nil {
+				count++
+			}
+		}
+		assert.Equal(t, 2, count)
+	})
+
+	t.Run("err log lock in use", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varTracesRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultTraceSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varTracesPersistErrors, c.Budget.DefaultTraceIncludeErr).Return(nil).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+		mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
+		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
+		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
+		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorTraceNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+		target.log.Lock()
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		var actualErr error
+		for result := range actual {
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_LOG && result.Err != nil {
+				actualErr = result.Err
+			}
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_TRACE &&
+				result.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count)
+		assert.ErrorIs(t, actualErr, ErrStillUpdating)
+	})
+
+	t.Run("err trace lock in use", func(t *testing.T) {
+		t.Parallel()
+
+		mockAccessor := budgetdatamock.NewMockVariableAccessor(t)
+		mockAccessor.EXPECT().UpdateVariable(
+			namespace,
+			connection,
+			varLogsRatioNumber,
+			strconv.FormatUint(uint64(c.Budget.DefaultLogSamplingRatio), 10),
+		).Return(nil).Once()
+		mockAccessor.EXPECT().UpdateVariable(namespace, connection, varLogsPersistErrors, c.Budget.DefaultLogIncludeErr).Return(nil).Once()
+
+		mockKube := kubernetesmock.NewMockInterface(t)
+		mockAppsv1 := kubeappsv1mock.NewMockAppsV1Interface(t)
+		mockDeployment := kubeappsv1mock.NewMockDeploymentInterface(t)
+		mockKube.EXPECT().AppsV1().Return(mockAppsv1)
+		mockAppsv1.EXPECT().Deployments(namespace).Return(mockDeployment)
+		mockDeployment.EXPECT().Get(mock.Anything, fmt.Sprintf(collectorLogNameFormatter, connection), mock.Anything).Return(&appsv1.Deployment{
+			Status: appsv1.DeploymentStatus{
+				Replicas:        1,
+				ReadyReplicas:   1,
+				UpdatedReplicas: 1,
+			},
+		}, nil).Once()
+
+		target := NewMDAISettingController(c, mockAccessor, mockKube)
+		target.trace.Lock()
+
+		actual := make(chan UpdateFilterResult)
+		go func() {
+			target.InitializeFilter(t.Context(), namespace, connection, actual)
+		}()
+
+		count := 0
+		var actualErr error
+		for result := range actual {
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_TRACE && result.Err != nil {
+				actualErr = result.Err
+			}
+			if result.Type == budgetv1alpha.FilterType_FILTER_TYPE_LOG &&
+				result.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count)
+		assert.ErrorIs(t, actualErr, ErrStillUpdating)
+	})
+}
+
 func TestMDAISettingController_UpdateFilter(t *testing.T) {
 	t.Parallel()
 
