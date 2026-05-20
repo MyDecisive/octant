@@ -21,15 +21,15 @@ const (
 	showTableFormatter     = "SHOW TABLES LIKE '%s'"
 )
 
-var (
-	ErrQuery      = errors.New("query error")
-	ErrConnection = errors.New("connection error")
-)
-
 const (
 	DayInHR       = 24   // 1 day
 	MonthInHR     = 730  // 30 days (i.e., closest approx. to a month)
 	LastMonthInHR = 1460 // 60 days (i.e., closest approx. to 2 month)
+)
+
+var (
+	ErrQuery      = errors.New("query error")
+	ErrConnection = errors.New("connection error")
 )
 
 // MetricDataRetriever is used to retrieve metric data from the data store.
@@ -310,12 +310,12 @@ func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
 	timestampCol ColumnString,
 ) BoolExpression {
 	if timeframe != budgetv1alpha.Timeframe_TIMEFRAME_LM {
-		return CAST(timestampCol).AS_FLOAT().LT_EQ(
+		return CAST(timestampCol).AS_FLOAT().GT_EQ(
 			CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
 		)
 	}
 	return CAST(timestampCol).AS_FLOAT().BETWEEN(
-		CAST(NOW().SUB(INTERVAL(gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_LM), HOUR))).AS_FLOAT(),
+		CAST(NOW().SUB(INTERVAL(gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), HOUR))).AS_FLOAT(),
 		CAST(NOW().SUB(INTERVAL(gdr.toHr(timeframe), HOUR))).AS_FLOAT(),
 	)
 }
