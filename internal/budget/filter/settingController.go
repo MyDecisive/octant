@@ -31,10 +31,21 @@ type SettingController interface {
 		updates *budgetv1alpha.Filter,
 		out chan UpdateFilterResult,
 	)
+	// InitializeFilter initializes both log filter setting and
+	// trace filter setting with the default values from configuration.
+	// If an update is already in progress for the given type, this will return `ErrStillUpdating`.
+	// If the update takes longer than the timeout, this will return `ErrTimeout`.
+	InitializeFilter(
+		ctx context.Context,
+		namespace string,
+		connection string,
+		out chan UpdateFilterResult,
+	)
 }
 
 // UpdateFilterResult represents results UpdateFilter method can send.
 type UpdateFilterResult struct {
+	Type   budgetv1alpha.FilterType
 	Status budgetv1alpha.UpdateFilterResponse_Status
 	Err    error
 }
@@ -136,6 +147,57 @@ func (sc *MDAISettingController) GetFilter(
 	return sc.get(input)
 }
 
+// InitializeFilter initializes both log filter setting and
+// trace filter setting with the default values from configuration.
+// If an update is already in progress for the given type, this will return `ErrStillUpdating`.
+// If the update takes longer than the timeout, this will return `ErrTimeout`.
+func (sc *MDAISettingController) InitializeFilter(
+	ctx context.Context,
+	namespace string,
+	connection string,
+	out chan UpdateFilterResult,
+) {
+	outs := []chan UpdateFilterResult{
+		make(chan UpdateFilterResult),
+		make(chan UpdateFilterResult),
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(outs))
+
+	go sc.UpdateFilter(ctx, namespace, connection, &budgetv1alpha.Filter{
+		Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
+		PctSampled: sc.configuration.Budget.DefaultLogSamplingRatio,
+		IncludeErr: sc.configuration.Budget.DefaultLogIncludeErr,
+	}, outs[0])
+
+	go sc.UpdateFilter(ctx, namespace, connection, &budgetv1alpha.Filter{
+		Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
+		PctSampled: sc.configuration.Budget.DefaultTraceSamplingRatio,
+		IncludeErr: sc.configuration.Budget.DefaultTraceIncludeErr,
+	}, outs[1])
+
+	for _, ch := range outs {
+		go func(ch chan UpdateFilterResult) {
+			for o := range ch {
+				select {
+				case <-ctx.Done():
+					wg.Done()
+					return
+				default:
+				}
+				out <- o
+			}
+			wg.Done()
+		}(ch)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+}
+
 // UpdateFilter updates the filter setting of the given type with the provided values.
 // If an update is already in progress for the given type, this will return `ErrStillUpdating`.
 // If the update takes longer than the timeout, this will return `ErrTimeout`.
@@ -161,7 +223,8 @@ func (sc *MDAISettingController) UpdateFilter(
 
 		if !sc.log.TryLock() {
 			out <- UpdateFilterResult{
-				Err: ErrStillUpdating,
+				Type: updates.GetType(),
+				Err:  ErrStillUpdating,
 			}
 			return
 		}
@@ -173,14 +236,16 @@ func (sc *MDAISettingController) UpdateFilter(
 
 		if !sc.trace.TryLock() {
 			out <- UpdateFilterResult{
-				Err: ErrStillUpdating,
+				Type: updates.GetType(),
+				Err:  ErrStillUpdating,
 			}
 			return
 		}
 		defer sc.trace.Unlock()
 	default:
 		out <- UpdateFilterResult{
-			Err: ErrInvalid,
+			Type: updates.GetType(),
+			Err:  ErrInvalid,
 		}
 		return
 	}
@@ -237,7 +302,8 @@ func (sc *MDAISettingController) update(
 		strconv.FormatUint(uint64(updates.GetPctSampled()), 10),
 	); err != nil {
 		out <- UpdateFilterResult{
-			Err: fmt.Errorf("%w:%w", ErrUpdateValue, err),
+			Type: updates.GetType(),
+			Err:  fmt.Errorf("%w:%w", ErrUpdateValue, err),
 		}
 		return
 	}
@@ -248,12 +314,14 @@ func (sc *MDAISettingController) update(
 		updates.GetIncludeErr(),
 	); err != nil {
 		out <- UpdateFilterResult{
-			Err: fmt.Errorf("%w:%w", ErrUpdateValue, err),
+			Type: updates.GetType(),
+			Err:  fmt.Errorf("%w:%w", ErrUpdateValue, err),
 		}
 		return
 	}
 
 	out <- UpdateFilterResult{
+		Type:   updates.GetType(),
 		Status: budgetv1alpha.UpdateFilterResponse_STATUS_VALUE_UPDATED,
 	}
 
@@ -263,6 +331,7 @@ func (sc *MDAISettingController) update(
 		true,
 		func(ctx context.Context) (bool, error) {
 			out <- UpdateFilterResult{
+				Type:   updates.GetType(),
 				Status: budgetv1alpha.UpdateFilterResponse_STATUS_WAIT_PROPAGATION,
 			}
 			deployment, err := sc.kube.AppsV1().
@@ -277,16 +346,19 @@ func (sc *MDAISettingController) update(
 		}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			out <- UpdateFilterResult{
-				Err: fmt.Errorf("%w:%w", ErrUpdateCollector, ErrTimeout),
+				Type: updates.GetType(),
+				Err:  fmt.Errorf("%w:%w", ErrUpdateCollector, ErrTimeout),
 			}
 			return
 		}
 		out <- UpdateFilterResult{
-			Err: fmt.Errorf("%w:%w", ErrUpdateCollector, err),
+			Type: updates.GetType(),
+			Err:  fmt.Errorf("%w:%w", ErrUpdateCollector, err),
 		}
 		return
 	}
 	out <- UpdateFilterResult{
+		Type:   updates.GetType(),
 		Status: budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED,
 	}
 }
