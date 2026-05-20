@@ -5,10 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
+	"time"
 
 	"connectrpc.com/connect"
+	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -27,17 +31,20 @@ type ConnectionHandler struct {
 	config           *config.Configuration
 	octantConnection connection.Connection[connection.OctantConnectionData]
 	compressor       connection.ManifestCompressor
+	budgetSetting    budgetfilter.SettingController
 }
 
 func NewConnectionHandler(
 	octantConfig *config.Configuration,
 	octantConnection connection.Connection[connection.OctantConnectionData],
 	compressor connection.ManifestCompressor,
+	setting budgetfilter.SettingController,
 ) *ConnectionHandler {
 	return &ConnectionHandler{
 		config:           octantConfig,
 		octantConnection: octantConnection,
 		compressor:       compressor,
+		budgetSetting:    setting,
 	}
 }
 
@@ -204,6 +211,12 @@ func (ch *ConnectionHandler) CreateConnection(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
 	}
 
+	if connData.Deployment != nil && connData.Deployment.Type == connection.ArgoSideloadDeploymentType {
+		err := ch.initializeFilterSetting(ctx, connScope, logger)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -316,6 +329,62 @@ func (ch *ConnectionHandler) DeleteConnectionValidator(
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// initializeFilterSetting initializes the filter settings with the default values from config.
+func (ch *ConnectionHandler) initializeFilterSetting(
+	ctx context.Context,
+	scope *octantv1alpha.ConnectionScope,
+	logger *zap.Logger,
+) error {
+	var filterErr error
+
+	timedCtx, cancel := context.WithTimeout(ctx, time.Duration(ch.config.Budget.FilterSettingUpdateTimeout)*time.Second)
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1) //nolint: revive // Can't use wg.Go cause I want to pass params to async func
+	go func(ctx context.Context, logger *zap.Logger) {
+		out := make(chan budgetfilter.UpdateFilterResult)
+
+		go ch.budgetSetting.InitializeFilter(timedCtx, scope.GetNamespace(), scope.GetConnectionName(), out)
+
+		for o := range out {
+			select {
+			case <-ctx.Done():
+				wg.Done()
+				return
+			default:
+			}
+			if o.Err != nil {
+				logger.Error("encountered an error while initializing filter setting",
+					zap.String("type", o.Type.String()),
+					zap.Error(o.Err),
+				)
+				if filterErr != nil {
+					filterErr = fmt.Errorf("%w:%s %w", filterErr, o.Type.String(), o.Err)
+				} else {
+					filterErr = fmt.Errorf("%s %w", o.Type.String(), o.Err)
+				}
+			}
+
+			if o.Status == budgetv1alpha.UpdateFilterResponse_STATUS_COMPLETED {
+				logger.Debug("completed updating filter status", zap.String("type", o.Type.String()))
+			} else {
+				logger.Debug("still updating filter status",
+					zap.String("type", o.Type.String()),
+					zap.String("status", o.Status.String()),
+				)
+			}
+		}
+		wg.Done()
+	}(timedCtx, logger)
+	wg.Wait()
+
+	if filterErr != nil {
+		return fmt.Errorf("initialize filter settings: %w", filterErr)
+	}
+	return nil
 }
 
 func convertRequestToConnectionData(
