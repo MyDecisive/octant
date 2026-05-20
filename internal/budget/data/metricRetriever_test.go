@@ -155,7 +155,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
 		require.NoError(t, err)
-		assert.InDelta(t, 0, actual, 0.01)
+		assert.Zero(t, actual)
 	})
 
 	t.Run("err query", func(t *testing.T) {
@@ -175,7 +175,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
-		assert.InDelta(t, 0, actual, 0.01)
+		assert.Zero(t, actual)
 		assert.ErrorIs(t, err, ErrQuery)
 	})
 
@@ -187,7 +187,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
-		assert.InDelta(t, 0, actual, 0.01)
+		assert.Zero(t, actual)
 		assert.ErrorIs(t, err, ErrConnection)
 	})
 }
