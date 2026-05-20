@@ -65,7 +65,11 @@ func NewGreptimeDB(
 		}
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	// charset=utf8mb4 needed to ensure mysql driver is talking to GreptimeDB using GreptimeDB's charset
+	// parseTime=True tbh not sure why we needed it, but all GreptimeDB example includes it soooo
+	// loc=Local set time using local time zone
+	// interpolateParams=True tell GreptimeDB to enable params for stuff like `LIMIT`
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=True",
 		string(secret.Data[greptimeDBSecretUserKey]),
 		string(secret.Data[greptimeDBSecretPasswordKey]),
 		host,
