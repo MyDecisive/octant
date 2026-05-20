@@ -10,8 +10,10 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
+	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
 )
@@ -590,6 +592,78 @@ func TestRenderHubManifest(t *testing.T) {
 	})
 }
 
+func TestCreateTemplateData(t *testing.T) {
+	t.Parallel()
+
+	t.Run("error multiple connection destinations", func(t *testing.T) {
+		t.Parallel()
+
+		connection := OctantConnectionData{
+			Destinations: []OctantConnectionDestination{
+				{DestinationType: "datadog", IntegrationName: "test-dd"},
+				{DestinationType: "datadog", IntegrationName: "test-dd-2"},
+			},
+			Deployment: &Deployment{
+				Type: ArgoSideloadDeploymentType,
+			},
+		}
+
+		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
+		require.ErrorContains(t, err, "pushing argo application with multiple destinations is currently unsupported")
+		require.Nil(t, td)
+	})
+
+	t.Run("error unknown destination type", func(t *testing.T) {
+		t.Parallel()
+
+		connection := OctantConnectionData{
+			Destinations: []OctantConnectionDestination{
+				{DestinationType: "datacat", IntegrationName: "test-dd"},
+			},
+			Deployment: &Deployment{
+				Type: ArgoSideloadDeploymentType,
+			},
+		}
+
+		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
+		require.ErrorContains(t, err, "unknown destination type: datacat")
+		require.Nil(t, td)
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		connection := OctantConnectionData{
+			Destinations: []OctantConnectionDestination{
+				{DestinationType: "datadog", IntegrationName: "test-dd"},
+			},
+			Deployment: &Deployment{
+				Type: ArgoSideloadDeploymentType,
+			},
+		}
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadogIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "test-dd").
+			Return(ddIntegrationData, nil).
+			Once()
+
+		oc := NewOctantConnection(nil, nil, mockDatadogIntegration, nil, testConfig, nil, nil)
+		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
+		require.NoError(t, err)
+		require.NotNil(t, td)
+
+		assert.Equal(t, "coolIntegration", td.AppName)
+		assert.Equal(t, testConfig.CurrentNamespace, td.CurrentNamespace)
+		assert.Equal(t, testConfig.ServiceAccountName, td.ServiceAccount)
+		assert.Equal(t, connection, td.ConnectionData)
+		assert.Equal(t, ddIntegrationData, td.DatadogIntegrationData)
+		assert.True(t, td.IsArgoSideload)
+	})
+}
+
 func TestCreateExportableArgoManifests(t *testing.T) {
 	t.Parallel()
 	target := NewConnectionManifestGenerator(&config.Configuration{
@@ -646,12 +720,6 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 	// Ensure sensitive secrets are overwritten with placeholders
 	assert.Equal(t, "<YOUR_API_KEY>", stringData["api-key"])
 	assert.Equal(t, "<YOUR_DD_URL>", stringData["site-url"])
-}
-
-func TestCreateTemplateData(t *testing.T) {
-	t.Parallel()
-
-	t.Skip("to be added in ENG-1319")
 }
 
 func TestToConnectionFormat(t *testing.T) {

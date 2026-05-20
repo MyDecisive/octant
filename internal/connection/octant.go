@@ -125,18 +125,13 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
-		if k8serrors.IsNotFound(getCMErr) {
-			return nil
-		}
+		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
 	}
 
-	if cm.Data == nil {
-		return nil
-	}
 	if _, exists := cm.Data[input.ConnectionName]; !exists {
 		input.Logger.Warn("connection not found", zap.String("connectionName", input.ConnectionName))
-		return nil
+		return fmt.Errorf("connection '%s' not found", input.ConnectionName)
 	}
 
 	var connection OctantConnectionData
@@ -162,14 +157,12 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 	return nil
 }
 
-func (oc *OctantConnection) GetConnections(ctx context.Context, _ ConnectionCRUDInput) ([]string, error) {
+func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
 	configmap, err := oc.k8sClient.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			return []string{}, nil
-		}
+		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
 	}
 
@@ -261,18 +254,13 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
 	if getCMErr != nil {
-		if k8serrors.IsNotFound(getCMErr) {
-			return nil
-		}
+		input.Logger.Warn("fetching connection configmap", zap.Error(getCMErr))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
 	}
 
-	if cm.Data == nil {
-		return nil
-	}
 	if _, exists := cm.Data[input.ConnectionName]; !exists {
-		input.Logger.Warn("connection not found", zap.String("connectionName", input.ConnectionName))
-		return nil
+		input.Logger.Warn("connection not found in configmap", zap.String("connectionName", input.ConnectionName))
+		return fmt.Errorf("connection not found in configmap %s", input.ConnectionName)
 	}
 
 	var connection OctantConnectionData

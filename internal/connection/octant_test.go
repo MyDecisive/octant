@@ -11,6 +11,7 @@ import (
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -50,7 +51,8 @@ var (
 		DDUrl:  "http://dd.com",
 	}
 	testConfig = &config.Configuration{
-		CurrentNamespace: defaultNamespace,
+		CurrentNamespace:   defaultNamespace,
+		ServiceAccountName: "coolServiceAccount",
 	}
 )
 
@@ -130,7 +132,50 @@ func TestGetConnectionByName(t *testing.T) {
 }
 
 func TestSaveConnection(t *testing.T) { // nolint: paralleltest
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("happy path - updated existing connection", func(t *testing.T) { // nolint: paralleltest
+		validConnectionBytes, err := json.Marshal(validConnection)
+		require.NoError(t, err)
+		mockK8sData := []runtime.Object{
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+				Data: map[string]string{
+					"argo-test": string(validConnectionBytes),
+				},
+			},
+		}
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(argoIntegrationData, nil).
+			Once()
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadogIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(ddIntegrationData, nil).
+			Once()
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+		mockArgoClient.EXPECT().
+			PushArgoApp(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
+		mockArgoClient.EXPECT().
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			Return(nil).
+			Once()
+
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
+		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}))
+	})
+
+	t.Run("happy path", func(t *testing.T) { // nolint: paralleltest
 		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoIntegration.EXPECT().
 			GetIntegrationByName(mock.Anything, "argo-test").
@@ -176,6 +221,75 @@ func TestDeleteConnection(t *testing.T) {
 			},
 		},
 	}
+
+	t.Run("configmap not found", func(t *testing.T) {
+		t.Parallel()
+
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
+		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test-invalid",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}), "failed to fetch configmap")
+	})
+
+	t.Run("connection name doesn't exist", func(t *testing.T) {
+		t.Parallel()
+
+		mockK8sClient := fake.NewClientset(mockK8sData...)
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil, nil, testConfig, nil, nil)
+		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test-invalid",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}), "connection 'argo-test-invalid' not found")
+	})
+
+	t.Run("error unmarshalling connection data", func(t *testing.T) {
+		t.Parallel()
+
+		k8sData := []runtime.Object{
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+				Data: map[string]string{
+					"argo-test": "}invalid{json",
+				},
+			},
+		}
+
+		mockK8sClient := fake.NewClientset(k8sData...)
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil, nil, testConfig, nil, nil)
+		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}), "failed to unmarshal connection data")
+	})
+
+	t.Run("happy path - not sideload deployment", func(t *testing.T) {
+		t.Parallel()
+
+		nonSideloadDeployment := validConnection
+		nonSideloadDeployment.Deployment.Type = ArgoManifestsDeploymentType
+		serializedConnection, marshalErr := json.Marshal(nonSideloadDeployment)
+		require.NoError(t, marshalErr)
+		k8sData := []runtime.Object{
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+				Data: map[string]string{
+					"argo-test": string(serializedConnection),
+				},
+			},
+		}
+
+		mockK8sClient := fake.NewClientset(k8sData...)
+		octantConnection := NewOctantConnection(mockK8sClient, nil, nil, nil, testConfig, nil, nil)
+		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}))
+	})
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
@@ -366,11 +480,154 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 func TestDeleteConnectionValidator(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("will add tests in ENG-1319")
+	validConnectionBytes, err := json.Marshal(validConnection)
+	require.NoError(t, err)
+	mockK8sData := []runtime.Object{
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+			Data: map[string]string{
+				"argo-test": string(validConnectionBytes),
+			},
+		},
+	}
+
+	t.Run("configmap not found", func(t *testing.T) {
+		t.Parallel()
+
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		})
+		require.ErrorContains(t, getErr, "failed to fetch configmap")
+	})
+
+	t.Run("connection not found", func(t *testing.T) {
+		t.Parallel()
+
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test-yolo",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		})
+		require.ErrorContains(t, getErr, "connection not found in configmap")
+	})
+
+	t.Run("error unmarshalling connection data", func(t *testing.T) {
+		t.Parallel()
+
+		k8sData := []runtime.Object{
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+				Data: map[string]string{
+					"argo-test": "}invalid{json",
+				},
+			},
+		}
+
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil, generator)
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		})
+		require.ErrorContains(t, getErr, "failed to unmarshal connection data")
+	})
+
+	t.Run("happy path - non-sideload deployment skips execution", func(t *testing.T) {
+		t.Parallel()
+
+		nonSideloadDeployment := validConnection
+		nonSideloadDeployment.Deployment.Type = ArgoManifestsDeploymentType
+		serializedConnection, marshalErr := json.Marshal(nonSideloadDeployment)
+		require.NoError(t, marshalErr)
+		k8sData := []runtime.Object{
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+				Data: map[string]string{
+					"argo-test": string(serializedConnection),
+				},
+			},
+		}
+
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil, generator)
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		})
+		require.NoError(t, getErr)
+	})
+
+	t.Run("happy path - with sideload validator deployment", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(argoIntegrationData, nil).
+			Once()
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadogIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "argo-test").
+			Return(ddIntegrationData, nil).
+			Once()
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+		mockArgoClient.EXPECT().
+			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, true).
+			Return(nil).
+			Once()
+
+		generator := NewConnectionManifestGenerator(testConfig)
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		})
+		require.NoError(t, getErr)
+	})
 }
 
 func TestGetConnections(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("will add tests in ENG-1319")
+	validConnectionBytes, err := json.Marshal(validConnection)
+	require.NoError(t, err)
+	mockK8sData := []runtime.Object{
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
+			Data: map[string]string{
+				"argo-test": string(validConnectionBytes),
+			},
+		},
+	}
+
+	t.Run("configmap not found", func(t *testing.T) {
+		t.Parallel()
+
+		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
+		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
+			Logger: zaptest.NewLogger(t),
+		})
+		require.ErrorContains(t, getErr, "failed to get configmap")
+		require.Nil(t, connections)
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
+		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
+			Logger: zaptest.NewLogger(t),
+		})
+		require.NoError(t, getErr)
+		require.Len(t, connections, 1)
+		assert.Equal(t, "argo-test", connections[0])
+	})
 }
