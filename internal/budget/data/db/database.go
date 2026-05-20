@@ -65,7 +65,7 @@ func NewGreptimeDB(
 		}
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=True",
 		string(secret.Data[greptimeDBSecretUserKey]),
 		string(secret.Data[greptimeDBSecretPasswordKey]),
 		host,
