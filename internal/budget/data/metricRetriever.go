@@ -179,13 +179,15 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 	if input.Search != "" {
 		where = where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
 	}
+
+	logAmount := FloatColumn("log.amount")
 	stmt := SELECT(
 		table.Service.AS("log.name"),
-		SUM(table.GreptimeValue.DIV(Float(toGB))).AS("log.amount"),
+		SUM(table.GreptimeValue.DIV(Float(toGB))).AS(logAmount.Name()),
 	).FROM(table).
 		WHERE(where).
 		GROUP_BY(table.Service).
-		ORDER_BY(Raw("`log.amount` DESC")).
+		ORDER_BY(logAmount.DESC()).
 		LIMIT(int64(input.Size + 1))
 
 	var result []Log
@@ -217,9 +219,11 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	if input.Search != "" {
 		where = where.AND(table.RootID.LIKE(String("%" + input.Search + "%")))
 	}
+
+	spanCount := FloatColumn("root_span.count")
 	stmt := SELECT(
 		table.RootID.AS("root_span.name"),
-		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMil))).AS("root_span.count"),
+		SUM(CAST(table.TraceCount).AS_FLOAT().DIV(Float(toMil))).AS(spanCount.Name()),
 		RawFloat(gdr.uddsketchCalc(table.BreadthSketch)).AS("root_span.breadth"),
 		RawFloat(gdr.uddsketchCalc(table.DepthSketch)).AS("root_span.depth"),
 		RawFloat(gdr.uddsketchCalc(table.DurationSketch)).DIV(Float(toMil)).
@@ -227,7 +231,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 	).FROM(table).
 		WHERE(where).
 		GROUP_BY(table.RootID).
-		ORDER_BY(Raw("`root_span.count` DESC")).
+		ORDER_BY(spanCount.DESC()).
 		LIMIT(int64(input.Size + 1))
 
 	var result []RootSpan
