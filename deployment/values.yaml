@@ -24,3 +24,10 @@ image:
 services:
   name: octant
   type: ClusterIP
+
+clarity:
+  default:
+    logSamplingRatio: 100
+    logIncludeErr: true
+    traceSamplingRatio: 100
+    traceIncludeErr: true
