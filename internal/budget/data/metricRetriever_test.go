@@ -175,8 +175,8 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
-		assert.InDelta(t, -1, actual, 0.01)
-		assert.Error(t, err)
+		assert.InDelta(t, 0, actual, 0.01)
+		assert.ErrorIs(t, err, ErrQuery)
 	})
 
 	t.Run("err builder", func(t *testing.T) {
@@ -187,8 +187,8 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
-		assert.InDelta(t, -1, actual, 0.01)
-		assert.Error(t, err)
+		assert.InDelta(t, 0, actual, 0.01)
+		assert.ErrorIs(t, err, ErrConnection)
 	})
 }
 
@@ -342,7 +342,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 		actual, next, err := target.GetLogs(t.Context(), input)
 		assert.Empty(t, next)
 		assert.Empty(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrQuery)
 	})
 
 	t.Run("err build", func(t *testing.T) {
@@ -525,7 +525,7 @@ func TestGreptimeDataRetriever_GetRootSpans(t *testing.T) {
 		actual, next, err := target.GetRootSpans(t.Context(), input)
 		assert.Empty(t, next)
 		assert.Empty(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrQuery)
 	})
 
 	t.Run("err build", func(t *testing.T) {
@@ -608,7 +608,7 @@ func TestGreptimeDataRetriever_RootSpansExist(t *testing.T) {
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.RootSpansExist(t.Context(), namespace)
 		assert.False(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrQuery)
 	})
 
 	t.Run("err builder", func(t *testing.T) {
@@ -620,7 +620,7 @@ func TestGreptimeDataRetriever_RootSpansExist(t *testing.T) {
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.RootSpansExist(t.Context(), namespace)
 		assert.False(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrConnection)
 	})
 }
 
@@ -690,7 +690,7 @@ func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.LogsExist(t.Context(), namespace)
 		assert.False(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrQuery)
 	})
 
 	t.Run("err builder", func(t *testing.T) {
@@ -702,6 +702,6 @@ func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.LogsExist(t.Context(), namespace)
 		assert.False(t, actual)
-		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrConnection)
 	})
 }

@@ -3,6 +3,7 @@ package budgetdata
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
@@ -18,6 +19,11 @@ const (
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
 	showTableFormatter     = "SHOW TABLES LIKE '%s'"
+)
+
+var (
+	ErrQuery      = errors.New("query error")
+	ErrConnection = errors.New("connection error")
 )
 
 const (
@@ -66,7 +72,7 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 ) (*Overall, error) {
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	logRec, err := gdr.getTotal(
@@ -143,7 +149,7 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	return gdr.getTotal(
@@ -166,7 +172,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 
 	conn, err := gdr.builder.Build(ctx, input.Namespace)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
@@ -184,7 +190,7 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 
 	var result []Log
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 
 	next := ""
@@ -204,7 +210,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 
 	conn, err := gdr.builder.Build(ctx, input.Namespace)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	where := gdr.timeRangeExpression(input.Timeframe, table.TimeWindow)
@@ -226,7 +232,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 
 	var result []RootSpan
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 
 	next := ""
@@ -241,7 +247,7 @@ func (gdr *GreptimeDataRetriever) GetRootSpans(
 func (gdr *GreptimeDataRetriever) RootSpansExist(ctx context.Context, namespace string) (bool, error) {
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	return gdr.tableExists(ctx, conn.DB, TraceRootTopology1m)
@@ -251,7 +257,7 @@ func (gdr *GreptimeDataRetriever) RootSpansExist(ctx context.Context, namespace 
 func (gdr *GreptimeDataRetriever) LogsExist(ctx context.Context, namespace string) (bool, error) {
 	conn, err := gdr.builder.Build(ctx, namespace)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
 	return gdr.tableExists(ctx, conn.DB, BytesSentByServiceTotal)
@@ -273,7 +279,7 @@ func (gdr *GreptimeDataRetriever) getTotal(
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
-		return -1, err
+		return 0, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 	if len(result) > 0 {
 		return result[0], nil
@@ -291,7 +297,7 @@ func (*GreptimeDataRetriever) tableExists(
 
 	var res []string
 	if err := stmt.QueryContext(ctx, db, &res); err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 
 	return len(res) > 0, nil
