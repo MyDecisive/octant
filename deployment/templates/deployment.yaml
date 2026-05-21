@@ -44,4 +44,12 @@ spec:
             value: "{{ .Values.deployment.prometheusEndpoint }}"
           - name: OCTANT_SERVICE_ACCOUNT
             value: "{{ .Values.serviceAccount.name }}"
+          - name: OCTANT_DEFAULT_LOG_SAMPLING_RATIO
+            value: "{{ .Values.clarity.default.logSamplingRatio }}"
+          - name: OCTANT_DEFAULT_LOG_INCLUDE_ERR
+            value: "{{ .Values.clarity.default.logIncludeErr }}"
+          - name: OCTANT_DEFAULT_TRACE_SAMPLING_RATIO
+            value: "{{ .Values.clarity.default.traceSamplingRatio }}"
+          - name: OCTANT_DEFAULT_TRACE_INCLUDE_ERR
+            value: "{{ .Values.clarity.default.traceIncludeErr }}"
 

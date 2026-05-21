@@ -55,6 +55,11 @@ type Budget struct {
 	//  Octant check if the filter setting update have been applied or not.
 	FilterSettingUpdateInterval int `yaml:"filterSettingUpdateInterval" env:"OCTANT_FILTER_SETTING_UPDATE_INTERVAL" env-default:"1"` // nolint:lll
 
+	DefaultLogSamplingRatio   uint32 `env:"OCTANT_DEFAULT_LOG_SAMPLING_RATIO" env-default:"100"`   // nolint:lll
+	DefaultLogIncludeErr      bool   `env:"OCTANT_DEFAULT_LOG_INCLUDE_ERR" env-default:"true"`     // nolint:lll
+	DefaultTraceSamplingRatio uint32 `env:"OCTANT_DEFAULT_TRACE_SAMPLING_RATIO" env-default:"100"` // nolint:lll
+	DefaultTraceIncludeErr    bool   `env:"OCTANT_DEFAULT_TRACE_INCLUDE_ERR" env-default:"true"`   // nolint:lll
+
 	DefaultLogCostRate   float64 `env:"OCTANT_DEFAULT_LOG_COST_RATE" env-default:"2.50"`
 	DefaultTraceCostRate float64 `env:"OCTANT_DEFAULT_TRACE_COST_RATE" env-default:"2.50"`
 
