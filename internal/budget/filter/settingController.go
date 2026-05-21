@@ -183,6 +183,10 @@ func (sc *MDAISettingController) InitializeFilter(
 				select {
 				case <-ctx.Done():
 					wg.Done()
+					out <- UpdateFilterResult{
+						Type: budgetv1alpha.FilterType_FILTER_TYPE_UNSPECIFIED,
+						Err:  errors.New("context cancelled"),
+					}
 					return
 				default:
 				}

@@ -353,6 +353,7 @@ func (ch *ConnectionHandler) initializeFilterSetting(
 			select {
 			case <-ctx.Done():
 				wg.Done()
+				logger.Warn("context cancelled while initializing filter settings")
 				return
 			default:
 			}
