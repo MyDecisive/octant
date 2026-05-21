@@ -19,7 +19,7 @@ require (
 	github.com/go-openapi/runtime v0.29.2
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/mydecisive/mdai-data-core v0.3.1
+	github.com/mydecisive/mdai-data-core v0.3.2-0.20260521192339-8e4e5684e2ee
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/rs/cors v1.11.1

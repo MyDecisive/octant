@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/config"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,13 +32,15 @@ func (d DataDogIntegrationData) IsKnownDatadogTLD() bool {
 
 type DataDogIntegration struct {
 	K8sClient     kubernetes.Interface
+	SecretStore   kube.SecretStore
 	configuration *config.Configuration
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
-func NewDataDogIntegration(k8sClient kubernetes.Interface, configuration *config.Configuration) *DataDogIntegration {
+func NewDataDogIntegration(k8sClient kubernetes.Interface, secretStore kube.SecretStore, configuration *config.Configuration) *DataDogIntegration {
 	return &DataDogIntegration{
 		K8sClient:     k8sClient,
+		SecretStore:   secretStore,
 		configuration: configuration,
 	}
 }
@@ -48,11 +51,7 @@ var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 func (ddi *DataDogIntegration) GetIntegrations(
 	ctx context.Context,
 ) (map[string]DataDogIntegrationData, error) {
-	secret, err := ddi.K8sClient.CoreV1().Secrets(ddi.configuration.CurrentNamespace).Get(
-		ctx,
-		datadogSecretName,
-		metav1.GetOptions{},
-	)
+	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -78,11 +77,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(
 	ctx context.Context,
 	name string,
 ) (*DataDogIntegrationData, error) {
-	secret, err := ddi.K8sClient.CoreV1().Secrets(ddi.configuration.CurrentNamespace).Get(
-		ctx,
-		datadogSecretName,
-		metav1.GetOptions{},
-	)
+	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -112,11 +107,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(
-		ctx,
-		datadogSecretName,
-		metav1.GetOptions{},
-	)
+	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
 	isNotFound := k8serrors.IsNotFound(err)
 	if err != nil && !isNotFound {
 		return fmt.Errorf("failed to fetch secret %s: %w", datadogSecretName, err)
@@ -124,7 +115,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, datadogSecretName, jsonData)
+		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, datadogSecretName, kube.OctantIntegrationDatadogType, jsonData)
 	}
 	// Update the secret if it already exists
 	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, integrationName, secret, jsonData)
@@ -133,11 +124,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.
 func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.K8sClient.CoreV1().Secrets(namespace).Get(
-		ctx,
-		datadogSecretName,
-		metav1.GetOptions{},
-	)
+	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil

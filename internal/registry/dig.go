@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -46,6 +47,12 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(metrics.NewPrometheusConnectionStatus, dig.As(new(metrics.ConnectionStatus))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(provideConfigMapController); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(provideSecretController); err != nil {
 		return nil, err
 	}
 
@@ -145,13 +152,20 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 
 // SetupGracefulShutdown will create a thread that traps shutdown signal
 // to allow the service to do any finishing work before shutdown.
-func SetupGracefulShutdown() {
+func SetupGracefulShutdown(container *dig.Container) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGTSTP)
 	go func() {
 		<-sigs
 		signal.Stop(sigs)
 		close(sigs)
+
+		if err := container.Invoke(func(cmStore datacorekube.ConfigMapStore, secretStore datacorekube.SecretStore) {
+			cmStore.Stop()
+			secretStore.Stop()
+		}); err != nil {
+			zap.L().Error("unexpected error stopping k8s informers", zap.Error(err))
+		}
 
 		// Stop whole system
 		zap.L().Info("Shutting down...")
@@ -185,4 +199,31 @@ func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient {
 	return &http.Client{
 		Timeout: time.Duration(configuration.DefaultTimeout) * time.Second,
 	}
+}
+
+func provideConfigMapController(config *config.Configuration, k8sClient kubernetes.Interface) (datacorekube.ConfigMapStore, error) {
+	controller, err := datacorekube.NewConfigMapController([]string{datacorekube.OctantConnectionsConfigMapType}, config.CurrentNamespace, k8sClient, zap.L())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ConfigMap controller: %w", err)
+	}
+
+	if err = controller.Run(); err != nil {
+		return nil, fmt.Errorf("failed to sync configmap controller cache: %w", err)
+	}
+	return controller, nil
+}
+
+func provideSecretController(config *config.Configuration, k8sClient kubernetes.Interface) (datacorekube.SecretStore, error) {
+	controller, err := datacorekube.NewSecretController([]string{
+		datacorekube.OctantIntegrationArgoType,
+		datacorekube.OctantIntegrationDatadogType,
+	}, config.CurrentNamespace, k8sClient, zap.L())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Secret controller: %w", err)
+	}
+
+	if err = controller.Run(); err != nil {
+		return nil, fmt.Errorf("failed to sync Secret controller cache: %w", err)
+	}
+	return controller, nil
 }
