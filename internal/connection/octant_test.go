@@ -26,22 +26,7 @@ var (
 		telemetry.Logs,
 		telemetry.Traces,
 	}
-	defaultNamespace = "default"
-	validConnection  = OctantConnectionData{
-		SourceType:     "datadog",
-		TelemetryTypes: telemetryTypes,
-		Deployment: &Deployment{
-			Type:            ArgoSideloadDeploymentType,
-			IntegrationName: "argo-test",
-		},
-		MdaiNamespace: defaultNamespace,
-		Destinations: []OctantConnectionDestination{
-			{
-				DestinationType: "datadog",
-				IntegrationName: "argo-test",
-			},
-		},
-	}
+	defaultNamespace    = "default"
 	argoIntegrationData = &integration.ArgoCDIntegrationData{
 		APIUrl:       "http://argo.com",
 		AccountToken: "abc123",
@@ -58,6 +43,22 @@ var (
 
 func TestGetConnectionByName(t *testing.T) {
 	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
@@ -131,8 +132,27 @@ func TestGetConnectionByName(t *testing.T) {
 	})
 }
 
-func TestSaveConnection(t *testing.T) { // nolint: paralleltest
-	t.Run("happy path - updated existing connection", func(t *testing.T) { // nolint: paralleltest
+func TestSaveConnection(t *testing.T) {
+	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
+	t.Run("happy path - updated existing connection", func(t *testing.T) {
+		t.Parallel()
+
 		validConnectionBytes, err := json.Marshal(validConnection)
 		require.NoError(t, err)
 		mockK8sData := []runtime.Object{
@@ -175,7 +195,9 @@ func TestSaveConnection(t *testing.T) { // nolint: paralleltest
 		}))
 	})
 
-	t.Run("happy path", func(t *testing.T) { // nolint: paralleltest
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
 		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
 		mockArgoIntegration.EXPECT().
 			GetIntegrationByName(mock.Anything, "argo-test").
@@ -210,6 +232,22 @@ func TestSaveConnection(t *testing.T) { // nolint: paralleltest
 
 func TestDeleteConnection(t *testing.T) {
 	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
@@ -319,6 +357,22 @@ func TestDeleteConnection(t *testing.T) {
 func TestGetConnectionStatus(t *testing.T) {
 	t.Parallel()
 
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
+
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
 	mockK8sData := []runtime.Object{
@@ -385,6 +439,22 @@ func TestGetConnectionStatus(t *testing.T) {
 
 func TestPutConnectionValidatorRun(t *testing.T) {
 	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
@@ -479,6 +549,22 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 
 func TestDeleteConnectionValidator(t *testing.T) {
 	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
@@ -597,6 +683,22 @@ func TestDeleteConnectionValidator(t *testing.T) {
 
 func TestGetConnections(t *testing.T) {
 	t.Parallel()
+
+	validConnection := OctantConnectionData{
+		SourceType:     "datadog",
+		TelemetryTypes: telemetryTypes,
+		Deployment: &Deployment{
+			Type:            ArgoSideloadDeploymentType,
+			IntegrationName: "argo-test",
+		},
+		MdaiNamespace: defaultNamespace,
+		Destinations: []OctantConnectionDestination{
+			{
+				DestinationType: "datadog",
+				IntegrationName: "argo-test",
+			},
+		},
+	}
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
