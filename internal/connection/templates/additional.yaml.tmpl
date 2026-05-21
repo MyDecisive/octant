@@ -1,32 +1,36 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .AppName }}-octant-secret-access
+  name: {{ .AppName }}-octant-access
   namespace: {{ .Namespace }}
   labels:
     app: {{ .AppName }}
     app.kubernetes.io/instance: {{ .AppName }}
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-secret-access
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-access
   {{- end }}
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
     verbs: [ "get" ]
     resourceNames: ["greptimedb-users-auth"]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments" ]
+    verbs: [ "get" ]
+    resourceNames: ["{{ .AppName }}-log-sampling-collector", "{{ .AppName }}-trace-sampling-collector"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ .AppName }}-octant-secret-access-binding
+  name: {{ .AppName }}-octant-access-binding
   namespace: {{ .Namespace }}
   labels:
     app: {{ .AppName }}
     app.kubernetes.io/instance: {{ .AppName }}
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-secret-access-binding
+    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-access-binding
   {{- end }}
 subjects:
   - kind: ServiceAccount
@@ -34,5 +38,5 @@ subjects:
     namespace: {{ .CurrentNamespace }}
 roleRef:
   kind: Role
-  name: {{ .AppName }}-octant-secret-access
+  name: {{ .AppName }}-octant-access
   apiGroup: ""
