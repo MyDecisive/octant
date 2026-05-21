@@ -1,6 +1,7 @@
 package budgetdata
 
 import (
+	"math"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -151,6 +152,27 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 		}, nil).Once()
 
 		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnRows(sqlmock.NewRows([]string{"total"}))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
+		require.NoError(t, err)
+		assert.Zero(t, actual)
+	})
+
+	t.Run("success NaN", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(math.NaN()))
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
