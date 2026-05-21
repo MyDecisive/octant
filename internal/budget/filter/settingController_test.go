@@ -186,7 +186,7 @@ func TestMDAISettingController_GetFilter(t *testing.T) {
 	})
 }
 
-func TestMDAISettingController_InitializeFilter(t *testing.T) {
+func TestMDAISettingController_InitializeFilter(t *testing.T) { //nolint:gocognit
 	t.Parallel()
 
 	namespace := faker.Word()
