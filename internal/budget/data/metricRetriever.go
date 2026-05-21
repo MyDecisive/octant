@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	. "github.com/go-jet/jet/v2/mysql" //nolint
@@ -286,7 +287,11 @@ func (gdr *GreptimeDataRetriever) getTotal(
 		return 0, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 	if len(result) > 0 {
-		return result[0], nil
+		r := result[0]
+		if math.IsNaN(r) {
+			return 0, nil
+		}
+		return r, nil
 	}
 	return 0, nil
 }
