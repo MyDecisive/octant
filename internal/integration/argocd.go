@@ -41,7 +41,7 @@ func NewArgoCDIntegration(secretStore kube.SecretStore, k8sClient kubernetes.Int
 func (aci *ArgoCDIntegration) GetIntegrations(
 	ctx context.Context,
 ) (map[string]ArgoCDIntegrationData, error) {
-	secret, err := aci.SecretStore.GetSecretByName(argocdSecretName)
+	secret, err := aci.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -66,7 +66,7 @@ func (aci *ArgoCDIntegration) GetIntegrations(
 func (aci *ArgoCDIntegration) GetIntegrationByName(
 	ctx context.Context, name string,
 ) (*ArgoCDIntegrationData, error) {
-	secret, err := aci.SecretStore.GetSecretByName(argocdSecretName)
+	secret, err := aci.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -96,7 +96,7 @@ func (aci *ArgoCDIntegration) SetIntegration(
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 	namespace := aci.configuration.CurrentNamespace
-	secret, err := aci.SecretStore.GetSecretByName(argocdSecretName)
+	secret, err := aci.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
@@ -111,7 +111,7 @@ func (aci *ArgoCDIntegration) SetIntegration(
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.
 func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
 	namespace := aci.configuration.CurrentNamespace
-	secret, err := aci.SecretStore.GetSecretByName(argocdSecretName)
+	secret, err := aci.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil

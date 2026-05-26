@@ -101,7 +101,7 @@ func (oc *OctantConnection) GetConnectionByName(
 	ctx context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByName(connectionsConfigmapName)
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
@@ -123,7 +123,7 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByName(connectionsConfigmapName)
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
 	if getCMErr != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
@@ -158,7 +158,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByName(connectionsConfigmapName)
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
 	if err != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
@@ -194,7 +194,7 @@ func (oc *OctantConnection) SaveConnection(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.configMapStore.GetConfigmapByName(connectionsConfigmapName)
+	cm, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
@@ -246,7 +246,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByName(connectionsConfigmapName)
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
 	if getCMErr != nil {
 		input.Logger.Warn("fetching connection configmap", zap.Error(getCMErr))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)

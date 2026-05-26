@@ -51,7 +51,7 @@ var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 func (ddi *DataDogIntegration) GetIntegrations(
 	ctx context.Context,
 ) (map[string]DataDogIntegrationData, error) {
-	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
+	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -77,7 +77,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(
 	ctx context.Context,
 	name string,
 ) (*DataDogIntegrationData, error) {
-	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
+	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -107,7 +107,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
+	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, ddi.configuration.CurrentNamespace)
 	isNotFound := k8serrors.IsNotFound(err)
 	if err != nil && !isNotFound {
 		return fmt.Errorf("failed to fetch secret %s: %w", datadogSecretName, err)
@@ -124,7 +124,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.
 func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.SecretStore.GetSecretByName(datadogSecretName)
+	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(argocdSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
