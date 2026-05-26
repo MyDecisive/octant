@@ -190,7 +190,7 @@ func (ch *ConnectionHandler) CreateConnection(
 	request *connect.Request[octantv1alpha.CreateConnectionRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	connData := convertRequestToConnectionData(request)
-	connScope := request.Msg.GetScope()
+	connScope := request.Msg.GetConnectionData().GetScope()
 	logger := zap.L().With(
 		zap.String("operation", octantv1alphaconnect.ConnectionServiceCreateConnectionProcedure),
 		zap.String("connectionName", connScope.GetConnectionName()),
@@ -399,7 +399,7 @@ func convertRequestToConnectionData(
 		Destinations:   destinations,
 		TelemetryTypes: dataTypes,
 		Deployment:     deployment,
-		MdaiNamespace:  request.Msg.GetScope().GetNamespace(),
+		MdaiNamespace:  request.Msg.GetConnectionData().GetScope().GetNamespace(),
 	}
 	return connData
 }
@@ -408,7 +408,7 @@ func extractDeploymentFromRequest(
 	request *connect.Request[octantv1alpha.CreateConnectionRequest],
 ) *connection.Deployment {
 	var deploymentType connection.DeploymentType
-	switch request.Msg.GetDeployment().GetType() {
+	switch request.Msg.GetConnectionData().GetDeployment().GetType() {
 	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD:
 		deploymentType = connection.ArgoSideloadDeploymentType
 	case octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST:
@@ -418,14 +418,14 @@ func extractDeploymentFromRequest(
 	}
 	deployment := &connection.Deployment{
 		Type:            deploymentType,
-		IntegrationName: request.Msg.GetDeployment().GetIntegrationName(),
+		IntegrationName: request.Msg.GetConnectionData().GetDeployment().GetIntegrationName(),
 	}
 	return deployment
 }
 
 func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []telemetry.MLT {
 	var telemetries []telemetry.MLT
-	for _, t := range request.Msg.GetTelemetryTypes() {
+	for _, t := range request.Msg.GetConnectionData().GetTelemetryTypes() {
 		switch t {
 		case octantv1alpha.MLTType_MLT_TYPE_METRIC:
 			telemetries = append(telemetries, telemetry.Metrics)
@@ -442,7 +442,7 @@ func extractDestinationsFromRequest(
 	request *connect.Request[octantv1alpha.CreateConnectionRequest],
 ) []connection.OctantConnectionDestination {
 	var destinations []connection.OctantConnectionDestination
-	for _, d := range request.Msg.GetDestinations() {
+	for _, d := range request.Msg.GetConnectionData().GetDestinations() {
 		destType := "unknown"
 		if d.GetType() == octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG {
 			destType = "datadog"
@@ -462,24 +462,32 @@ func convertConnectionDataToGetConnectionResponse(
 		return nil
 	}
 	return &octantv1alpha.GetConnectionResponse{
-		TelemetryTypes: convertTelemetryTypesToProtoMLT(conn.TelemetryTypes),
-		DeploymentType: convertDeploymentToProtoDeploymentType(conn.Deployment),
-		Destinations:   convertDestinationsToProtoDestionations(conn.Destinations),
+		ConnectionData: &octantv1alpha.ConnectionData{
+			TelemetryTypes: convertTelemetryTypesToProtoMLT(conn.TelemetryTypes),
+			Deployment:     convertDeploymentToProtoDeployment(conn.Deployment),
+			Destinations:   convertDestinationsToProtoDestionations(conn.Destinations),
+		},
 	}
 }
 
-func convertDeploymentToProtoDeploymentType(deployment *connection.Deployment) octantv1alpha.DeploymentType {
+func convertDeploymentToProtoDeployment(deployment *connection.Deployment) *octantv1alpha.Deployment {
 	if deployment == nil {
-		return 0 // Default/unspecified enum value
+		return nil
 	}
 
 	switch deployment.Type {
 	case connection.ArgoSideloadDeploymentType:
-		return octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD
+		return &octantv1alpha.Deployment{
+			Type:            octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD,
+			IntegrationName: deployment.IntegrationName,
+		}
 	case connection.ArgoManifestsDeploymentType:
-		return octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST
+		return &octantv1alpha.Deployment{
+			Type:            octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST,
+			IntegrationName: deployment.IntegrationName,
+		}
 	default:
-		return 0 // Default/unspecified
+		return nil
 	}
 }
 

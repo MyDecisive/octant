@@ -55,6 +55,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/MyDecisive/octant-contracts/go v0.6.2-alpha h1:qUjW2cCHFgBGAjIBh6O5bXlfnpdydD0QpKdN5ZwZn5Q=
 github.com/MyDecisive/octant-contracts/go v0.6.2-alpha/go.mod h1:ZNywjzXHShVR2wd7AehKUMk/WEEMoB8CZxoGNL1yPqE=
+github.com/MyDecisive/octant-contracts/go v0.6.2-alpha.0.20260526192442-93c0b3d45b8b h1:Ce+GtNp4SDxf1kDCCaYVR41LZ0Aur88x2NEOcGebP9c=
+github.com/MyDecisive/octant-contracts/go v0.6.2-alpha.0.20260526192442-93c0b3d45b8b/go.mod h1:ZNywjzXHShVR2wd7AehKUMk/WEEMoB8CZxoGNL1yPqE=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/ProtonMail/go-crypto v1.1.6 h1:ZcV+Ropw6Qn0AX9brlQLAUXfqLBc7Bl+f/DmNxpLfdw=
 github.com/ProtonMail/go-crypto v1.1.6/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
