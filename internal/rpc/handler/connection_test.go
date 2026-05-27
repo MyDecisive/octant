@@ -216,11 +216,12 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
 			Deployment: &connection.Deployment{
 				Type:            connection.ArgoSideloadDeploymentType,
-				IntegrationName: "my-argo",
+				IntegrationName: "cool-integration",
 			},
 			Destinations: []connection.OctantConnectionDestination{
-				{DestinationType: "datadog", IntegrationName: "my-dd"},
+				{DestinationType: "datadog", IntegrationName: "cool-integration"},
 			},
+			MdaiNamespace: "mdai",
 		}
 
 		mockConn.EXPECT().
@@ -240,6 +241,8 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 		assert.Equal(t, octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD, connectionData.GetDeployment().GetType())
 		assert.Len(t, connectionData.GetDestinations(), 1)
 		assert.Equal(t, octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG, connectionData.GetDestinations()[0].GetType())
+		assert.Equal(t, "mdai", connectionData.GetScope().GetNamespace())
+		assert.Equal(t, "cool-integration", connectionData.GetScope().GetConnectionName())
 	})
 
 	t.Run("not found", func(t *testing.T) {

@@ -466,6 +466,10 @@ func convertConnectionDataToGetConnectionResponse(
 			TelemetryTypes: convertTelemetryTypesToProtoMLT(conn.TelemetryTypes),
 			Deployment:     convertDeploymentToProtoDeployment(conn.Deployment),
 			Destinations:   convertDestinationsToProtoDestionations(conn.Destinations),
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      conn.MdaiNamespace,
+				ConnectionName: conn.Deployment.IntegrationName,
+			},
 		},
 	}
 }
