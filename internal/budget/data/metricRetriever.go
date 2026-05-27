@@ -18,9 +18,13 @@ const (
 	toGB  = 1073741824.0
 	toMil = 1000000.0
 
-	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
-	isNaNFormatter         = "isnan(%s)"
-	showTableFormatter     = "SHOW TABLES LIKE '%s'"
+	uddsketchCalcFormatter   = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
+	isNaNFormatter           = "isnan(%s)"
+	showTableFormatter       = "SHOW TABLES LIKE '%s'"
+	totalTQLFormatter        = "TQL EVAL (now(), now(), '5m') sum(increase(%s%s)) AS %s"
+	byFieldTQLFormatter      = "TQL EVAL (now(), now(), '5m') sum by (%s)(increase(%s%s)) AS %s"
+	timeRangeFormatter       = "[%dh] %s"
+	timeRangeOffsetFormatter = "offset %dh"
 )
 
 const (
@@ -83,7 +87,6 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		timeframe,
 		BytesReceivedByServiceTotal,
 		BytesReceivedByServiceTotal.GreptimeValue,
-		BytesReceivedByServiceTotal.GreptimeTimestamp,
 		toGB,
 	)
 	if err != nil {
@@ -97,7 +100,6 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		timeframe,
 		BytesSentByServiceTotal,
 		BytesSentByServiceTotal.GreptimeValue,
-		BytesSentByServiceTotal.GreptimeTimestamp,
 		toGB,
 	)
 	if err != nil {
@@ -111,7 +113,6 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		timeframe,
 		ReceivedSpanCountTotal,
 		ReceivedSpanCountTotal.GreptimeValue,
-		ReceivedSpanCountTotal.GreptimeTimestamp,
 		toMil,
 	)
 	if err != nil {
@@ -125,7 +126,6 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		timeframe,
 		SentSpanCountTotal,
 		SentSpanCountTotal.GreptimeValue,
-		SentSpanCountTotal.GreptimeTimestamp,
 		toMil,
 	)
 	if err != nil {
@@ -160,7 +160,6 @@ func (gdr *GreptimeDataRetriever) GetTotalLog(
 		timeframe,
 		table,
 		table.GreptimeValue,
-		table.GreptimeTimestamp,
 		toGB,
 	)
 }
@@ -177,21 +176,32 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 		return nil, "", fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
-	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp).
-		AND(gdr.notNaNExpression(table.GreptimeValue))
+	var where BoolExpression
 	if input.Search != "" {
-		where = where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
+		where = table.Service.LIKE(String("%" + input.Search + "%"))
 	}
 
+	logName := StringColumn("log.name")
 	logAmount := FloatColumn("log.amount")
-	stmt := SELECT(
-		table.Service.AS("log.name"),
-		SUM(table.GreptimeValue.DIV(Float(toGB))).AS(logAmount.Name()),
-	).FROM(table).
-		WHERE(where).
-		GROUP_BY(table.Service).
-		ORDER_BY(logAmount.DESC()).
-		LIMIT(int64(input.Size + 1))
+	cte := CTE(table.TableName())
+	stmt := WITH(
+		cte.AS(RawStatement(fmt.Sprintf(byFieldTQLFormatter,
+			table.Service.Name(),
+			table.TableName(),
+			gdr.timeRangeTQL(input.Timeframe),
+			table.GreptimeValue.Name(),
+		))),
+	)(
+		SELECT(
+			table.Service.AS(logName.Name()),
+			table.GreptimeValue.DIV(Float(toGB)).AS(logAmount.Name()),
+		).
+			FROM(cte).
+			WHERE(where).
+			GROUP_BY(logName, logAmount).
+			ORDER_BY(logAmount.DESC(), logName.ASC()).
+			LIMIT(int64(input.Size + 1)),
+	)
 
 	var result []Log
 	if err := stmt.QueryContext(ctx, conn.DB, &result); err != nil {
@@ -275,18 +285,21 @@ func (gdr *GreptimeDataRetriever) getTotal(
 	ctx context.Context,
 	db *sql.DB,
 	timeframe budgetv1alpha.Timeframe,
-	table ReadableTable,
+	table Table,
 	valueCol ColumnFloat,
-	timestampCol ColumnString,
 	divisor float64,
 ) (float64, error) {
-	stmt := SELECT(
-		SUM(valueCol.DIV(Float(divisor))),
-	).FROM(table).
-		WHERE(
-			gdr.timeRangeExpression(timeframe, timestampCol).
-				AND(gdr.notNaNExpression(valueCol)),
-		)
+	cte := CTE(table.TableName())
+	stmt := WITH(
+		cte.AS(RawStatement(fmt.Sprintf(totalTQLFormatter,
+			table.TableName(),
+			gdr.timeRangeTQL(timeframe),
+			valueCol.Name(),
+		))),
+	)(
+		SELECT(valueCol.DIV(Float(divisor))).
+			FROM(cte),
+	)
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
@@ -318,6 +331,18 @@ func (*GreptimeDataRetriever) tableExists(
 	return len(res) > 0, nil
 }
 
+// timeRangeTQL generates time range string that can be used in TQL.
+func (gdr *GreptimeDataRetriever) timeRangeTQL( //nolint:ireturn
+	timeframe budgetv1alpha.Timeframe,
+) string {
+	timeInt := gdr.toHr(timeframe)
+	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
+		return fmt.Sprintf(timeRangeFormatter, timeInt, "")
+	}
+	offset := fmt.Sprintf(timeRangeOffsetFormatter, timeInt)
+	return fmt.Sprintf(timeRangeFormatter, gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), offset)
+}
+
 // timeRangeExpression generates a bool expression that can be used
 // to only retrieve data within the given timeframe.
 func (gdr *GreptimeDataRetriever) timeRangeExpression( //nolint:ireturn
@@ -346,14 +371,6 @@ func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	default:
 		return LastMonthInHR
 	}
-}
-
-// notNaNExpression generates a bool expression that can be used
-// to exclude NaN values.
-func (*GreptimeDataRetriever) notNaNExpression( //nolint:ireturn
-	valCol ColumnFloat,
-) BoolExpression {
-	return NOT(RawBool(fmt.Sprintf(isNaNFormatter, valCol.Name())))
 }
 
 // uddsketchCalc returns the saw query to perform the uddsketchCalc on the given col.
