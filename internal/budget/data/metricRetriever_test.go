@@ -19,10 +19,10 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE (CAST(bytes_received_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));" //nolint:lll
-	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"            //nolint:lll
-	expectedSpanRecSQL := "SELECT SUM(received_span_count_total.greptime_value / ?) FROM public.received_span_count_total WHERE (CAST(received_span_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"                  //nolint:lll
-	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE (CAST(sent_span_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"                             //nolint:lll
+	expectedLogRecSQL := "WITH bytes_received_by_service_total AS (TQL EVAL (now(), now(), '5m') sum(increase(bytes_received_by_service_total[730h] )) AS greptime_value ) SELECT bytes_received_by_service_total.greptime_value / ? FROM bytes_received_by_service_total;" //nolint:lll
+	expectedLogSentSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum(increase(bytes_sent_by_service_total[730h] )) AS greptime_value ) SELECT bytes_sent_by_service_total.greptime_value / ? FROM bytes_sent_by_service_total;"                //nolint:lll
+	expectedSpanRecSQL := "WITH received_span_count_total AS (TQL EVAL (now(), now(), '5m') sum(increase(received_span_count_total[730h] )) AS greptime_value ) SELECT received_span_count_total.greptime_value / ? FROM received_span_count_total;"                        //nolint:lll
+	expectedSpanSentSQL := "WITH sent_span_count_total AS (TQL EVAL (now(), now(), '5m') sum(increase(sent_span_count_total[730h] )) AS greptime_value ) SELECT sent_span_count_total.greptime_value / ? FROM sent_span_count_total;"                                       //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -113,8 +113,8 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 	t.Parallel()
 
 	namespace := faker.Word()
-	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));" //nolint:lll
+	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_LM
+	expectedSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum(increase(bytes_sent_by_service_total[730h] offset 1460h)) AS greptime_value ) SELECT bytes_sent_by_service_total.greptime_value / ? FROM bytes_sent_by_service_total;" //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -223,7 +223,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value))) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+	expectedSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum by (service)(increase(bytes_sent_by_service_total[730h] )) AS greptime_value ) SELECT bytes_sent_by_service_total.service AS \"log.name\", (bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM bytes_sent_by_service_total GROUP BY `log.name`, `log.amount` ORDER BY `log.amount` DESC, `log.name` ASC LIMIT ?;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -316,7 +316,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE ((CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) BETWEEN (NOW() - INTERVAL 1460 HOUR) AND (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)))) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum by (service)(increase(bytes_sent_by_service_total[730h] offset 1460h)) AS greptime_value ) SELECT bytes_sent_by_service_total.service AS \"log.name\", (bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE bytes_sent_by_service_total.service LIKE ? GROUP BY `log.name`, `log.amount` ORDER BY `log.amount` DESC, `log.name` ASC LIMIT ?;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))
@@ -726,4 +726,38 @@ func TestGreptimeDataRetriever_LogsExist(t *testing.T) {
 		assert.False(t, actual)
 		assert.ErrorIs(t, err, ErrConnection)
 	})
+}
+
+func TestGreptimeDataRetriever_TimeRangeTQL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		des      string
+		in       budgetv1alpha.Timeframe
+		expected string
+	}{
+		{
+			"24h",
+			budgetv1alpha.Timeframe_TIMEFRAME_24HR,
+			"[24h] ",
+		},
+		{
+			"month to date",
+			budgetv1alpha.Timeframe_TIMEFRAME_MTD,
+			"[730h] ",
+		},
+		{
+			"last month",
+			budgetv1alpha.Timeframe_TIMEFRAME_LM,
+			"[730h] offset 1460h",
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.des, func(t *testing.T) {
+			t.Parallel()
+			target := NewGreptimeDataRetriever(nil)
+			actual := target.timeRangeTQL(tt.in)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
 }
