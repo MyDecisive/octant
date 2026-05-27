@@ -216,11 +216,12 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			TelemetryTypes: []telemetry.MLT{telemetry.Logs, telemetry.Metrics},
 			Deployment: &connection.Deployment{
 				Type:            connection.ArgoSideloadDeploymentType,
-				IntegrationName: "my-argo",
+				IntegrationName: "cool-integration",
 			},
 			Destinations: []connection.OctantConnectionDestination{
-				{DestinationType: "datadog", IntegrationName: "my-dd"},
+				{DestinationType: "datadog", IntegrationName: "cool-integration"},
 			},
+			MdaiNamespace: "mdai",
 		}
 
 		mockConn.EXPECT().
@@ -234,11 +235,14 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			ConnectionName: "test-conn",
 		}))
 
+		connectionData := resp.Msg.GetConnectionData()
 		require.NoError(t, err)
-		assert.Contains(t, resp.Msg.GetTelemetryTypes(), octantv1alpha.MLTType_MLT_TYPE_LOG)
-		assert.Equal(t, octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD, resp.Msg.GetDeploymentType())
-		assert.Len(t, resp.Msg.GetDestinations(), 1)
-		assert.Equal(t, octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG, resp.Msg.GetDestinations()[0].GetType())
+		assert.Contains(t, connectionData.GetTelemetryTypes(), octantv1alpha.MLTType_MLT_TYPE_LOG)
+		assert.Equal(t, octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD, connectionData.GetDeployment().GetType())
+		assert.Len(t, connectionData.GetDestinations(), 1)
+		assert.Equal(t, octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG, connectionData.GetDestinations()[0].GetType())
+		assert.Equal(t, "mdai", connectionData.GetScope().GetNamespace())
+		assert.Equal(t, "cool-integration", connectionData.GetScope().GetConnectionName())
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -270,22 +274,25 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 	}
 
 	input := &octantv1alpha.CreateConnectionRequest{
-		Scope: &octantv1alpha.ConnectionScope{
-			Namespace:      "test-ns",
-			ConnectionName: "test-conn",
-		},
-		TelemetryTypes: []octantv1alpha.MLTType{octantv1alpha.MLTType_MLT_TYPE_LOG},
-		Deployment: &octantv1alpha.Deployment{
-			Type:            octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD,
-			IntegrationName: "test-argo",
-		},
-		Destinations: []*octantv1alpha.TelemetryDestination{
-			{
-				Type:            octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG,
-				IntegrationName: "test-dd",
+		ConnectionData: &octantv1alpha.ConnectionData{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      "test-ns",
+				ConnectionName: "test-conn",
+			},
+			TelemetryTypes: []octantv1alpha.MLTType{octantv1alpha.MLTType_MLT_TYPE_LOG},
+			Deployment: &octantv1alpha.Deployment{
+				Type:            octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_SIDELOAD,
+				IntegrationName: "test-argo",
+			},
+			Destinations: []*octantv1alpha.TelemetryDestination{
+				{
+					Type:            octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG,
+					IntegrationName: "test-dd",
+				},
 			},
 		},
 	}
+	inputScope := input.GetConnectionData().GetScope()
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -296,16 +303,16 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 					len(data.Destinations) == 1 &&
 					len(data.TelemetryTypes) == 1
 			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
-				return actual.Namespace == input.GetScope().GetNamespace() &&
-					actual.ConnectionName == input.GetScope().GetConnectionName()
+				return actual.Namespace == inputScope.GetNamespace() &&
+					actual.ConnectionName == inputScope.GetConnectionName()
 			})).
 			Return(nil)
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().InitializeFilter(
 			mock.Anything,
-			input.GetScope().GetNamespace(),
-			input.GetScope().GetConnectionName(),
+			inputScope.GetNamespace(),
+			inputScope.GetConnectionName(),
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
 			out <- budgetfilter.UpdateFilterResult{
@@ -330,16 +337,16 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 					len(data.Destinations) == 1 &&
 					len(data.TelemetryTypes) == 1
 			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
-				return actual.Namespace == input.GetScope().GetNamespace() &&
-					actual.ConnectionName == input.GetScope().GetConnectionName()
+				return actual.Namespace == inputScope.GetNamespace() &&
+					actual.ConnectionName == inputScope.GetConnectionName()
 			})).
 			Return(nil)
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().InitializeFilter(
 			mock.Anything,
-			input.GetScope().GetNamespace(),
-			input.GetScope().GetConnectionName(),
+			inputScope.GetNamespace(),
+			inputScope.GetConnectionName(),
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
 			out <- budgetfilter.UpdateFilterResult{
@@ -367,16 +374,16 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 					len(data.Destinations) == 1 &&
 					len(data.TelemetryTypes) == 1
 			}), mock.MatchedBy(func(actual connection.ConnectionCRUDInput) bool {
-				return actual.Namespace == input.GetScope().GetNamespace() &&
-					actual.ConnectionName == input.GetScope().GetConnectionName()
+				return actual.Namespace == inputScope.GetNamespace() &&
+					actual.ConnectionName == inputScope.GetConnectionName()
 			})).
 			Return(nil)
 
 		mockCtrl := budgetfiltermock.NewMockSettingController(t)
 		mockCtrl.EXPECT().InitializeFilter(
 			mock.Anything,
-			input.GetScope().GetNamespace(),
-			input.GetScope().GetConnectionName(),
+			inputScope.GetNamespace(),
+			inputScope.GetConnectionName(),
 			mock.Anything,
 		).Run(func(_ context.Context, _, _ string, out chan budgetfilter.UpdateFilterResult) {
 			out <- budgetfilter.UpdateFilterResult{
