@@ -147,3 +147,101 @@ func TestArgoCDHandler_SaveArgoConnection(t *testing.T) {
 		require.Equal(t, &connect.Response[emptypb.Empty]{}, response)
 	})
 }
+
+func TestArgoCDHandler_GetArgoIntegrations(t *testing.T) {
+	t.Parallel()
+
+	integrations := map[string]integration.ArgoCDIntegrationData{
+		"coolConnection1": {
+			AccountToken: "abc123",
+			APIUrl:       "https://argocd-server",
+		},
+		"coolConnection2": {
+			AccountToken: "abc123",
+			APIUrl:       "https://argocd-server",
+		},
+	}
+
+	t.Run("error retrieving argo integrations", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoCDIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDIntegration.EXPECT().
+			GetIntegrations(mock.Anything).
+			Return(nil, assert.AnError).
+			Times(1)
+
+		handler := NewArgoCDHandler(nil, nil, mockArgoCDIntegration)
+		response, err := handler.GetArgoIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
+		require.Error(t, err)
+		require.Nil(t, response)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoCDIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDIntegration.EXPECT().
+			GetIntegrations(mock.Anything).
+			Return(integrations, nil).
+			Times(1)
+
+		handler := NewArgoCDHandler(nil, nil, mockArgoCDIntegration)
+		response, err := handler.GetArgoIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		require.ElementsMatch(t, []string{"coolConnection1", "coolConnection2"}, response.Msg.GetNames())
+	})
+}
+
+func TestArgoCDHandler_GetArgoIntegrationByName(t *testing.T) {
+	t.Parallel()
+
+	theIntegration := &integration.ArgoCDIntegrationData{
+		AccountToken: "abc123",
+		APIUrl:       "https://argocd-server",
+	}
+
+	t.Run("error retrieving argo integration by name", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoCDIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(nil, assert.AnError).
+			Times(1)
+
+		handler := NewArgoCDHandler(nil, nil, mockArgoCDIntegration)
+		response, err := handler.GetArgoIntegrationByName(t.Context(), connect.NewRequest(&octantv1alpha.GetArgoIntegrationByNameRequest{
+			Name: "coolIntegration",
+		}))
+		require.Error(t, err)
+		require.Nil(t, response)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoCDIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoCDIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(theIntegration, nil).
+			Times(1)
+
+		handler := NewArgoCDHandler(nil, nil, mockArgoCDIntegration)
+		response, err := handler.GetArgoIntegrationByName(t.Context(), connect.NewRequest(&octantv1alpha.GetArgoIntegrationByNameRequest{
+			Name: "coolIntegration",
+		}))
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		require.Equal(t, "https://argocd-server", response.Msg.GetArgoEndpoint())
+	})
+}
