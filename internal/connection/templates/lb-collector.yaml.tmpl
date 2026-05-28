@@ -54,7 +54,15 @@ spec:
             statements:
               - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{.*\\}\\s*$")
               - set(body, attributes["message"]) where IsString(attributes["message"])
+              - set(time, Time(attributes["timestamp"], "2006-01-02T15:04:05Z")) where attributes["timestamp"] != nil
+              - set(severity_text, attributes["level"]) where attributes["level"] != nil
+              - set(severity_number, SEVERITY_NUMBER_DEBUG) where attributes["level"] == "debug"
+              - set(severity_number, SEVERITY_NUMBER_INFO) where attributes["level"] == "info"
+              - set(severity_number, SEVERITY_NUMBER_WARN) where attributes["level"] == "warn" or attributes["level"] == "warning"
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where attributes["level"] == "error"
+              - set(severity_number, SEVERITY_NUMBER_FATAL) where attributes["level"] == "fatal"
               - delete_key(attributes, "message")
+              - delete_key(attributes, "timestamp")
     exporters:
       otlp_grpc/tracealyzer:
         endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
