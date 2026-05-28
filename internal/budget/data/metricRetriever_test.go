@@ -114,7 +114,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_LM
-	expectedSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum(increase(bytes_sent_by_service_total[730h] offset 1460h)) AS greptime_value ) SELECT bytes_sent_by_service_total.greptime_value / ? FROM bytes_sent_by_service_total;" //nolint:lll
+	expectedSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum(increase(bytes_sent_by_service_total[730h] offset 730h)) AS greptime_value ) SELECT bytes_sent_by_service_total.greptime_value / ? FROM bytes_sent_by_service_total;" //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -316,7 +316,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum by (service)(increase(bytes_sent_by_service_total[730h] offset 1460h)) AS greptime_value ) SELECT bytes_sent_by_service_total.service AS \"log.name\", (bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE bytes_sent_by_service_total.service LIKE ? GROUP BY `log.name`, `log.amount` ORDER BY `log.amount` DESC, `log.name` ASC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "WITH bytes_sent_by_service_total AS (TQL EVAL (now(), now(), '5m') sum by (service)(increase(bytes_sent_by_service_total[730h] offset 730h)) AS greptime_value ) SELECT bytes_sent_by_service_total.service AS \"log.name\", (bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM bytes_sent_by_service_total WHERE bytes_sent_by_service_total.service LIKE ? GROUP BY `log.name`, `log.amount` ORDER BY `log.amount` DESC, `log.name` ASC LIMIT ?;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))
@@ -749,7 +749,7 @@ func TestGreptimeDataRetriever_TimeRangeTQL(t *testing.T) {
 		{
 			"last month",
 			budgetv1alpha.Timeframe_TIMEFRAME_LM,
-			"[730h] offset 1460h",
+			"[730h] offset 730h",
 		},
 	}
 	for _, tt := range cases {

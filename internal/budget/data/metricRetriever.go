@@ -19,7 +19,6 @@ const (
 	toMil = 1000000.0
 
 	uddsketchCalcFormatter   = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
-	isNaNFormatter           = "isnan(%s)"
 	showTableFormatter       = "SHOW TABLES LIKE '%s'"
 	totalTQLFormatter        = "TQL EVAL (now(), now(), '5m') sum(increase(%s%s)) AS %s"
 	byFieldTQLFormatter      = "TQL EVAL (now(), now(), '5m') sum by (%s)(increase(%s%s)) AS %s"
@@ -339,8 +338,9 @@ func (gdr *GreptimeDataRetriever) timeRangeTQL( //nolint:ireturn
 	if timeframe < budgetv1alpha.Timeframe_TIMEFRAME_LM {
 		return fmt.Sprintf(timeRangeFormatter, timeInt, "")
 	}
+	timeInt = gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD)
 	offset := fmt.Sprintf(timeRangeOffsetFormatter, timeInt)
-	return fmt.Sprintf(timeRangeFormatter, gdr.toHr(budgetv1alpha.Timeframe_TIMEFRAME_MTD), offset)
+	return fmt.Sprintf(timeRangeFormatter, timeInt, offset)
 }
 
 // timeRangeExpression generates a bool expression that can be used
