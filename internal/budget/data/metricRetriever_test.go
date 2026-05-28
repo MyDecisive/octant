@@ -1,6 +1,7 @@
 package budgetdata
 
 import (
+	"math"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -18,10 +19,10 @@ func TestGreptimeDataRetriever_GetOverall(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE CAST(bytes_received_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR);" //nolint:lll
-	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR);"            //nolint:lll
-	expectedSpanRecSQL := "SELECT SUM(received_span_root_count_total.greptime_value / ?) FROM public.received_span_root_count_total WHERE CAST(received_span_root_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR);"   //nolint:lll
-	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE CAST(sent_span_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR);"                             //nolint:lll
+	expectedLogRecSQL := "SELECT SUM(bytes_received_by_service_total.greptime_value / ?) FROM public.bytes_received_by_service_total WHERE (CAST(bytes_received_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));" //nolint:lll
+	expectedLogSentSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"            //nolint:lll
+	expectedSpanRecSQL := "SELECT SUM(received_span_count_total.greptime_value / ?) FROM public.received_span_count_total WHERE (CAST(received_span_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"                  //nolint:lll
+	expectedSpanSentSQL := "SELECT SUM(sent_span_count_total.greptime_value / ?) FROM public.sent_span_count_total WHERE (CAST(sent_span_count_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));"                             //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -113,7 +114,7 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 
 	namespace := faker.Word()
 	timeframe := budgetv1alpha.Timeframe_TIMEFRAME_MTD
-	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR);" //nolint:lll
+	expectedSQL := "SELECT SUM(bytes_sent_by_service_total.greptime_value / ?) FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)));" //nolint:lll
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -151,6 +152,27 @@ func TestGreptimeDataRetriever_GetTotalLog(t *testing.T) {
 		}, nil).Once()
 
 		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnRows(sqlmock.NewRows([]string{"total"}))
+
+		target := NewGreptimeDataRetriever(mockBuilder)
+		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
+		require.NoError(t, err)
+		assert.Zero(t, actual)
+	})
+
+	t.Run("success NaN", func(t *testing.T) {
+		t.Parallel()
+
+		fakedb, dbmock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer fakedb.Close() //nolint:errcheck
+
+		mockBuilder := budgetdbmock.NewMockDatabaseAccessBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace).Return(&budgetdb.Database{
+			Namespace: namespace,
+			DB:        fakedb,
+		}, nil).Once()
+
+		dbmock.ExpectQuery(expectedSQL).WithArgs(toGB).WillReturnRows(sqlmock.NewRows([]string{"total"}).AddRow(math.NaN()))
 
 		target := NewGreptimeDataRetriever(mockBuilder)
 		actual, err := target.GetTotalLog(t.Context(), timeframe, namespace)
@@ -201,7 +223,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 		Namespace: faker.Word(),
 	}
 
-	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+	expectedSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) >= (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value))) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 	t.Run("success empty", func(t *testing.T) {
 		t.Parallel()
@@ -294,7 +316,7 @@ func TestGreptimeDataRetriever_GetLogs(t *testing.T) {
 			Search:    faker.Word(),
 		}
 
-		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE (CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) BETWEEN (NOW() - INTERVAL 1460 HOUR) AND (NOW() - INTERVAL 730 HOUR)) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
+		expectedSearchSQL := "SELECT bytes_sent_by_service_total.service AS \"log.name\", SUM(bytes_sent_by_service_total.greptime_value / ?) AS \"log.amount\" FROM public.bytes_sent_by_service_total WHERE ((CAST(bytes_sent_by_service_total.greptime_timestamp AS DATETIME) BETWEEN (NOW() - INTERVAL 1460 HOUR) AND (NOW() - INTERVAL 730 HOUR)) AND (NOT (isnan(greptime_value)))) AND (bytes_sent_by_service_total.service LIKE ?) GROUP BY bytes_sent_by_service_total.service ORDER BY `log.amount` DESC LIMIT ?;" //nolint:lll
 
 		var expected Log
 		require.NoError(t, faker.FakeData(&expected))

@@ -1974,21 +1974,7 @@ components:
              service Foo {
                rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
              }
-    octant.v1alpha.ConnectionScope:
-      type: object
-      properties:
-        namespace:
-          type: string
-          title: namespace
-          description: namespace that the connection is installed in/will be installed into
-        connectionName:
-          type: string
-          title: connection_name
-          description: connection_name is the name of the connection
-      title: ConnectionScope
-      additionalProperties: false
-      description: ConnectionScope contains identifiers for a connection
-    octant.v1alpha.CreateConnectionRequest:
+    octant.v1alpha.ConnectionData:
       type: object
       properties:
         scope:
@@ -2010,6 +1996,28 @@ components:
             $ref: '#/components/schemas/octant.v1alpha.TelemetryDestination'
           title: destinations
           description: destinations are where telemetry from this connection is sent and options needed to send it there
+      title: ConnectionData
+      additionalProperties: false
+    octant.v1alpha.ConnectionScope:
+      type: object
+      properties:
+        namespace:
+          type: string
+          title: namespace
+          description: namespace that the connection is installed in/will be installed into
+        connectionName:
+          type: string
+          title: connection_name
+          description: connection_name is the name of the connection
+      title: ConnectionScope
+      additionalProperties: false
+      description: ConnectionScope contains identifiers for a connection
+    octant.v1alpha.CreateConnectionRequest:
+      type: object
+      properties:
+        connectionData:
+          title: connection_data
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionData'
       title: CreateConnectionRequest
       additionalProperties: false
       description: CreateConnectionRequest contains options for creating a connection
@@ -2131,22 +2139,9 @@ components:
     octant.v1alpha.GetConnectionResponse:
       type: object
       properties:
-        telemetryTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/octant.v1alpha.MLTType'
-          title: telemetry_types
-          description: telemetry_types are the MLT telemetry types for this connection
-        deploymentType:
-          title: deployment_type
-          description: deployment_type is the deployment mechanism
-          $ref: '#/components/schemas/octant.v1alpha.DeploymentType'
-        destinations:
-          type: array
-          items:
-            $ref: '#/components/schemas/octant.v1alpha.TelemetryDestination'
-          title: destinations
-          description: destinations are where telemetry for this connection flows to
+        connectionData:
+          title: connection_data
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionData'
       title: GetConnectionResponse
       additionalProperties: false
       description: GetConnectionResponse has details on a connection

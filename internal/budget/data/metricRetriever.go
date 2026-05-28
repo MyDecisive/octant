@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
 	. "github.com/go-jet/jet/v2/mysql" //nolint
@@ -18,6 +19,7 @@ const (
 	toMil = 1000000.0
 
 	uddsketchCalcFormatter = "uddsketch_calc(0.50, uddsketch_merge(128, 0.01, %s))"
+	isNaNFormatter         = "isnan(%s)"
 	showTableFormatter     = "SHOW TABLES LIKE '%s'"
 )
 
@@ -107,9 +109,9 @@ func (gdr *GreptimeDataRetriever) GetOverall(
 		ctx,
 		conn.DB,
 		timeframe,
-		ReceivedSpanRootCountTotal,
-		ReceivedSpanRootCountTotal.GreptimeValue,
-		ReceivedSpanRootCountTotal.GreptimeTimestamp,
+		ReceivedSpanCountTotal,
+		ReceivedSpanCountTotal.GreptimeValue,
+		ReceivedSpanCountTotal.GreptimeTimestamp,
 		toMil,
 	)
 	if err != nil {
@@ -175,7 +177,8 @@ func (gdr *GreptimeDataRetriever) GetLogs(
 		return nil, "", fmt.Errorf("%w: %w", ErrConnection, err)
 	}
 
-	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp)
+	where := gdr.timeRangeExpression(input.Timeframe, table.GreptimeTimestamp).
+		AND(gdr.notNaNExpression(table.GreptimeValue))
 	if input.Search != "" {
 		where = where.AND(table.Service.LIKE(String("%" + input.Search + "%")))
 	}
@@ -279,14 +282,22 @@ func (gdr *GreptimeDataRetriever) getTotal(
 ) (float64, error) {
 	stmt := SELECT(
 		SUM(valueCol.DIV(Float(divisor))),
-	).FROM(table).WHERE(gdr.timeRangeExpression(timeframe, timestampCol))
+	).FROM(table).
+		WHERE(
+			gdr.timeRangeExpression(timeframe, timestampCol).
+				AND(gdr.notNaNExpression(valueCol)),
+		)
 
 	var result []float64
 	if err := stmt.QueryContext(ctx, db, &result); err != nil {
 		return 0, fmt.Errorf("%w: %w", ErrQuery, err)
 	}
 	if len(result) > 0 {
-		return result[0], nil
+		r := result[0]
+		if math.IsNaN(r) {
+			return 0, nil
+		}
+		return r, nil
 	}
 	return 0, nil
 }
@@ -335,6 +346,14 @@ func (*GreptimeDataRetriever) toHr(timeframe budgetv1alpha.Timeframe) int {
 	default:
 		return LastMonthInHR
 	}
+}
+
+// notNaNExpression generates a bool expression that can be used
+// to exclude NaN values.
+func (*GreptimeDataRetriever) notNaNExpression( //nolint:ireturn
+	valCol ColumnFloat,
+) BoolExpression {
+	return NOT(RawBool(fmt.Sprintf(isNaNFormatter, valCol.Name())))
 }
 
 // uddsketchCalc returns the saw query to perform the uddsketchCalc on the given col.
