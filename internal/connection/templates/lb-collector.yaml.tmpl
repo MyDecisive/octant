@@ -54,13 +54,23 @@ spec:
             statements:
               - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{.*\\}\\s*$")
               - set(body, attributes["message"]) where IsString(attributes["message"])
-              - set(time, Time(attributes["timestamp"], "2006-01-02T15:04:05Z")) where attributes["timestamp"] != nil
+
+              # convert timestamp attribute
+              - set(time, Time(attributes["timestamp"], "2006-01-02T15:04:05Z")) where IsString(attributes["timestamp"])
+              - set(time, Unix(attributes["timestamp"], 0)) where IsInt(attributes["timestamp"]) and attributes["timestamp"] < 20000000000
+              - set(time, Unix(0, attributes["timestamp"] * 1000000)) where IsInt(attributes["timestamp"]) and attributes["timestamp"] >= 20000000000
+              - set(time, Unix(Int(attributes["timestamp"]), 0)) where IsDouble(attributes["timestamp"]) and attributes["timestamp"] < 20000000000.0
+              - set(time, Unix(0, Int(attributes["timestamp"]) * 1000000)) where IsDouble(attributes["timestamp"]) and attributes["timestamp"] >= 20000000000.0
+
+              # convert severity attribute
               - set(severity_text, attributes["level"]) where attributes["level"] != nil
               - set(severity_number, SEVERITY_NUMBER_DEBUG) where attributes["level"] == "debug"
               - set(severity_number, SEVERITY_NUMBER_INFO) where attributes["level"] == "info"
               - set(severity_number, SEVERITY_NUMBER_WARN) where attributes["level"] == "warn" or attributes["level"] == "warning"
               - set(severity_number, SEVERITY_NUMBER_ERROR) where attributes["level"] == "error"
               - set(severity_number, SEVERITY_NUMBER_FATAL) where attributes["level"] == "fatal"
+              
+              # remove converted fields
               - delete_key(attributes, "message")
               - delete_key(attributes, "timestamp")
     exporters:
