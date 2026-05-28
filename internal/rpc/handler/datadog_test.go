@@ -7,39 +7,33 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
-	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
 	"github.com/stretchr/testify/assert"
-	testifymock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func TestDatadogHandler_GetIntegrations(t *testing.T) {
+func TestDatadogHandler_GetDatadogIntegrations(t *testing.T) {
 	t.Parallel()
 
-	configuration := &config.Configuration{
-		CurrentNamespace: faker.Word(),
-	}
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		expected := faker.Word()
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			GetIntegrations(testifymock.Anything).
+			GetIntegrations(mock.Anything).
 			Return(map[string]integration.DataDogIntegrationData{
-				expected: {},
+				"coolIntegration1": {},
+				"coolIntegration2": {},
 			}, nil)
 
-		target := NewDatadogHandler(configuration, mockIntegration)
-
+		target := NewDatadogHandler(nil, mockIntegration)
 		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 		require.NoError(t, err)
-
-		assert.Contains(t, actual.Msg.GetNames(), expected)
+		assert.ElementsMatch(t, []string{"coolIntegration1", "coolIntegration2"}, actual.Msg.GetNames())
 	})
 
 	t.Run("err", func(t *testing.T) {
@@ -48,23 +42,23 @@ func TestDatadogHandler_GetIntegrations(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			GetIntegrations(testifymock.Anything).
+			GetIntegrations(mock.Anything).
 			Return(nil, assert.AnError)
 
-		target := NewDatadogHandler(configuration, mockIntegration)
+		target := NewDatadogHandler(nil, mockIntegration)
 
 		actual, err := target.GetDatadogIntegrations(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 		require.Error(t, err)
 		assert.Nil(t, actual)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
 	})
 }
 
 func TestDatadogHandler_SaveIntegration(t *testing.T) {
 	t.Parallel()
-
-	configuration := &config.Configuration{
-		CurrentNamespace: faker.Word(),
-	}
 
 	var task *octantv1alpha.SaveDatadogIntegrationRequest
 	require.NoError(t, faker.FakeData(&task, options.WithRandomMapAndSliceMaxSize(1)))
@@ -75,10 +69,10 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			SetIntegration(testifymock.Anything, task.GetName(), testifymock.Anything).
+			SetIntegration(mock.Anything, task.GetName(), mock.Anything).
 			Return(nil)
 
-		target := NewDatadogHandler(configuration, mockIntegration)
+		target := NewDatadogHandler(nil, mockIntegration)
 
 		_, err := target.SaveDatadogIntegration(t.Context(), connect.NewRequest(task))
 		assert.NoError(t, err)
@@ -90,12 +84,61 @@ func TestDatadogHandler_SaveIntegration(t *testing.T) {
 		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
 
 		mockIntegration.EXPECT().
-			SetIntegration(testifymock.Anything, task.GetName(), testifymock.Anything).
+			SetIntegration(mock.Anything, task.GetName(), mock.Anything).
 			Return(assert.AnError)
 
-		target := NewDatadogHandler(configuration, mockIntegration)
+		target := NewDatadogHandler(nil, mockIntegration)
 
 		_, err := target.SaveDatadogIntegration(t.Context(), connect.NewRequest(task))
-		assert.Error(t, err)
+		require.Error(t, err)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
+	})
+}
+
+func TestDatadogHandler_GetDatadogIntegrationByName(t *testing.T) {
+	t.Parallel()
+
+	ddIntegrationData := &integration.DataDogIntegrationData{
+		DDUrl:  "https://datadog.com",
+		APIKey: "abc123",
+	}
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(ddIntegrationData, nil)
+
+		target := NewDatadogHandler(nil, mockIntegration)
+		actual, err := target.GetDatadogIntegrationByName(t.Context(), connect.NewRequest(&octantv1alpha.GetDatadogIntegrationByNameRequest{
+			Name: "coolIntegration",
+		}))
+		require.NoError(t, err)
+		assert.Equal(t, "https://datadog.com", actual.Msg.GetUrl())
+	})
+
+	t.Run("err", func(t *testing.T) {
+		t.Parallel()
+
+		mockIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(nil, assert.AnError)
+
+		target := NewDatadogHandler(nil, mockIntegration)
+		actual, err := target.GetDatadogIntegrationByName(t.Context(), connect.NewRequest(&octantv1alpha.GetDatadogIntegrationByNameRequest{
+			Name: "coolIntegration",
+		}))
+		require.Error(t, err)
+		assert.Nil(t, actual)
+
+		var connectErr *connect.Error
+		require.ErrorAs(t, err, &connectErr)
+		require.Equal(t, connect.CodeInternal, connectErr.Code())
 	})
 }

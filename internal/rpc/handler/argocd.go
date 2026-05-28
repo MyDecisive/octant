@@ -123,7 +123,9 @@ func (ah *ArgoCDHandler) GetArgoIntegrationByName(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse[octantv1alpha.GetArgoIntegrationByNameResponse](&octantv1alpha.GetArgoIntegrationByNameResponse{
-		ArgoEndpoint: argoData.APIUrl,
-	}), nil
+	return connect.NewResponse[octantv1alpha.GetArgoIntegrationByNameResponse](
+		&octantv1alpha.GetArgoIntegrationByNameResponse{
+			ArgoEndpoint: argoData.APIUrl,
+		},
+	), nil
 }

@@ -208,6 +208,7 @@ func (ch *ConnectionHandler) CreateConnection(
 		},
 	)
 	if err != nil {
+		logger.Error("Failed to save connection", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save connection: %w", err))
 	}
 

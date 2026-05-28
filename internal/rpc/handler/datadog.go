@@ -42,7 +42,7 @@ func (dh *DatadogHandler) GetDatadogIntegrations(
 
 	ddInt, err := dh.datadogIntegration.GetIntegrations(ctx)
 	if err != nil {
-		logger.Error("Failed to get integration", zap.Error(err))
+		logger.Error("Failed to get integrations", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.New("get integration"))
 	}
 
@@ -68,9 +68,11 @@ func (dh *DatadogHandler) GetDatadogIntegrationByName(
 		logger.Error("getting integration", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return connect.NewResponse[octantv1alpha.GetDatadogIntegrationByNameResponse](&octantv1alpha.GetDatadogIntegrationByNameResponse{
-		Url: integrationData.DDUrl,
-	}), nil
+	return connect.NewResponse[octantv1alpha.GetDatadogIntegrationByNameResponse](
+		&octantv1alpha.GetDatadogIntegrationByNameResponse{
+			Url: integrationData.DDUrl,
+		},
+	), nil
 }
 
 func (dh *DatadogHandler) SaveDatadogIntegration(
