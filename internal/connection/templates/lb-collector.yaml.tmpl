@@ -72,7 +72,7 @@ spec:
               - set(severity_text, attributes["status"]) where attributes["status"] != nil
               - set(severity_number, SEVERITY_NUMBER_DEBUG) where attributes["status"] == "debug"
               - set(severity_number, SEVERITY_NUMBER_INFO) where attributes["status"] == "info"
-              - set(severity_number, SEVERITY_NUMBER_WARN) where attributes["status"] == "warn" or attributes["level"] == "warning"
+              - set(severity_number, SEVERITY_NUMBER_WARN) where attributes["status"] == "warn" or attributes["status"] == "warning"
               - set(severity_number, SEVERITY_NUMBER_ERROR) where attributes["status"] == "error"
               - set(severity_number, SEVERITY_NUMBER_FATAL) where attributes["status"] == "fatal"
 
