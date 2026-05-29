@@ -37,6 +37,7 @@ type OctantConnectionData struct {
 	MdaiNamespace  string                        `json:"mdaiNamespace"`
 }
 
+// OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
 	k8sClient          kubernetes.Interface
 	configMapStore     kube.ConfigMapStore
@@ -48,25 +49,65 @@ type OctantConnection struct {
 	generator          ManifestGenerator
 }
 
+// OctantConnectionOption is a dependency option to provide to a new OctantConnection.
+type OctantConnectionOption func(*OctantConnection)
+
+// NewOctantConnection creates and returns a new OctantConnection.
 func NewOctantConnection(
-	k8sClient kubernetes.Interface,
-	configMapStore kube.ConfigMapStore,
-	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
-	connectionMetrics metrics.ConnectionStatus,
-	configuration *config.Configuration,
-	argoClient argocd.APIClient,
-	generator ManifestGenerator,
+	configMapStore kube.ConfigMapStore, // required
+	configuration *config.Configuration, // required
+	options ...OctantConnectionOption,
 ) *OctantConnection {
-	return &OctantConnection{
-		k8sClient:          k8sClient,
-		configMapStore:     configMapStore,
-		argoIntegration:    argoIntegration,
-		datadogIntegration: datadogIntegration,
-		connectionMetrics:  connectionMetrics,
-		configuration:      configuration,
-		argoClient:         argoClient,
-		generator:          generator,
+	oc := &OctantConnection{
+		configMapStore: configMapStore,
+		configuration:  configuration,
+	}
+
+	for _, option := range options {
+		option(oc)
+	}
+	return oc
+}
+
+// WithK8sClient provides a k8s client to the octant connection.
+func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.k8sClient = k8sClient
+	}
+}
+
+// WithArgoCDIntegration provides an argocd integration to the octant connection.
+func WithArgoCDIntegration(integration integration.Integration[integration.ArgoCDIntegrationData]) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.argoIntegration = integration
+	}
+}
+
+// WithDatadogIntegration provides a datadog integration to the octant connection.
+func WithDatadogIntegration(integration integration.Integration[integration.DataDogIntegrationData]) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.datadogIntegration = integration
+	}
+}
+
+// WithConnectionMetrics provides connection metrics to the octant connection.
+func WithConnectionMetrics(connectionMetrics metrics.ConnectionStatus) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.connectionMetrics = connectionMetrics
+	}
+}
+
+// WithArgoClient provides the argocd api client to the octant connection.
+func WithArgoClient(client argocd.APIClient) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.argoClient = client
+	}
+}
+
+// WithGenerator provides a manifest generator to the octant connection.
+func WithGenerator(generator ManifestGenerator) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.generator = generator
 	}
 }
 
@@ -98,7 +139,7 @@ func (oc *OctantConnection) GetConnectionStatus(
 }
 
 func (oc *OctantConnection) GetConnectionByName(
-	ctx context.Context,
+	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
 	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
