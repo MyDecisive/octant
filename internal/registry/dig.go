@@ -111,14 +111,7 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	}
 
 	// Connection
-	if err := container.Provide(
-		connection.NewOctantConnection,
-		dig.As(
-			new(
-				connection.Connection[connection.OctantConnectionData],
-			),
-		),
-	); err != nil {
+	if err := container.Provide(provideOctantConnection); err != nil {
 		return nil, err
 	}
 
@@ -237,4 +230,26 @@ func provideSecretController( // nolint: ireturn
 		return nil, fmt.Errorf("failed to sync Secret controller cache: %w", err)
 	}
 	return controller, nil
+}
+
+func provideOctantConnection(
+	cmStore datacorekube.ConfigMapStore,
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+	connectionMetrics metrics.ConnectionStatus,
+	manifestGenerator connection.ManifestGenerator,
+	argocdIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
+	argoClient argocd.APIClient,
+) connection.Connection[connection.OctantConnectionData] { // nolint: ireturn
+	return connection.NewOctantConnection(
+		cmStore,
+		theConfig,
+		connection.WithK8sClient(k8sClient),
+		connection.WithConnectionMetrics(connectionMetrics),
+		connection.WithGenerator(manifestGenerator),
+		connection.WithArgoCDIntegration(argocdIntegration),
+		connection.WithArgoClient(argoClient),
+		connection.WithDatadogIntegration(datadogIntegration),
+	)
 }
