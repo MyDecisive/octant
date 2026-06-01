@@ -18,8 +18,8 @@ import (
 type DatadogHandler struct {
 	octantv1alphaconnect.UnimplementedDatadogServiceHandler
 
-	config  *config.Configuration
-	datadog integration.Integration[integration.DataDogIntegrationData]
+	config             *config.Configuration
+	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 }
 
 func NewDatadogHandler(
@@ -27,8 +27,8 @@ func NewDatadogHandler(
 	datadog integration.Integration[integration.DataDogIntegrationData],
 ) *DatadogHandler {
 	return &DatadogHandler{
-		config:  configuration,
-		datadog: datadog,
+		config:             configuration,
+		datadogIntegration: datadog,
 	}
 }
 
@@ -37,9 +37,12 @@ func (dh *DatadogHandler) GetDatadogIntegrations(
 	_ *connect.Request[emptypb.Empty],
 ) (*connect.Response[octantv1alpha.GetDatadogIntegrationsResponse], error) {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationsProcedure))
-	ddInt, err := dh.datadog.GetIntegrations(ctx)
+
+	logger.Debug("received request")
+
+	ddInt, err := dh.datadogIntegration.GetIntegrations(ctx)
 	if err != nil {
-		logger.Error("Failed to get integration", zap.Error(err))
+		logger.Error("Failed to get integrations", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.New("get integration"))
 	}
 
@@ -48,13 +51,39 @@ func (dh *DatadogHandler) GetDatadogIntegrations(
 	}), nil
 }
 
+func (dh *DatadogHandler) GetDatadogIntegrationByName(
+	ctx context.Context,
+	req *connect.Request[octantv1alpha.GetDatadogIntegrationByNameRequest],
+) (*connect.Response[octantv1alpha.GetDatadogIntegrationByNameResponse], error) {
+	integrationName := req.Msg.GetName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.DatadogServiceGetDatadogIntegrationByNameProcedure),
+		zap.String("integrationName", integrationName),
+	)
+
+	logger.Debug("received request")
+
+	integrationData, err := dh.datadogIntegration.GetIntegrationByName(ctx, integrationName)
+	if err != nil {
+		logger.Error("getting integration", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse[octantv1alpha.GetDatadogIntegrationByNameResponse](
+		&octantv1alpha.GetDatadogIntegrationByNameResponse{
+			Url: integrationData.DDUrl,
+		},
+	), nil
+}
+
 func (dh *DatadogHandler) SaveDatadogIntegration(
 	ctx context.Context,
 	request *connect.Request[octantv1alpha.SaveDatadogIntegrationRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.DatadogServiceSaveDatadogIntegrationProcedure))
 
-	if err := dh.datadog.SetIntegration(
+	logger.Debug("received request")
+
+	if err := dh.datadogIntegration.SetIntegration(
 		ctx,
 		request.Msg.GetName(),
 		integration.DataDogIntegrationData{

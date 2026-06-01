@@ -2,6 +2,8 @@ package rpchandler
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -83,4 +85,47 @@ func (ah *ArgoCDHandler) SaveArgoConnection(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return &connect.Response[emptypb.Empty]{}, nil
+}
+
+func (ah *ArgoCDHandler) GetArgoIntegrations(
+	ctx context.Context,
+	_ *connect.Request[emptypb.Empty],
+) (*connect.Response[octantv1alpha.GetArgoIntegrationsResponse], error) {
+	logger := zap.L().With(zap.String("operation", octantv1alphaconnect.ArgoCDServiceGetArgoIntegrationsProcedure))
+
+	logger.Debug("received request")
+
+	argoIntegrations, err := ah.argoIntegration.GetIntegrations(ctx)
+	if err != nil {
+		logger.Error("getting integrations", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse[octantv1alpha.GetArgoIntegrationsResponse](&octantv1alpha.GetArgoIntegrationsResponse{
+		Names: slices.Collect(maps.Keys(argoIntegrations)),
+	}), nil
+}
+
+func (ah *ArgoCDHandler) GetArgoIntegrationByName(
+	ctx context.Context,
+	req *connect.Request[octantv1alpha.GetArgoIntegrationByNameRequest],
+) (*connect.Response[octantv1alpha.GetArgoIntegrationByNameResponse], error) {
+	integrationName := req.Msg.GetName()
+	logger := zap.L().With(
+		zap.String("operation", octantv1alphaconnect.ArgoCDServiceGetArgoIntegrationsProcedure),
+		zap.String("integrationName", integrationName),
+	)
+
+	logger.Debug("received request")
+
+	argoData, err := ah.argoIntegration.GetIntegrationByName(ctx, integrationName)
+	if err != nil {
+		logger.Error("getting integration", zap.Error(err))
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse[octantv1alpha.GetArgoIntegrationByNameResponse](
+		&octantv1alpha.GetArgoIntegrationByNameResponse{
+			ArgoEndpoint: argoData.APIUrl,
+		},
+	), nil
 }
