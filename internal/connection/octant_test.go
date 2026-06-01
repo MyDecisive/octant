@@ -38,6 +38,9 @@ var (
 	testConfig = &config.Configuration{
 		CurrentNamespace:   defaultNamespace,
 		ServiceAccountName: "coolServiceAccount",
+		Install: config.Install{
+			MdaiValidatorVersion: "0.1.3",
+		},
 	}
 )
 
