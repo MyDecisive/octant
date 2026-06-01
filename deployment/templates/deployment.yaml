@@ -52,4 +52,6 @@ spec:
             value: "{{ .Values.clarity.default.traceSamplingRatio }}"
           - name: OCTANT_DEFAULT_TRACE_INCLUDE_ERR
             value: "{{ .Values.clarity.default.traceIncludeErr }}"
+          - name: MDAI_VALIDATOR_VERSION
+            value: "{{ .Values.validator.version }}"
 

@@ -40,8 +40,9 @@ type Configuration struct {
 }
 
 type Install struct {
-	MdaiInstallTimeout               int `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"90"`
-	MdaiInstallPollingIntervalMillis int `yaml:"mdaiInstallPollingIntervalMillis" env:"MDAI_INSTALL_POLLING_INTERVAL_MILLIS" env-default:"3000"` // nolint:lll
+	MdaiInstallTimeout               int    `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"90"`
+	MdaiInstallPollingIntervalMillis int    `yaml:"mdaiInstallPollingIntervalMillis" env:"MDAI_INSTALL_POLLING_INTERVAL_MILLIS" env-default:"3000"` // nolint:lll
+	MdaiValidatorVersion             string `yaml:"mdaiValidatorVersion" env:"MDAI_VALIDATOR_VERSION" env-default:"0.1.3"`
 }
 
 // Budget contains configuration specifically for budget applet.
