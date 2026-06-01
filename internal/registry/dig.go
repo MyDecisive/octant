@@ -201,8 +201,16 @@ func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient {
 	}
 }
 
-func provideConfigMapController(config *config.Configuration, k8sClient kubernetes.Interface) (datacorekube.ConfigMapStore, error) {
-	controller, err := datacorekube.NewConfigMapController([]string{datacorekube.OctantConnectionsConfigMapType}, config.CurrentNamespace, k8sClient, zap.L())
+func provideConfigMapController( // nolint: ireturn
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+) (datacorekube.ConfigMapStore, error) {
+	controller, err := datacorekube.NewConfigMapController(
+		[]string{datacorekube.OctantConnectionsConfigMapType},
+		theConfig.CurrentNamespace,
+		k8sClient,
+		zap.L(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ConfigMap controller: %w", err)
 	}
@@ -213,11 +221,14 @@ func provideConfigMapController(config *config.Configuration, k8sClient kubernet
 	return controller, nil
 }
 
-func provideSecretController(config *config.Configuration, k8sClient kubernetes.Interface) (datacorekube.SecretStore, error) {
+func provideSecretController( // nolint: ireturn
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+) (datacorekube.SecretStore, error) {
 	controller, err := datacorekube.NewSecretController([]string{
 		datacorekube.OctantIntegrationArgoType,
 		datacorekube.OctantIntegrationDatadogType,
-	}, config.CurrentNamespace, k8sClient, zap.L())
+	}, theConfig.CurrentNamespace, k8sClient, zap.L())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Secret controller: %w", err)
 	}

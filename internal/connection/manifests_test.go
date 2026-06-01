@@ -608,7 +608,7 @@ func TestCreateTemplateData(t *testing.T) {
 			},
 		}
 
-		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig)
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.ErrorContains(t, err, "pushing argo application with multiple destinations is currently unsupported")
 		require.Nil(t, td)
@@ -626,7 +626,7 @@ func TestCreateTemplateData(t *testing.T) {
 			},
 		}
 
-		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig)
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.ErrorContains(t, err, "unknown destination type: datacat")
 		require.Nil(t, td)
@@ -650,7 +650,7 @@ func TestCreateTemplateData(t *testing.T) {
 			Return(ddIntegrationData, nil).
 			Once()
 
-		oc := NewOctantConnection(nil, nil, mockDatadogIntegration, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig, WithDatadogIntegration(mockDatadogIntegration))
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.NoError(t, err)
 		require.NotNil(t, td)

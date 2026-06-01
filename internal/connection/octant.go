@@ -77,16 +77,20 @@ func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
 }
 
 // WithArgoCDIntegration provides an argocd integration to the octant connection.
-func WithArgoCDIntegration(integration integration.Integration[integration.ArgoCDIntegrationData]) OctantConnectionOption {
+func WithArgoCDIntegration(
+	theIntegration integration.Integration[integration.ArgoCDIntegrationData],
+) OctantConnectionOption {
 	return func(o *OctantConnection) {
-		o.argoIntegration = integration
+		o.argoIntegration = theIntegration
 	}
 }
 
 // WithDatadogIntegration provides a datadog integration to the octant connection.
-func WithDatadogIntegration(integration integration.Integration[integration.DataDogIntegrationData]) OctantConnectionOption {
+func WithDatadogIntegration(
+	theIntegration integration.Integration[integration.DataDogIntegrationData],
+) OctantConnectionOption {
 	return func(o *OctantConnection) {
-		o.datadogIntegration = integration
+		o.datadogIntegration = theIntegration
 	}
 }
 
@@ -142,7 +146,10 @@ func (oc *OctantConnection) GetConnectionByName(
 	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
@@ -164,7 +171,10 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if getCMErr != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
@@ -199,7 +209,10 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
@@ -235,7 +248,10 @@ func (oc *OctantConnection) SaveConnection(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
+	cm, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
@@ -287,7 +303,10 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(connectionsConfigmapName, oc.configuration.CurrentNamespace)
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if getCMErr != nil {
 		input.Logger.Warn("fetching connection configmap", zap.Error(getCMErr))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)

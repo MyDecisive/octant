@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mydecisive/mdai-data-core/kube"
+	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -18,6 +21,14 @@ const defaultNamespace = "default"
 func TestGetIntegrations(t *testing.T) {
 	t.Parallel()
 
+	secretMeta := metav1.ObjectMeta{
+		Name:      datadogSecretName,
+		Namespace: defaultNamespace,
+		Labels: map[string]string{
+			kube.SecretTypeLabel: kube.OctantIntegrationDatadogType,
+		},
+	}
+
 	validInt := DataDogIntegrationData{APIKey: "12345", DDUrl: "https://example.com"}
 	validIntBytes, err := json.Marshal(validInt)
 	require.NoError(t, err)
@@ -25,9 +36,14 @@ func TestGetIntegrations(t *testing.T) {
 	t.Run("secret does not exist", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, datadogSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -41,18 +57,19 @@ func TestGetIntegrations(t *testing.T) {
 	t.Run("secret exists with valid integrations", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
 			},
 		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -69,19 +86,20 @@ func TestGetIntegrations(t *testing.T) {
 	t.Run("secret exists with invalid json skips the bad entry", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-					"team-b": []byte("invalid-json"),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
+				"team-b": []byte("invalid-json"),
 			},
 		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -98,6 +116,14 @@ func TestGetIntegrations(t *testing.T) {
 func TestGetIntegrationByName(t *testing.T) {
 	t.Parallel()
 
+	secretMeta := metav1.ObjectMeta{
+		Name:      datadogSecretName,
+		Namespace: defaultNamespace,
+		Labels: map[string]string{
+			kube.SecretTypeLabel: kube.OctantIntegrationDatadogType,
+		},
+	}
+
 	validInt := DataDogIntegrationData{APIKey: "12345", DDUrl: "https://example.com"}
 	validIntBytes, err := json.Marshal(validInt)
 	require.NoError(t, err)
@@ -105,9 +131,14 @@ func TestGetIntegrationByName(t *testing.T) {
 	t.Run("secret does not exist", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, datadogSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -121,18 +152,19 @@ func TestGetIntegrationByName(t *testing.T) {
 	t.Run("integration not found", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
 			},
 		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -146,18 +178,19 @@ func TestGetIntegrationByName(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
 			},
 		}
-
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -179,8 +212,16 @@ func TestSetIntegration(t *testing.T) {
 		t.Parallel()
 
 		mockK8sClient := fake.NewClientset()
+
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, datadogSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			K8sClient:   mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -212,17 +253,22 @@ func TestSetIntegration(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"api_key":"old-key","dd_url":"old-url"}`),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
+			Data: map[string][]byte{
+				"team-a": []byte(`{"api_key":"old-key","dd_url":"old-url"}`),
 			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
+		mockK8sClient := fake.NewClientset(existingSecret)
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			K8sClient:   mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -263,69 +309,68 @@ func TestDeleteIntegration(t *testing.T) {
 	t.Run("secret does not exist - silently succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, datadogSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// validate secret doesn't exist before we try to delete
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-datadog-integration\" not found")
-
-		err = datadogIntegration.DeleteIntegration(t.Context(), "team-a")
+		err := datadogIntegration.DeleteIntegration(t.Context(), "team-a")
 		require.NoError(t, err)
 	})
 
 	t.Run("integration does not exist in secret - silently succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
+			Data: map[string][]byte{
+				"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
 			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// validate secret exists with "team-a" before we try to delete with another integration name
-		existingSecret, err := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingSecret.Data)
-		require.Len(t, existingSecret.Data, 1)
-		require.Contains(t, existingSecret.Data, "team-a")
-
-		err = datadogIntegration.DeleteIntegration(t.Context(), "team-b")
+		err := datadogIntegration.DeleteIntegration(t.Context(), "team-b")
 		require.NoError(t, err)
 	})
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
-					"team-b": []byte(`{"api_key":"key2","dd_url":"url2"}`),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: datadogSecretName, Namespace: defaultNamespace},
+			Data: map[string][]byte{
+				"team-a": []byte(`{"api_key":"key","dd_url":"url"}`),
+				"team-b": []byte(`{"api_key":"key2","dd_url":"url2"}`),
 			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
+		mockK8sClient := fake.NewClientset(existingSecret)
 		datadogIntegration := &DataDogIntegration{
-			K8sClient: mockK8sClient,
+			K8sClient:   mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},

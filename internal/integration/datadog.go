@@ -37,7 +37,11 @@ type DataDogIntegration struct {
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
-func NewDataDogIntegration(k8sClient kubernetes.Interface, secretStore kube.SecretStore, configuration *config.Configuration) *DataDogIntegration {
+func NewDataDogIntegration(
+	k8sClient kubernetes.Interface,
+	secretStore kube.SecretStore,
+	configuration *config.Configuration,
+) *DataDogIntegration {
 	return &DataDogIntegration{
 		K8sClient:     k8sClient,
 		SecretStore:   secretStore,
@@ -115,7 +119,15 @@ func (ddi *DataDogIntegration) SetIntegration(
 
 	if isNotFound {
 		// Create the secret if it does not exist
-		return createIntegrationSecret(ctx, ddi.K8sClient, namespace, integrationName, datadogSecretName, kube.OctantIntegrationDatadogType, jsonData)
+		return createIntegrationSecret(
+			ctx,
+			ddi.K8sClient,
+			namespace,
+			integrationName,
+			datadogSecretName,
+			kube.OctantIntegrationDatadogType,
+			jsonData,
+		)
 	}
 	// Update the secret if it already exists
 	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, integrationName, secret, jsonData)

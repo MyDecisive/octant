@@ -20,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -451,11 +450,7 @@ func TestDeleteConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			PushArgoApp(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(nil).
-			Once()
-		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			DeleteArgoApp(mock.Anything, mock.Anything, mock.Anything, "argo-test").
 			Return(nil).
 			Once()
 
@@ -468,7 +463,7 @@ func TestDeleteConnection(t *testing.T) {
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(fake.NewClientset()),
+			WithK8sClient(fake.NewClientset(theConfigmap)),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithArgoClient(mockArgoClient),
 		)
@@ -757,19 +752,31 @@ func TestDeleteConnectionValidator(t *testing.T) {
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
-	mockK8sData := []runtime.Object{
-		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-			Data: map[string]string{
-				"argo-test": string(validConnectionBytes),
+
+	theConfigmap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      connectionsConfigmapName,
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				kube.ConfigMapTypeLabel: kube.OctantConnectionsConfigMapType,
 			},
+		},
+		Data: map[string]string{
+			"argo-test": string(validConnectionBytes),
 		},
 	}
 
 	t.Run("configmap not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, connectionsConfigmapName)
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(nil, notFoundError).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -781,7 +788,13 @@ func TestDeleteConnectionValidator(t *testing.T) {
 	t.Run("connection not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(theConfigmap, nil).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -793,17 +806,26 @@ func TestDeleteConnectionValidator(t *testing.T) {
 	t.Run("error unmarshalling connection data", func(t *testing.T) {
 		t.Parallel()
 
-		k8sData := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"argo-test": "}invalid{json",
+		badConfigmap := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      connectionsConfigmapName,
+				Namespace: defaultNamespace,
+				Labels: map[string]string{
+					kube.ConfigMapTypeLabel: kube.OctantConnectionsConfigMapType,
 				},
+			},
+			Data: map[string]string{
+				"argo-test": "}",
 			},
 		}
 
-		generator := NewConnectionManifestGenerator(testConfig)
-		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil, generator)
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(badConfigmap, nil).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -819,17 +841,27 @@ func TestDeleteConnectionValidator(t *testing.T) {
 		nonSideloadDeployment.Deployment.Type = ArgoManifestsDeploymentType
 		serializedConnection, marshalErr := json.Marshal(nonSideloadDeployment)
 		require.NoError(t, marshalErr)
-		k8sData := []runtime.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-				Data: map[string]string{
-					"argo-test": string(serializedConnection),
+
+		theCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      connectionsConfigmapName,
+				Namespace: defaultNamespace,
+				Labels: map[string]string{
+					kube.ConfigMapTypeLabel: kube.OctantConnectionsConfigMapType,
 				},
+			},
+			Data: map[string]string{
+				"argo-test": string(serializedConnection),
 			},
 		}
 
-		generator := NewConnectionManifestGenerator(testConfig)
-		octantConnection := NewOctantConnection(fake.NewClientset(k8sData...), nil, nil, nil, testConfig, nil, generator)
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(theCM, nil).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -860,7 +892,22 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Once()
 
 		generator := NewConnectionManifestGenerator(testConfig)
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), mockArgoIntegration, mockDatadogIntegration, nil, testConfig, mockArgoClient, generator)
+
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(theConfigmap, nil).
+			Once()
+
+		octantConnection := NewOctantConnection(
+			mockCmStore,
+			testConfig,
+			WithGenerator(generator),
+			WithDatadogIntegration(mockDatadogIntegration),
+			WithArgoCDIntegration(mockArgoIntegration),
+			WithArgoClient(mockArgoClient),
+		)
+
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -891,19 +938,32 @@ func TestGetConnections(t *testing.T) {
 
 	validConnectionBytes, err := json.Marshal(validConnection)
 	require.NoError(t, err)
-	mockK8sData := []runtime.Object{
-		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: connectionsConfigmapName, Namespace: defaultNamespace},
-			Data: map[string]string{
-				"argo-test": string(validConnectionBytes),
+
+	theConfigmap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      connectionsConfigmapName,
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				kube.ConfigMapTypeLabel: kube.OctantConnectionsConfigMapType,
 			},
+		},
+		Data: map[string]string{
+			"argo-test-1": string(validConnectionBytes),
+			"argo-test-2": string(validConnectionBytes),
 		},
 	}
 
 	t.Run("configmap not found", func(t *testing.T) {
 		t.Parallel()
 
-		octantConnection := NewOctantConnection(fake.NewClientset(), nil, nil, nil, testConfig, nil, nil)
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, connectionsConfigmapName)
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(nil, notFoundError).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})
@@ -913,12 +973,19 @@ func TestGetConnections(t *testing.T) {
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
-		octantConnection := NewOctantConnection(fake.NewClientset(mockK8sData...), nil, nil, nil, testConfig, nil, nil)
+
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockCmStore.EXPECT().
+			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
+			Return(theConfigmap, nil).
+			Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})
 		require.NoError(t, getErr)
-		require.Len(t, connections, 1)
-		assert.Equal(t, "argo-test", connections[0])
+		require.Len(t, connections, 2)
+		assert.ElementsMatch(t, []string{"argo-test-1", "argo-test-2"}, connections)
 	})
 }

@@ -28,7 +28,11 @@ type ArgoCDIntegration struct {
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 
 // NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
-func NewArgoCDIntegration(secretStore kube.SecretStore, k8sClient kubernetes.Interface, configuration *config.Configuration) *ArgoCDIntegration {
+func NewArgoCDIntegration(
+	secretStore kube.SecretStore,
+	k8sClient kubernetes.Interface,
+	configuration *config.Configuration,
+) *ArgoCDIntegration {
 	return &ArgoCDIntegration{
 		K8sClient:     k8sClient,
 		SecretStore:   secretStore,
@@ -100,7 +104,15 @@ func (aci *ArgoCDIntegration) SetIntegration(
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
-			return createIntegrationSecret(ctx, aci.K8sClient, namespace, integrationName, argocdSecretName, kube.OctantIntegrationArgoType, jsonData)
+			return createIntegrationSecret(
+				ctx,
+				aci.K8sClient,
+				namespace,
+				integrationName,
+				argocdSecretName,
+				kube.OctantIntegrationArgoType,
+				jsonData,
+			)
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
