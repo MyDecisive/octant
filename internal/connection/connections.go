@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/mdai-data-core/kube"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,6 +62,9 @@ func createConnectionConfigMap(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				kube.ConfigMapTypeLabel: kube.OctantConnectionsConfigMapType,
+			},
 		},
 		Data: map[string]string{
 			connectionName: connectionData,
