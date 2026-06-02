@@ -39,8 +39,8 @@ type OctantConnectionData struct {
 
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
-	k8sClient          kubernetes.Interface
-	configMapStore     kube.ConfigMapStore
+	configMapWriter    kubernetes.Interface
+	configMapReader    kube.ConfigMapStore
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics  metrics.ConnectionStatus
@@ -59,8 +59,8 @@ func NewOctantConnection(
 	options ...OctantConnectionOption,
 ) *OctantConnection {
 	oc := &OctantConnection{
-		configMapStore: configMapStore,
-		configuration:  configuration,
+		configMapReader: configMapStore,
+		configuration:   configuration,
 	}
 
 	for _, option := range options {
@@ -72,7 +72,7 @@ func NewOctantConnection(
 // WithK8sClient provides a k8s client to the octant connection.
 func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
 	return func(o *OctantConnection) {
-		o.k8sClient = k8sClient
+		o.configMapWriter = k8sClient
 	}
 }
 
@@ -146,7 +146,7 @@ func (oc *OctantConnection) GetConnectionByName(
 	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -171,7 +171,7 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
+	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -199,7 +199,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	delete(cm.Data, input.ConnectionName)
 
-	if _, err := oc.k8sClient.CoreV1().
+	if _, err := oc.configMapWriter.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
@@ -209,7 +209,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -248,7 +248,7 @@ func (oc *OctantConnection) SaveConnection(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
+	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -303,7 +303,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
+	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -347,7 +347,7 @@ func (oc *OctantConnection) createConnection(
 	}
 	return createConnectionConfigMap(
 		ctx,
-		oc.k8sClient,
+		oc.configMapWriter,
 		namespace,
 		connectionsConfigmapName,
 		connectionName,
@@ -368,7 +368,7 @@ func (oc *OctantConnection) updateConnection(
 	}
 	return updateConfigMapWithConnection(
 		ctx,
-		oc.k8sClient,
+		oc.configMapWriter,
 		namespace,
 		cm,
 		connectionName,
