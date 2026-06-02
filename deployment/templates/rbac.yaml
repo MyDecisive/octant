@@ -12,7 +12,7 @@ metadata:
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
-    verbs: [ "create" ]
+    verbs: [ "create", "list" ]
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames: {{ toYaml .Values.serviceAccount.integrationSecretNames | nindent 6 }}
@@ -39,7 +39,7 @@ metadata:
 rules:
   - apiGroups: [ "" ]
     resources: [ "configmaps" ]
-    verbs: [ "create" ]
+    verbs: [ "create", "list" ]
   - apiGroups: [ "" ]
     resources: [ "configmaps" ]
     resourceNames: [ "mdai-octant-connections" ]
