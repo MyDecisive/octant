@@ -9,18 +9,14 @@ import (
 	"slices"
 	"time"
 
-	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
-	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type OctantConnectionDestination struct {
@@ -39,11 +35,9 @@ type OctantConnectionData struct {
 
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
-	configMapWriter    kubernetes.Interface
-	configMapReader    kube.ConfigMapStore
+	cmStore            kube.ConfigMapStore
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
-	connectionMetrics  metrics.ConnectionStatus
 	configuration      *config.Configuration
 	argoClient         argocd.APIClient
 	generator          ManifestGenerator
@@ -59,21 +53,14 @@ func NewOctantConnection(
 	options ...OctantConnectionOption,
 ) *OctantConnection {
 	oc := &OctantConnection{
-		configMapReader: configMapStore,
-		configuration:   configuration,
+		cmStore:       configMapStore,
+		configuration: configuration,
 	}
 
 	for _, option := range options {
 		option(oc)
 	}
 	return oc
-}
-
-// WithK8sClient provides a k8s client to the octant connection.
-func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.configMapWriter = k8sClient
-	}
 }
 
 // WithArgoCDIntegration provides an argocd integration to the octant connection.
@@ -94,13 +81,6 @@ func WithDatadogIntegration(
 	}
 }
 
-// WithConnectionMetrics provides connection metrics to the octant connection.
-func WithConnectionMetrics(connectionMetrics metrics.ConnectionStatus) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.connectionMetrics = connectionMetrics
-	}
-}
-
 // WithArgoClient provides the argocd api client to the octant connection.
 func WithArgoClient(client argocd.APIClient) OctantConnectionOption {
 	return func(o *OctantConnection) {
@@ -115,38 +95,13 @@ func WithGenerator(generator ManifestGenerator) OctantConnectionOption {
 	}
 }
 
-var _ Connection[OctantConnectionData] = (*OctantConnection)(nil)
-
-func (oc *OctantConnection) GetConnectionStatus(
-	ctx context.Context,
-	input ConnectionCRUDInput,
-	validatorRunID string,
-) (
-	*octantv1alpha.GetConnectionStatusResponse,
-	error,
-) {
-	connection, err := oc.GetConnectionByName(ctx, input)
-	if err != nil {
-		return nil, fmt.Errorf("getting connection: %w", err)
-	}
-	if connection == nil {
-		return nil, fmt.Errorf("connection '%s' not found in namespace '%s'", input.ConnectionName, input.Namespace)
-	}
-
-	return oc.connectionMetrics.GetConnectionStatus(
-		ctx,
-		input.Namespace,
-		input.ConnectionName,
-		connection.TelemetryTypes,
-		validatorRunID,
-	)
-}
+var _ Connection = (*OctantConnection)(nil)
 
 func (oc *OctantConnection) GetConnectionByName(
 	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.cmStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -171,7 +126,7 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	cm, getCMErr := oc.cmStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -199,17 +154,11 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	delete(cm.Data, input.ConnectionName)
 
-	if _, err := oc.configMapWriter.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
-	}
-
-	return nil
+	return oc.cmStore.UpdateConfigMap(ctx, oc.configuration.CurrentNamespace, cm)
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.cmStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -223,13 +172,6 @@ func (oc *OctantConnection) GetConnections(ctx context.Context, input Connection
 		names = append(names, name)
 	}
 	return names, nil
-}
-
-func (oc *OctantConnection) GetConnectionValidatorRuns(
-	ctx context.Context,
-	input ConnectionCRUDInput,
-) ([]string, error) {
-	return oc.connectionMetrics.GetConnectionValidatorRuns(ctx, input.Namespace, input.ConnectionName)
 }
 
 func (oc *OctantConnection) SaveConnection(
@@ -248,7 +190,7 @@ func (oc *OctantConnection) SaveConnection(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	cm, err := oc.cmStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -286,54 +228,6 @@ func (oc *OctantConnection) SaveConnection(
 	return nil
 }
 
-func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input ConnectionCRUDInput) (string, error) {
-	connection, err := oc.GetConnectionByName(ctx, input)
-	if err != nil {
-		return "", fmt.Errorf("getting connection: %w", err)
-	}
-	if connection == nil {
-		return "", fmt.Errorf("connection '%s' not found", input.ConnectionName)
-	}
-
-	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.Namespace)
-	}
-
-	return "", nil
-}
-
-func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
-		connectionsConfigmapName,
-		oc.configuration.CurrentNamespace,
-	)
-	if getCMErr != nil {
-		input.Logger.Warn("fetching connection configmap", zap.Error(getCMErr))
-		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
-	}
-
-	if _, exists := cm.Data[input.ConnectionName]; !exists {
-		input.Logger.Warn("connection not found in configmap", zap.String("connectionName", input.ConnectionName))
-		return fmt.Errorf("connection not found in configmap %s", input.ConnectionName)
-	}
-
-	var connection OctantConnectionData
-	if err := json.Unmarshal([]byte(cm.Data[input.ConnectionName]), &connection); err != nil {
-		return fmt.Errorf("failed to unmarshal connection data: %w", err)
-	}
-
-	// TODO: This should be refactored to a more robust deployment-based task system
-	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		templateData, err := oc.createTemplateData(ctx, input.ConnectionName, connection)
-		if err != nil {
-			return err
-		}
-		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName, templateData)
-	}
-
-	return nil
-}
-
 // createConnection creates a new connection configmap.
 func (oc *OctantConnection) createConnection(
 	ctx context.Context,
@@ -347,7 +241,7 @@ func (oc *OctantConnection) createConnection(
 	}
 	return createConnectionConfigMap(
 		ctx,
-		oc.configMapWriter,
+		oc.cmStore,
 		namespace,
 		connectionsConfigmapName,
 		connectionName,
@@ -368,7 +262,7 @@ func (oc *OctantConnection) updateConnection(
 	}
 	return updateConfigMapWithConnection(
 		ctx,
-		oc.configMapWriter,
+		oc.cmStore,
 		namespace,
 		cm,
 		connectionName,
