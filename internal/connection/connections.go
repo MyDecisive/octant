@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -12,6 +13,11 @@ import (
 )
 
 const connectionsConfigmapName = "mdai-octant-connections"
+
+var (
+	ErrSideloadArgo = errors.New("sideload argocd")
+	ErrSave         = errors.New("save")
+)
 
 type ConnectionCRUDInput struct {
 	Logger         *zap.Logger

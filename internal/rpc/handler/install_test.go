@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/go-faker/faker/v4"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
@@ -333,8 +334,10 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					Once()
 
 				mockArgoClient := argocdmock.NewMockAPIClient(t)
-				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+					return in.ClientOpts.AuthToken == "abc123" &&
+						in.ClientOpts.ServerAddr == "http://argocd.com" &&
+						in.ClientOpts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, nil, assert.AnError).Once()
 				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration, nil)
 			},
@@ -358,8 +361,10 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					Once()
 
 				mockArgoClient := argocdmock.NewMockAPIClient(t)
-				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+					return in.ClientOpts.AuthToken == "abc123" &&
+						in.ClientOpts.ServerAddr == "http://argocd.com" &&
+						in.ClientOpts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, resourceDetails, nil).Times(3)
 
 				testConfig := &config.Configuration{
@@ -401,8 +406,10 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 					Once()
 
 				mockArgoClient := argocdmock.NewMockAPIClient(t)
-				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+					return in.ClientOpts.AuthToken == "abc123" &&
+						in.ClientOpts.ServerAddr == "http://argocd.com" &&
+						in.ClientOpts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil).Times(1)
 
 				testConfig := &config.Configuration{
@@ -445,11 +452,15 @@ func TestInstallHandler_GetInstallStatus(t *testing.T) {
 
 				mockArgoClient := argocdmock.NewMockAPIClient(t)
 				// returns installing twice, THEN installed
-				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+					return in.ClientOpts.AuthToken == "abc123" &&
+						in.ClientOpts.ServerAddr == "http://argocd.com" &&
+						in.ClientOpts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil).Twice()
-				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.Anything, mock.MatchedBy(func(opts *apiclient.ClientOptions) bool {
-					return opts.AuthToken == "abc123" && opts.ServerAddr == "http://argocd.com" && opts.Insecure
+				mockArgoClient.EXPECT().GetAppStatus(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+					return in.ClientOpts.AuthToken == "abc123" &&
+						in.ClientOpts.ServerAddr == "http://argocd.com" &&
+						in.ClientOpts.Insecure
 				})).Return(octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, resourceDetails, nil).Once()
 				return NewInstallHandler(theConfig, mockArgoClient, mockArgoIntegration, nil)
 			},

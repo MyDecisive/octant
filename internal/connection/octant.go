@@ -187,14 +187,14 @@ func (oc *OctantConnection) SaveConnection(
 ) error {
 	if !input.Skip {
 		if err := oc.createOrUpdate(ctx, connection, input); err != nil {
-			return err
+			return fmt.Errorf("%w:%w", ErrSave, err)
 		}
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
 		err := oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w:%w", ErrSideloadArgo, err)
 		}
 	}
 

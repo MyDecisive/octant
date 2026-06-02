@@ -385,7 +385,11 @@ func TestGetAppStatus(t *testing.T) {
 			}
 
 			testClient := NewArgoCDClient()
-			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), zaptest.NewLogger(t), clientOpts)
+			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), Input{
+				Logger:     zaptest.NewLogger(t),
+				ClientOpts: clientOpts,
+				AppName:    "mdai",
+			})
 			testCase.validateResult(installStatus, resourceDetails, testErr)
 		})
 	}
@@ -515,7 +519,11 @@ func TestDeleteArgoApp(t *testing.T) {
 			}
 
 			testClient := NewArgoCDClient()
-			testErr := testClient.DeleteArgoApp(t.Context(), zaptest.NewLogger(t), clientOpts, "mdai")
+			testErr := testClient.DeleteArgoApp(t.Context(), Input{
+				Logger:     zaptest.NewLogger(t),
+				ClientOpts: clientOpts,
+				AppName:    "mdai",
+			})
 			testCase.validateResult(testErr)
 		})
 	}
@@ -601,9 +609,11 @@ func TestSyncApplication(t *testing.T) {
 			testClient := NewArgoCDClient()
 			testErr := testClient.SyncApplication(
 				t.Context(),
-				zaptest.NewLogger(t),
-				clientOpts,
-				"mdai",
+				Input{
+					Logger:     zaptest.NewLogger(t),
+					ClientOpts: clientOpts,
+					AppName:    "mdai",
+				},
 				[]string{"manifest 1 content", "manifest 2 content"},
 				false,
 			)

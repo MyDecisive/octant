@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
@@ -182,7 +183,9 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -216,7 +219,9 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -340,7 +345,9 @@ func TestDeleteConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			DeleteArgoApp(mock.Anything, mock.Anything, mock.Anything, "argo-test").
+			DeleteArgoApp(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			})).
 			Return(nil).
 			Once()
 
@@ -531,7 +538,9 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -666,7 +675,9 @@ func TestDeleteConnectionValidator(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, true).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, true).
 			Return(nil).
 			Once()
 
