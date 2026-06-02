@@ -42,6 +42,9 @@ var (
 		CurrentNamespace:   defaultNamespace,
 		ServiceAccountName: "coolServiceAccount",
 		Env:                config.Dev,
+		Install: config.Install{
+			MdaiValidatorVersion: "0.1.3",
+		},
 	}
 )
 

@@ -60,9 +60,10 @@ type ArgoConnectionTemplateData struct {
 }
 
 type ArgoValidatorTemplateData struct {
-	ConnectionName string
-	Namespace      string
-	ValidatorRunID string
+	ConnectionName   string
+	Namespace        string
+	ValidatorRunID   string
+	ValidatorVersion string
 }
 
 type ManifestOutputFormat string
@@ -323,7 +324,7 @@ func (cmg *ConnectionManifestGenerator) RenderCollectorDeploymentManifests(
 	return manifests, nil
 }
 
-func (*ConnectionManifestGenerator) RenderValidatorManifestForConnection(
+func (cmg *ConnectionManifestGenerator) RenderValidatorManifestForConnection(
 	templateData *ArgoValidatorTemplateData,
 	outputFormat ManifestOutputFormat,
 ) ([]byte, error) {
@@ -331,6 +332,7 @@ func (*ConnectionManifestGenerator) RenderValidatorManifestForConnection(
 		return nil, errors.New("no output format specified")
 	}
 
+	templateData.ValidatorVersion = cmg.configuration.Install.MdaiValidatorVersion
 	var manifest []byte
 	appManifestTemplate, err := template.New("validator").Parse(validatorTemplate)
 	if err != nil {

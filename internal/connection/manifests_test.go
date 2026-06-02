@@ -492,6 +492,9 @@ func TestRenderValidatorManifest(t *testing.T) {
 	target := NewConnectionManifestGenerator(&config.Configuration{
 		ServiceAccountName: faker.Word(),
 		CurrentNamespace:   faker.Word(),
+		Install: config.Install{
+			MdaiValidatorVersion: "0.1.3",
+		},
 	})
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
@@ -510,6 +513,8 @@ func TestRenderValidatorManifest(t *testing.T) {
 		spec := validator["spec"].(map[string]any)
 		collectorRef := spec["collectorRef"].(map[string]any)
 		assert.Equal(t, "test-app-sampling-lb", collectorRef["name"])
+		validatorRef := spec["validator"].(map[string]any)
+		assert.Equal(t, "ghcr.io/mydecisive/mdai-fidelity-validator:0.1.3", validatorRef["image"])
 	})
 }
 
