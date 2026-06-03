@@ -21,6 +21,15 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
+func TestSettingManager_ID(t *testing.T) {
+	t.Parallel()
+
+	target := newTestManager(t, nil, nil, nil)
+	actual := target.ID()
+
+	assert.Equal(t, target.id, actual)
+}
+
 func TestSettingManager_SetDatadogURL(t *testing.T) {
 	t.Parallel()
 
@@ -420,6 +429,7 @@ func newTestManager(
 	}
 
 	return &SettingManager{
+		id:                faker.Word(),
 		configuration:     c,
 		connectionService: conn,
 		datadogService:    dd,

@@ -41,6 +41,9 @@ type Manager interface {
 	// DeployAndWait redeploys the corresponding ArgoCD app to reflect the changes and then
 	// it will wait until either the deployment is complete or timeout.
 	DeployAndWait(ctx context.Context, out chan SettingUpdateResult)
+	// ID returns the ID associated with the current manager.
+	// The ID is used to release in progress lock with the manager builder.
+	ID() string
 }
 
 // SettingManager implements Manager.
@@ -53,6 +56,7 @@ type SettingManager struct {
 
 	logger *zap.Logger
 
+	id             string
 	connectionName string
 	namespace      string
 
@@ -66,6 +70,12 @@ type SettingManager struct {
 
 // Ensure SettingManager implements Manager.
 var _ Manager = &SettingManager{}
+
+// ID returns the ID associated with the current manager.
+// The ID is used to release in progress lock with the manager builder.
+func (sm *SettingManager) ID() string {
+	return sm.id
+}
 
 // SetDatadogURL provides the manager with the datadog URL to update
 // the datadog integration with.

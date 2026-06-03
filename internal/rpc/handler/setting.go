@@ -43,8 +43,12 @@ func (sh *SettingHandler) Update(
 	)
 	if err != nil {
 		logger.Error("unable to create a setting manager", zap.Error(err))
+		if errors.Is(err, setting.ErrStillUpdating) {
+			return connect.NewError(connect.CodeUnavailable, err)
+		}
 		return connect.NewError(connect.CodeNotFound, err)
 	}
+	defer sh.builder.Done(ctx, req.Msg.GetScope().GetConnectionName(), manager.ID())
 
 	if conErr := sh.stream(logger, stream, octantv1alpha.UpdateResponse_STATUS_UPDATING); conErr != nil {
 		return conErr

@@ -137,6 +137,50 @@ func (_c *MockManager_DeployAndWait_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// ID provides a mock function for the type MockManager
+func (_mock *MockManager) ID() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ID")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockManager_ID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ID'
+type MockManager_ID_Call struct {
+	*mock.Call
+}
+
+// ID is a helper method to define mock.On call
+func (_e *MockManager_Expecter) ID() *MockManager_ID_Call {
+	return &MockManager_ID_Call{Call: _e.mock.On("ID")}
+}
+
+func (_c *MockManager_ID_Call) Run(run func()) *MockManager_ID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockManager_ID_Call) Return(s string) *MockManager_ID_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockManager_ID_Call) RunAndReturn(run func() string) *MockManager_ID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetDatadogAPIKey provides a mock function for the type MockManager
 func (_mock *MockManager) SetDatadogAPIKey(key string) setting.Manager {
 	ret := _mock.Called(key)
@@ -400,5 +444,57 @@ func (_c *MockManagerBuilder_Build_Call) Return(manager setting.Manager, err err
 
 func (_c *MockManagerBuilder_Build_Call) RunAndReturn(run func(ctx context.Context, namespace string, connectionName string, logger *zap.Logger) (setting.Manager, error)) *MockManagerBuilder_Build_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// Done provides a mock function for the type MockManagerBuilder
+func (_mock *MockManagerBuilder) Done(ctx context.Context, connectionName string, id string) {
+	_mock.Called(ctx, connectionName, id)
+	return
+}
+
+// MockManagerBuilder_Done_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Done'
+type MockManagerBuilder_Done_Call struct {
+	*mock.Call
+}
+
+// Done is a helper method to define mock.On call
+//   - ctx context.Context
+//   - connectionName string
+//   - id string
+func (_e *MockManagerBuilder_Expecter) Done(ctx interface{}, connectionName interface{}, id interface{}) *MockManagerBuilder_Done_Call {
+	return &MockManagerBuilder_Done_Call{Call: _e.mock.On("Done", ctx, connectionName, id)}
+}
+
+func (_c *MockManagerBuilder_Done_Call) Run(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Done_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockManagerBuilder_Done_Call) Return() *MockManagerBuilder_Done_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockManagerBuilder_Done_Call) RunAndReturn(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Done_Call {
+	_c.Run(run)
 	return _c
 }

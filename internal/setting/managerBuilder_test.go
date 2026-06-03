@@ -66,6 +66,21 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 		assert.False(t, actualManager.shouldUpdateDatadog)
 	})
 
+	t.Run("err already in progress", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := connectionmock.NewMockConnection[connection.OctantConnectionData](t)
+		mockDatadog := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockArgo := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+
+		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
+		target.inProgress[connectionName] = faker.Word()
+		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Nil(t, actual)
+		assert.ErrorIs(t, err, ErrStillUpdating)
+	})
+
 	t.Run("err conn", func(t *testing.T) {
 		t.Parallel()
 
@@ -182,5 +197,48 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
+	})
+}
+
+func TestSettingManagerBuilder_Done(t *testing.T) {
+	t.Parallel()
+
+	connectionName := faker.Word()
+
+	c := &config.Configuration{}
+
+	t.Run("removed", func(t *testing.T) {
+		t.Parallel()
+
+		target := NewSettingManagerBuilder(c, nil, nil, nil, nil)
+		id := faker.Word()
+		target.inProgress[connectionName] = id
+
+		target.Done(t.Context(), connectionName, id)
+
+		assert.Empty(t, target.inProgress)
+	})
+
+	t.Run("wrong id", func(t *testing.T) {
+		t.Parallel()
+
+		target := NewSettingManagerBuilder(c, nil, nil, nil, nil)
+		id := faker.Word()
+		target.inProgress[connectionName] = faker.UUIDDigit()
+
+		target.Done(t.Context(), connectionName, id)
+
+		assert.Contains(t, target.inProgress, connectionName)
+	})
+
+	t.Run("already gone", func(t *testing.T) {
+		t.Parallel()
+
+		target := NewSettingManagerBuilder(c, nil, nil, nil, nil)
+		id := faker.Word()
+
+		target.Done(t.Context(), connectionName, id)
+
+		assert.Empty(t, target.inProgress)
 	})
 }

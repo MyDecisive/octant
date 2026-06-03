@@ -22,6 +22,7 @@ func TestSettingHandler_Update(t *testing.T) {
 	namespace := faker.Word()
 	conn := faker.Word()
 	newURL := faker.Word()
+	id := faker.Word()
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -41,7 +42,10 @@ func TestSettingHandler_Update(t *testing.T) {
 		})
 
 		mockBuilder := settingmock.NewMockManagerBuilder(t)
-		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil).Once()
+
+		mockManager.EXPECT().ID().Return(id).Once()
+		mockBuilder.EXPECT().Done(mock.Anything, conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -120,7 +124,10 @@ func TestSettingHandler_Update(t *testing.T) {
 		mockManager.EXPECT().Apply(mock.Anything).Return(assert.AnError).Once()
 
 		mockBuilder := settingmock.NewMockManagerBuilder(t)
-		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil).Once()
+
+		mockManager.EXPECT().ID().Return(id).Once()
+		mockBuilder.EXPECT().Done(mock.Anything, conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -177,6 +184,9 @@ func TestSettingHandler_Update(t *testing.T) {
 
 		mockBuilder := settingmock.NewMockManagerBuilder(t)
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
+
+		mockManager.EXPECT().ID().Return(id).Once()
+		mockBuilder.EXPECT().Done(mock.Anything, conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -236,6 +246,9 @@ func TestSettingHandler_Update(t *testing.T) {
 
 		mockBuilder := settingmock.NewMockManagerBuilder(t)
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
+
+		mockManager.EXPECT().ID().Return(id).Once()
+		mockBuilder.EXPECT().Done(mock.Anything, conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
