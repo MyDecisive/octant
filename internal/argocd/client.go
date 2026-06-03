@@ -2,6 +2,7 @@ package argocd
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -14,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -224,6 +226,42 @@ func (*Client) SyncApplication(
 		return err
 	}
 	return nil
+}
+
+// AppStatuses continuously retrieves the app status until
+// either the timeout is reached or the app status is installed.
+func (c *Client) AppStatuses(
+	ctx context.Context,
+	input Input,
+	interval time.Duration,
+	timeout time.Duration,
+	out chan InstallResult,
+) {
+	defer close(out) // Tell caller the operation is complete
+	if err := wait.PollUntilContextTimeout(ctx, interval, timeout, true,
+		func(ctx context.Context) (bool, error) {
+			status, details, err := c.GetAppStatus(ctx, input)
+			if err != nil {
+				return true, err
+			}
+			out <- InstallResult{
+				Status:  status,
+				Details: details,
+			}
+			return status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, nil
+		}); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			out <- InstallResult{
+				Status: octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT,
+			}
+			return
+		}
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
 }
 
 // GetAppStatus retrieves the argo application status and any resource details available for a non-healthy state.

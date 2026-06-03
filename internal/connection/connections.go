@@ -2,7 +2,6 @@ package connection
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -14,11 +13,6 @@ import (
 
 const connectionsConfigmapName = "mdai-octant-connections"
 
-var (
-	ErrSideloadArgo = errors.New("sideload argocd")
-	ErrSave         = errors.New("save")
-)
-
 type ConnectionCRUDInput struct {
 	Logger         *zap.Logger
 	Namespace      string
@@ -29,6 +23,10 @@ type ConnectionCRUDInput struct {
 	// the operation will only perform ArgoCD app sync and
 	// skip saving the connection.
 	Skip bool
+	// NoDeploy does nothing for most connection CRUD,
+	// except SaveConnection.
+	// If this is set to true, the operation will skip ArgoCD app sync.
+	NoDeploy bool
 }
 
 type Connection[T any] interface {
