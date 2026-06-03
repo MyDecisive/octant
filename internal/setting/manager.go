@@ -50,7 +50,6 @@ type SettingManager struct {
 	connectionService connection.Connection[connection.OctantConnectionData]
 	datadogService    integration.Integration[integration.DataDogIntegrationData]
 	argoClient        argocd.APIClient
-	argoService       integration.Integration[integration.ArgoCDIntegrationData]
 
 	logger *zap.Logger
 
@@ -161,6 +160,7 @@ func (sm *SettingManager) DeployAndWait(ctx context.Context, out chan SettingUpd
 		out <- SettingUpdateResult{
 			Err: fmt.Errorf("%w:%w", ErrDeploy, err),
 		}
+		return
 	}
 
 	results := make(chan argocd.InstallResult)

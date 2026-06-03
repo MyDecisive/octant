@@ -11,6 +11,10 @@ packages:
   github.com/mydecisive/octant/internal/integration:
     interfaces:
       Integration:
+  github.com/mydecisive/octant/internal/setting:
+    interfaces:
+      Manager:
+      ManagerBuilder:
   github.com/mydecisive/octant/internal/connection:
     interfaces:
       Connection:

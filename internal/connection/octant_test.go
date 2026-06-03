@@ -310,6 +310,37 @@ func TestSaveConnection(t *testing.T) {
 			Logger:         zaptest.NewLogger(t),
 		}))
 	})
+
+	t.Run("success skip & no deploy", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+
+		generator := NewConnectionManifestGenerator(testConfig)
+
+		octantConnection := NewOctantConnection(
+			mockCmStore,
+			testConfig,
+			WithK8sClient(fake.NewClientset()),
+			WithArgoCDIntegration(mockArgoIntegration),
+			WithDatadogIntegration(mockDatadogIntegration),
+			WithArgoClient(mockArgoClient),
+			WithGenerator(generator),
+		)
+		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+			Skip:           true,
+			NoDeploy:       true,
+		}))
+	})
 }
 
 func TestDeleteConnection(t *testing.T) {

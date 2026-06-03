@@ -91,7 +91,6 @@ func (smb *SettingManagerBuilder) Build( //nolint:ireturn
 		connectionService:      smb.connection,
 		datadogService:         smb.datadog,
 		argoClient:             smb.argoClient,
-		argoService:            smb.argoIntegration,
 		logger:                 logger,
 		connectionName:         connectionName,
 		namespace:              namespace,

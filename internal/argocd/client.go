@@ -270,9 +270,11 @@ func (*Client) AppOperationState(
 				input.Logger.Error("getting argo application", zap.Error(err))
 				return true, err
 			}
+
 			done := false
 			state := octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING
-			if argoApp.Status.OperationState != nil && argoApp.Status.OperationState.Phase == common.OperationSucceeded {
+			if argoApp.Status.OperationState != nil &&
+				argoApp.Status.OperationState.Phase == common.OperationSucceeded {
 				state = octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED
 				done = true
 			}
