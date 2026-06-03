@@ -98,7 +98,7 @@ func (sm *SettingManager) SetTelemetryTypes(types []octantv1alpha.MLTType) Manag
 	updates := telemetry.ToMLTs(types)
 	if len(updates) > 0 {
 		removed, added := lo.Difference(sm.connection.TelemetryTypes, updates)
-		if len(removed) > 0 && len(added) > 0 {
+		if len(removed) > 0 || len(added) > 0 {
 			sm.logger = sm.logger.With(
 				zap.String("removedTelemetries", fmt.Sprint(removed)),
 				zap.String("addedTelemetries", fmt.Sprint(added)),
@@ -165,7 +165,7 @@ func (sm *SettingManager) DeployAndWait(ctx context.Context, out chan SettingUpd
 
 	results := make(chan argocd.InstallResult)
 	go func() {
-		sm.argoClient.AppStatuses(ctx, argocd.Input{
+		sm.argoClient.AppOperationState(ctx, argocd.Input{
 			Logger:     sm.logger,
 			ClientOpts: argocd.CreateClientOpts(sm.configuration.Env, sm.argo.APIUrl, sm.argo.AccountToken),
 			AppName:    sm.connectionName,

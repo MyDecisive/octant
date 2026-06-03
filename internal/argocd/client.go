@@ -10,6 +10,7 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"github.com/argoproj/gitops-engine/pkg/sync/common"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
@@ -29,9 +30,8 @@ type Input struct {
 }
 
 type InstallResult struct {
-	Status  octantv1alpha.InstallStatus
-	Details []*octantv1alpha.ResourceDetails
-	Err     error
+	Status octantv1alpha.InstallStatus
+	Err    error
 }
 
 type APIClient interface {
@@ -50,9 +50,9 @@ type APIClient interface {
 		ctx context.Context,
 		input Input,
 	) error
-	// AppStatuses continuously retrieves the app status until
-	// either the timeout is reached or the app status is installed.
-	AppStatuses(
+	// AppOperationState continuously retrieves the app operation state until
+	// either the timeout is reached or the state is succeeded.
+	AppOperationState(
 		ctx context.Context,
 		input Input,
 		interval time.Duration,
@@ -72,6 +72,9 @@ type APIClient interface {
 }
 
 type Client struct{}
+
+// Ensure Client implements APIClient.
+var _ APIClient = &Client{}
 
 func NewArgoCDClient() *Client {
 	return &Client{}
@@ -228,9 +231,9 @@ func (*Client) SyncApplication(
 	return nil
 }
 
-// AppStatuses continuously retrieves the app status until
-// either the timeout is reached or the app status is installed.
-func (c *Client) AppStatuses(
+// AppOperationState continuously retrieves the app operation state until
+// either the timeout is reached or the state is succeeded.
+func (*Client) AppOperationState(
 	ctx context.Context,
 	input Input,
 	interval time.Duration,
@@ -238,17 +241,45 @@ func (c *Client) AppStatuses(
 	out chan InstallResult,
 ) {
 	defer close(out) // Tell caller the operation is complete
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
+	if err != nil {
+		input.Logger.Error("creating argo api client", zap.Error(err))
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		input.Logger.Error("creating argo application client", zap.Error(err))
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
+	defer closer.Close() //nolint:errcheck
+
 	if err := wait.PollUntilContextTimeout(ctx, interval, timeout, true,
 		func(ctx context.Context) (bool, error) {
-			status, details, err := c.GetAppStatus(ctx, input)
+			argoApp, err := applicationClient.Get(ctx, &application.ApplicationQuery{
+				Name: &input.AppName,
+			})
 			if err != nil {
+				input.Logger.Error("getting argo application", zap.Error(err))
 				return true, err
 			}
-			out <- InstallResult{
-				Status:  status,
-				Details: details,
+			done := false
+			state := octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING
+			if argoApp.Status.OperationState != nil && argoApp.Status.OperationState.Phase == common.OperationSucceeded {
+				state = octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED
+				done = true
 			}
-			return status == octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, nil
+			out <- InstallResult{
+				Status: state,
+			}
+			return done, nil
 		}); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			out <- InstallResult{

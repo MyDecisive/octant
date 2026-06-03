@@ -115,7 +115,7 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(provideOctantConnection); err != nil {
 		return nil, err
 	}
-	if err := container.Provide(setting.NewSettingManagerBuilder); err != nil {
+	if err := container.Provide(setting.NewSettingManagerBuilder, dig.As(new(setting.ManagerBuilder))); err != nil {
 		return nil, err
 	}
 

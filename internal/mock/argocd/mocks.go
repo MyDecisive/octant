@@ -43,28 +43,28 @@ func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 	return &MockAPIClient_Expecter{mock: &_m.Mock}
 }
 
-// AppStatuses provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) AppStatuses(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult) {
+// AppOperationState provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) AppOperationState(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult) {
 	_mock.Called(ctx, input, interval, timeout, out)
 	return
 }
 
-// MockAPIClient_AppStatuses_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppStatuses'
-type MockAPIClient_AppStatuses_Call struct {
+// MockAPIClient_AppOperationState_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppOperationState'
+type MockAPIClient_AppOperationState_Call struct {
 	*mock.Call
 }
 
-// AppStatuses is a helper method to define mock.On call
+// AppOperationState is a helper method to define mock.On call
 //   - ctx context.Context
 //   - input argocd.Input
 //   - interval time.Duration
 //   - timeout time.Duration
 //   - out chan argocd.InstallResult
-func (_e *MockAPIClient_Expecter) AppStatuses(ctx interface{}, input interface{}, interval interface{}, timeout interface{}, out interface{}) *MockAPIClient_AppStatuses_Call {
-	return &MockAPIClient_AppStatuses_Call{Call: _e.mock.On("AppStatuses", ctx, input, interval, timeout, out)}
+func (_e *MockAPIClient_Expecter) AppOperationState(ctx interface{}, input interface{}, interval interface{}, timeout interface{}, out interface{}) *MockAPIClient_AppOperationState_Call {
+	return &MockAPIClient_AppOperationState_Call{Call: _e.mock.On("AppOperationState", ctx, input, interval, timeout, out)}
 }
 
-func (_c *MockAPIClient_AppStatuses_Call) Run(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppStatuses_Call {
+func (_c *MockAPIClient_AppOperationState_Call) Run(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppOperationState_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -97,12 +97,12 @@ func (_c *MockAPIClient_AppStatuses_Call) Run(run func(ctx context.Context, inpu
 	return _c
 }
 
-func (_c *MockAPIClient_AppStatuses_Call) Return() *MockAPIClient_AppStatuses_Call {
+func (_c *MockAPIClient_AppOperationState_Call) Return() *MockAPIClient_AppOperationState_Call {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockAPIClient_AppStatuses_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppStatuses_Call {
+func (_c *MockAPIClient_AppOperationState_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppOperationState_Call {
 	_c.Run(run)
 	return _c
 }
