@@ -83,6 +83,37 @@ func TestSettingHandler_Update(t *testing.T) {
 		}
 	})
 
+	t.Run("err already in progress", func(t *testing.T) {
+		t.Parallel()
+
+		mockBuilder := settingmock.NewMockManagerBuilder(t)
+		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(nil, setting.ErrStillUpdating).Once()
+
+		target := NewSettingHandler(mockBuilder)
+		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
+
+		testServer := httptest.NewUnstartedServer(handler)
+		testServer.EnableHTTP2 = true
+		testServer.StartTLS()
+		t.Cleanup(testServer.Close)
+
+		client := octantv1alphaconnect.NewSettingServiceClient(testServer.Client(), testServer.URL)
+		stream, err := client.Update(t.Context(), connect.NewRequest(&octantv1alpha.UpdateRequest{
+			Scope: &octantv1alpha.ConnectionScope{
+				Namespace:      namespace,
+				ConnectionName: conn,
+			},
+			DatadogUrl: newURL,
+		}))
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		stream.Receive()
+		var connectErr *connect.Error
+		require.ErrorAs(t, stream.Err(), &connectErr)
+		assert.Equal(t, connect.CodeUnavailable, connectErr.Code())
+	})
+
 	t.Run("err builder", func(t *testing.T) {
 		t.Parallel()
 
