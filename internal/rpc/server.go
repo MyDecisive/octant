@@ -37,7 +37,7 @@ type Server struct {
 }
 
 // NewServer create a new Server.
-func NewServer(
+func NewServer( //nolint:revive // yes, there are a lot of args...
 	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
