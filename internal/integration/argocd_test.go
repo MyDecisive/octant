@@ -4,18 +4,28 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mydecisive/mdai-data-core/kube"
+	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestArgoCD_GetIntegrations(t *testing.T) {
 	t.Parallel()
 
+	secretMeta := metav1.ObjectMeta{
+		Name:      argocdSecretName,
+		Namespace: defaultNamespace,
+		Labels: map[string]string{
+			kube.SecretTypeLabel: kube.OctantIntegrationArgoType,
+		},
+	}
 	validInt := ArgoCDIntegrationData{
 		AccountToken: "abc123",
 		APIUrl:       "http://localhost:12345",
@@ -26,9 +36,14 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 	t.Run("secret does not exist", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, argocdSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		argocdIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -42,18 +57,20 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 	t.Run("secret exists with valid integrations", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
 			},
 		}
 
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		argocdIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -70,19 +87,21 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 	t.Run("secret exists with invalid json skips the bad entry", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": validIntBytes,
-					"team-b": []byte("invalid-json"),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": validIntBytes,
+				"team-b": []byte("invalid-json"),
 			},
 		}
 
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		argocdIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -108,18 +127,22 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		t.Parallel()
 
 		mockK8sClient := fake.NewClientset()
+
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, argocdSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		argocdIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			SecretStore: secretStore,
 		}
 
-		// Verify the secret doesn't exist yet
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
-
-		err = argocdIntegration.SetIntegration(t.Context(), "team-a", newIntegration)
+		err := argocdIntegration.SetIntegration(t.Context(), "team-a", newIntegration)
 		require.NoError(t, err)
 
 		// Verify the secret actually contains the added integration
@@ -130,6 +153,8 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		require.NotNil(t, secret.Data)
 		require.Len(t, secret.Data, 1)
 		require.Contains(t, secret.Data, "team-a")
+		require.Contains(t, secret.Labels, kube.SecretTypeLabel)
+		assert.Equal(t, kube.OctantIntegrationArgoType, secret.Labels[kube.SecretTypeLabel])
 
 		var teamData ArgoCDIntegrationData
 		err = json.Unmarshal(secret.Data["team-a"], &teamData)
@@ -141,20 +166,30 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      argocdSecretName,
+				Namespace: defaultNamespace,
+				Labels: map[string]string{
+					kube.SecretTypeLabel: kube.OctantIntegrationArgoType,
 				},
 			},
+			Data: map[string][]byte{
+				"team-a": []byte(`{"accountToken":"old-account-token", "apiUrl":"http://localhost:12345"}`),
+			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
+		mockK8sClient := fake.NewClientset(existingSecret)
 		datadogIntegration := &ArgoCDIntegration{
 			K8sClient: mockK8sClient,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			SecretStore: secretStore,
 		}
 
 		// Verify the secret DOES exist already
@@ -189,72 +224,79 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 func TestArgoCD_DeleteIntegration(t *testing.T) {
 	t.Parallel()
 
+	secretMeta := metav1.ObjectMeta{
+		Name:      argocdSecretName,
+		Namespace: defaultNamespace,
+		Labels: map[string]string{
+			kube.SecretTypeLabel: kube.OctantIntegrationArgoType,
+		},
+	}
+
 	t.Run("secret does not exist - silently succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
+		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, argocdSecretName)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(nil, notFoundError).
+			Once()
 		datadogIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// validate secret doesn't exist before we try to delete
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), argocdSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-argocd-integration\" not found")
-
-		err = datadogIntegration.DeleteIntegration(t.Context(), "team-a")
+		err := datadogIntegration.DeleteIntegration(t.Context(), "team-a")
 		require.NoError(t, err)
 	})
 
 	t.Run("integration does not exist in secret - silently succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl":"http://localhost:12345"}`),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl":"http://localhost:12345"}`),
 			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
 		argocdIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// validate secret exists with "team-a" before we try to delete with another integration name
-		existingSecret, err := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), argocdSecretName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingSecret.Data)
-		require.Len(t, existingSecret.Data, 1)
-		require.Contains(t, existingSecret.Data, "team-a")
-
-		err = argocdIntegration.DeleteIntegration(t.Context(), "team-b")
+		err := argocdIntegration.DeleteIntegration(t.Context(), "team-b")
 		require.NoError(t, err)
 	})
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		existingObjects := []runtime.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: argocdSecretName, Namespace: defaultNamespace},
-				Data: map[string][]byte{
-					"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl": "http://localhost:12345"}`),
-					"team-b": []byte(`{"accountToken":"xyz999-token", "apiUrl": "http://localhost:12345"}`),
-				},
+		existingSecret := &corev1.Secret{
+			ObjectMeta: secretMeta,
+			Data: map[string][]byte{
+				"team-a": []byte(`{"accountToken":"abc123-token", "apiUrl": "http://localhost:12345"}`),
+				"team-b": []byte(`{"accountToken":"xyz999-token", "apiUrl": "http://localhost:12345"}`),
 			},
 		}
-		mockK8sClient := fake.NewClientset(existingObjects...)
+
+		secretStore := kubemock.NewMockSecretStore(t)
+		secretStore.EXPECT().
+			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
+			Return(existingSecret, nil).
+			Once()
+		mockK8sClient := fake.NewClientset(existingSecret)
 		argocdIntegration := &ArgoCDIntegration{
-			K8sClient: mockK8sClient,
+			K8sClient:   mockK8sClient,
+			SecretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},

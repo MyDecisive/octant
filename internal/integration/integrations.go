@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mydecisive/mdai-data-core/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,13 +36,16 @@ func updateSecretWithIntegration(
 func createIntegrationSecret(
 	ctx context.Context,
 	k8sClient kubernetes.Interface,
-	namespace, integrationName, secretName string,
+	namespace, integrationName, secretName, secretTypeLabel string,
 	jsonData []byte,
 ) error {
 	newSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				kube.SecretTypeLabel: secretTypeLabel,
+			},
 		},
 		Data: map[string][]byte{
 			integrationName: jsonData,

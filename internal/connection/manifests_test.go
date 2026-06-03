@@ -492,6 +492,9 @@ func TestRenderValidatorManifest(t *testing.T) {
 	target := NewConnectionManifestGenerator(&config.Configuration{
 		ServiceAccountName: faker.Word(),
 		CurrentNamespace:   faker.Word(),
+		Install: config.Install{
+			MdaiValidatorVersion: "0.1.3",
+		},
 	})
 	t.Run("With Signals", func(t *testing.T) {
 		t.Parallel()
@@ -510,6 +513,8 @@ func TestRenderValidatorManifest(t *testing.T) {
 		spec := validator["spec"].(map[string]any)
 		collectorRef := spec["collectorRef"].(map[string]any)
 		assert.Equal(t, "test-app-sampling-lb", collectorRef["name"])
+		validatorRef := spec["validator"].(map[string]any)
+		assert.Equal(t, "ghcr.io/mydecisive/mdai-fidelity-validator:0.1.3", validatorRef["image"])
 	})
 }
 
@@ -608,7 +613,7 @@ func TestCreateTemplateData(t *testing.T) {
 			},
 		}
 
-		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig)
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.ErrorContains(t, err, "pushing argo application with multiple destinations is currently unsupported")
 		require.Nil(t, td)
@@ -626,7 +631,7 @@ func TestCreateTemplateData(t *testing.T) {
 			},
 		}
 
-		oc := NewOctantConnection(nil, nil, nil, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig)
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.ErrorContains(t, err, "unknown destination type: datacat")
 		require.Nil(t, td)
@@ -650,7 +655,7 @@ func TestCreateTemplateData(t *testing.T) {
 			Return(ddIntegrationData, nil).
 			Once()
 
-		oc := NewOctantConnection(nil, nil, mockDatadogIntegration, nil, testConfig, nil, nil)
+		oc := NewOctantConnection(nil, testConfig, WithDatadogIntegration(mockDatadogIntegration))
 		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
 		require.NoError(t, err)
 		require.NotNil(t, td)

@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -46,6 +47,12 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(metrics.NewPrometheusConnectionStatus, dig.As(new(metrics.ConnectionStatus))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(provideConfigMapController); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(provideSecretController); err != nil {
 		return nil, err
 	}
 
@@ -104,14 +111,7 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	}
 
 	// Connection
-	if err := container.Provide(
-		connection.NewOctantConnection,
-		dig.As(
-			new(
-				connection.Connection[connection.OctantConnectionData],
-			),
-		),
-	); err != nil {
+	if err := container.Provide(provideOctantConnection); err != nil {
 		return nil, err
 	}
 
@@ -145,13 +145,20 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 
 // SetupGracefulShutdown will create a thread that traps shutdown signal
 // to allow the service to do any finishing work before shutdown.
-func SetupGracefulShutdown() {
+func SetupGracefulShutdown(container *dig.Container) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGTSTP)
 	go func() {
 		<-sigs
 		signal.Stop(sigs)
 		close(sigs)
+
+		if err := container.Invoke(func(cmStore datacorekube.ConfigMapStore, secretStore datacorekube.SecretStore) {
+			cmStore.Stop()
+			secretStore.Stop()
+		}); err != nil {
+			zap.L().Error("unexpected error stopping k8s informers", zap.Error(err))
+		}
 
 		// Stop whole system
 		zap.L().Info("Shutting down...")
@@ -185,4 +192,64 @@ func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient {
 	return &http.Client{
 		Timeout: time.Duration(configuration.DefaultTimeout) * time.Second,
 	}
+}
+
+func provideConfigMapController( // nolint: ireturn
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+) (datacorekube.ConfigMapStore, error) {
+	controller, err := datacorekube.NewConfigMapController(
+		[]string{datacorekube.OctantConnectionsConfigMapType},
+		theConfig.CurrentNamespace,
+		k8sClient,
+		zap.L(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ConfigMap controller: %w", err)
+	}
+
+	if err = controller.Run(); err != nil {
+		return nil, fmt.Errorf("failed to sync configmap controller cache: %w", err)
+	}
+	return controller, nil
+}
+
+func provideSecretController( // nolint: ireturn
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+) (datacorekube.SecretStore, error) {
+	controller, err := datacorekube.NewSecretController([]string{
+		datacorekube.OctantIntegrationArgoType,
+		datacorekube.OctantIntegrationDatadogType,
+	}, theConfig.CurrentNamespace, k8sClient, zap.L())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Secret controller: %w", err)
+	}
+
+	if err = controller.Run(); err != nil {
+		return nil, fmt.Errorf("failed to sync Secret controller cache: %w", err)
+	}
+	return controller, nil
+}
+
+func provideOctantConnection(
+	cmStore datacorekube.ConfigMapStore,
+	theConfig *config.Configuration,
+	k8sClient kubernetes.Interface,
+	connectionMetrics metrics.ConnectionStatus,
+	manifestGenerator connection.ManifestGenerator,
+	argocdIntegration integration.Integration[integration.ArgoCDIntegrationData],
+	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
+	argoClient argocd.APIClient,
+) connection.Connection[connection.OctantConnectionData] { // nolint: ireturn
+	return connection.NewOctantConnection(
+		cmStore,
+		theConfig,
+		connection.WithK8sClient(k8sClient),
+		connection.WithConnectionMetrics(connectionMetrics),
+		connection.WithGenerator(manifestGenerator),
+		connection.WithArgoCDIntegration(argocdIntegration),
+		connection.WithArgoClient(argoClient),
+		connection.WithDatadogIntegration(datadogIntegration),
+	)
 }

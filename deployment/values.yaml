@@ -21,6 +21,9 @@ image:
   repository: ghcr.io/mydecisive/octant
   # tag: latest
 
+validator:
+  version: 0.1.3
+
 services:
   name: octant
   type: ClusterIP

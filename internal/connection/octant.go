@@ -10,6 +10,7 @@ import (
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
@@ -36,8 +37,10 @@ type OctantConnectionData struct {
 	MdaiNamespace  string                        `json:"mdaiNamespace"`
 }
 
+// OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
-	k8sClient          kubernetes.Interface
+	configMapWriter    kubernetes.Interface
+	configMapReader    kube.ConfigMapStore
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics  metrics.ConnectionStatus
@@ -46,23 +49,69 @@ type OctantConnection struct {
 	generator          ManifestGenerator
 }
 
+// OctantConnectionOption is a dependency option to provide to a new OctantConnection.
+type OctantConnectionOption func(*OctantConnection)
+
+// NewOctantConnection creates and returns a new OctantConnection.
 func NewOctantConnection(
-	k8sClient kubernetes.Interface,
-	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
-	connectionMetrics metrics.ConnectionStatus,
-	configuration *config.Configuration,
-	argoClient argocd.APIClient,
-	generator ManifestGenerator,
+	configMapStore kube.ConfigMapStore, // required
+	configuration *config.Configuration, // required
+	options ...OctantConnectionOption,
 ) *OctantConnection {
-	return &OctantConnection{
-		k8sClient:          k8sClient,
-		argoIntegration:    argoIntegration,
-		datadogIntegration: datadogIntegration,
-		connectionMetrics:  connectionMetrics,
-		configuration:      configuration,
-		argoClient:         argoClient,
-		generator:          generator,
+	oc := &OctantConnection{
+		configMapReader: configMapStore,
+		configuration:   configuration,
+	}
+
+	for _, option := range options {
+		option(oc)
+	}
+	return oc
+}
+
+// WithK8sClient provides a k8s client to the octant connection.
+func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.configMapWriter = k8sClient
+	}
+}
+
+// WithArgoCDIntegration provides an argocd integration to the octant connection.
+func WithArgoCDIntegration(
+	theIntegration integration.Integration[integration.ArgoCDIntegrationData],
+) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.argoIntegration = theIntegration
+	}
+}
+
+// WithDatadogIntegration provides a datadog integration to the octant connection.
+func WithDatadogIntegration(
+	theIntegration integration.Integration[integration.DataDogIntegrationData],
+) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.datadogIntegration = theIntegration
+	}
+}
+
+// WithConnectionMetrics provides connection metrics to the octant connection.
+func WithConnectionMetrics(connectionMetrics metrics.ConnectionStatus) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.connectionMetrics = connectionMetrics
+	}
+}
+
+// WithArgoClient provides the argocd api client to the octant connection.
+func WithArgoClient(client argocd.APIClient) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.argoClient = client
+	}
+}
+
+// WithGenerator provides a manifest generator to the octant connection.
+func WithGenerator(generator ManifestGenerator) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.generator = generator
 	}
 }
 
@@ -94,12 +143,13 @@ func (oc *OctantConnection) GetConnectionStatus(
 }
 
 func (oc *OctantConnection) GetConnectionByName(
-	ctx context.Context,
+	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.k8sClient.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
@@ -121,9 +171,10 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if getCMErr != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
@@ -148,7 +199,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	delete(cm.Data, input.ConnectionName)
 
-	if _, err := oc.k8sClient.CoreV1().
+	if _, err := oc.configMapWriter.CoreV1().
 		ConfigMaps(oc.configuration.CurrentNamespace).
 		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
@@ -158,9 +209,10 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.k8sClient.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		input.Logger.Warn("configmap not found", zap.String("configmap", connectionsConfigmapName))
 		return nil, fmt.Errorf("failed to get configmap %s: %w", connectionsConfigmapName, err)
@@ -219,9 +271,10 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.k8sClient.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if getCMErr != nil {
 		input.Logger.Warn("fetching connection configmap", zap.Error(getCMErr))
 		return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, getCMErr)
@@ -267,9 +320,10 @@ func (oc *OctantConnection) createOrUpdate(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.k8sClient.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Get(ctx, connectionsConfigmapName, metav1.GetOptions{})
+	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
@@ -309,7 +363,7 @@ func (oc *OctantConnection) createConnection(
 	}
 	return createConnectionConfigMap(
 		ctx,
-		oc.k8sClient,
+		oc.configMapWriter,
 		namespace,
 		connectionsConfigmapName,
 		connectionName,
@@ -330,7 +384,7 @@ func (oc *OctantConnection) updateConnection(
 	}
 	return updateConfigMapWithConnection(
 		ctx,
-		oc.k8sClient,
+		oc.configMapWriter,
 		namespace,
 		cm,
 		connectionName,
