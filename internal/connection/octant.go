@@ -362,6 +362,13 @@ func (oc *OctantConnection) updateConnection(
 	connection OctantConnectionData,
 	namespace, connectionName string,
 ) error {
+	var existingConnection OctantConnectionData
+	if err := json.Unmarshal([]byte(cm.Data[connectionName]), &existingConnection); err != nil {
+		return fmt.Errorf("failed to unmarshal connection data: %w", err)
+	}
+	// ensure we're preserving the existing Created time.
+	connection.Created = existingConnection.Created
+
 	jsonData, err := json.Marshal(connection)
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection data: %w", err)
