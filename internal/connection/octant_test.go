@@ -3,6 +3,7 @@ package connection
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
@@ -194,6 +195,9 @@ func TestSaveConnection(t *testing.T) {
 	t.Run("happy path - updated existing connection", func(t *testing.T) {
 		t.Parallel()
 
+		// set the Created timestamp to compare after the update
+		now := time.Now()
+		validConnection.Created = now
 		validConnectionBytes, err := json.Marshal(validConnection)
 		require.NoError(t, err)
 
@@ -239,11 +243,11 @@ func TestSaveConnection(t *testing.T) {
 			Once()
 
 		generator := NewConnectionManifestGenerator(testConfig)
-
+		mockK8sClient := fake.NewClientset(theConfigmap)
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(fake.NewClientset(theConfigmap)),
+			WithK8sClient(mockK8sClient),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithDatadogIntegration(mockDatadogIntegration),
 			WithArgoClient(mockArgoClient),
@@ -254,6 +258,15 @@ func TestSaveConnection(t *testing.T) {
 			Namespace:      defaultNamespace,
 			Logger:         zaptest.NewLogger(t),
 		}))
+
+		// verify the Created timestamp didn't get changed
+		updatedCM, getErr := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
+		require.NoError(t, getErr)
+
+		var updatedConnection OctantConnectionData
+		err = json.Unmarshal([]byte(updatedCM.Data["argo-test"]), &updatedConnection)
+		require.NoError(t, err)
+		assert.True(t, updatedConnection.Created.Equal(now), "expected created time to equal now")
 	})
 
 	t.Run("happy path", func(t *testing.T) {
