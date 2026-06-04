@@ -14,7 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrStillUpdating = errors.New("still updating")
+var (
+	ErrStillUpdating   = errors.New("still updating")
+	ErrConnectionEmpty = errors.New("connection empty")
+	ErrDatadogEmpty    = errors.New("datadog integration empty")
+	ErrArgoEmpty       = errors.New("argo integration empty")
+)
 
 type ManagerBuilder interface {
 	// Build builds a new setting manager.
@@ -32,7 +37,6 @@ type ManagerBuilder interface {
 	//
 	// PS: ID can be retrieved from Manager.ID().
 	Release(
-		ctx context.Context,
 		connectionName string,
 		id string,
 	)
@@ -51,7 +55,7 @@ type SettingManagerBuilder struct {
 }
 
 // Ensure SettingManagerBuilder implements ManagerBuilder.
-var _ ManagerBuilder = &SettingManagerBuilder{}
+var _ ManagerBuilder = (*SettingManagerBuilder)(nil)
 
 // NewSettingManagerBuilder creates a new instance of SettingManagerBuilder.
 func NewSettingManagerBuilder(
@@ -94,26 +98,26 @@ func (smb *SettingManagerBuilder) Build( //nolint:ireturn
 		Logger:         logger,
 	})
 	if err != nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no connection:%w", err))
+		return nil, smb.releaseAndErr(connectionName, id, fmt.Errorf("no connection:%w", err))
 	}
 	if con == nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("connection empty"))
+		return nil, smb.releaseAndErr(connectionName, id, ErrConnectionEmpty)
 	}
 
 	dd, err := smb.datadog.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no datadog integration:%w", err))
+		return nil, smb.releaseAndErr(connectionName, id, fmt.Errorf("no datadog integration:%w", err))
 	}
 	if dd == nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("datadog integration empty"))
+		return nil, smb.releaseAndErr(connectionName, id, ErrDatadogEmpty)
 	}
 
 	argo, err := smb.argoIntegration.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no argocd integration:%w", err))
+		return nil, smb.releaseAndErr(connectionName, id, fmt.Errorf("no argocd integration:%w", err))
 	}
 	if argo == nil {
-		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("argo integration empty"))
+		return nil, smb.releaseAndErr(connectionName, id, ErrArgoEmpty)
 	}
 
 	return &SettingManager{
@@ -140,7 +144,6 @@ func (smb *SettingManagerBuilder) Build( //nolint:ireturn
 //
 // PS: ID can be retrieved from Manager.ID().
 func (smb *SettingManagerBuilder) Release(
-	ctx context.Context,
 	connectionName string,
 	id string,
 ) {
@@ -152,11 +155,10 @@ func (smb *SettingManagerBuilder) Release(
 }
 
 func (smb *SettingManagerBuilder) releaseAndErr(
-	ctx context.Context,
 	connectionName string,
 	id string,
 	err error,
 ) error {
-	smb.Release(ctx, connectionName, id)
+	smb.Release(connectionName, id)
 	return err
 }

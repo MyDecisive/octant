@@ -45,7 +45,7 @@ func TestSettingHandler_Update(t *testing.T) {
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil).Once()
 
 		mockManager.EXPECT().ID().Return(id).Once()
-		mockBuilder.EXPECT().Release(mock.Anything, conn, id).Once()
+		mockBuilder.EXPECT().Release(conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -158,7 +158,7 @@ func TestSettingHandler_Update(t *testing.T) {
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil).Once()
 
 		mockManager.EXPECT().ID().Return(id).Once()
-		mockBuilder.EXPECT().Release(mock.Anything, conn, id).Once()
+		mockBuilder.EXPECT().Release(conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -217,7 +217,7 @@ func TestSettingHandler_Update(t *testing.T) {
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
 
 		mockManager.EXPECT().ID().Return(id).Once()
-		mockBuilder.EXPECT().Release(mock.Anything, conn, id).Once()
+		mockBuilder.EXPECT().Release(conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)
@@ -279,7 +279,7 @@ func TestSettingHandler_Update(t *testing.T) {
 		mockBuilder.EXPECT().Build(mock.Anything, namespace, conn, mock.Anything).Return(mockManager, nil)
 
 		mockManager.EXPECT().ID().Return(id).Once()
-		mockBuilder.EXPECT().Release(mock.Anything, conn, id).Once()
+		mockBuilder.EXPECT().Release(conn, id).Once()
 
 		target := NewSettingHandler(mockBuilder)
 		_, handler := octantv1alphaconnect.NewSettingServiceHandler(target)

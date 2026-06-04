@@ -74,7 +74,7 @@ type APIClient interface {
 type Client struct{}
 
 // Ensure Client implements APIClient.
-var _ APIClient = &Client{}
+var _ APIClient = (*Client)(nil)
 
 func NewArgoCDClient() *Client {
 	return &Client{}

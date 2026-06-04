@@ -69,7 +69,7 @@ type SettingManager struct {
 }
 
 // Ensure SettingManager implements Manager.
-var _ Manager = &SettingManager{}
+var _ Manager = (*SettingManager)(nil)
 
 // ID returns the ID associated with the current manager.
 // The ID is used to release in progress lock with the manager builder.

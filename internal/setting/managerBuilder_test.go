@@ -223,7 +223,7 @@ func TestSettingManagerBuilder_Release(t *testing.T) {
 		id := faker.Word()
 		target.inProgress[connectionName] = id
 
-		target.Release(t.Context(), connectionName, id)
+		target.Release(connectionName, id)
 
 		assert.Empty(t, target.inProgress)
 	})
@@ -235,7 +235,7 @@ func TestSettingManagerBuilder_Release(t *testing.T) {
 		id := faker.Word()
 		target.inProgress[connectionName] = faker.UUIDDigit()
 
-		target.Release(t.Context(), connectionName, id)
+		target.Release(connectionName, id)
 
 		assert.Contains(t, target.inProgress, connectionName)
 	})
@@ -246,7 +246,7 @@ func TestSettingManagerBuilder_Release(t *testing.T) {
 		target := NewSettingManagerBuilder(c, nil, nil, nil, nil)
 		id := faker.Word()
 
-		target.Release(t.Context(), connectionName, id)
+		target.Release(connectionName, id)
 
 		assert.Empty(t, target.inProgress)
 	})
