@@ -48,7 +48,7 @@ func (sh *SettingHandler) Update(
 		}
 		return connect.NewError(connect.CodeNotFound, err)
 	}
-	defer sh.builder.Done(ctx, req.Msg.GetScope().GetConnectionName(), manager.ID())
+	defer sh.builder.Release(ctx, req.Msg.GetScope().GetConnectionName(), manager.ID())
 
 	if conErr := sh.stream(logger, stream, octantv1alpha.UpdateResponse_STATUS_UPDATING); conErr != nil {
 		return conErr

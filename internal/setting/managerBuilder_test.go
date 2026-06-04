@@ -64,6 +64,8 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		assert.False(t, actualManager.shouldUpdateConnection)
 		assert.False(t, actualManager.shouldUpdateDatadog)
+
+		assert.NotEmpty(t, target.inProgress)
 	})
 
 	t.Run("err already in progress", func(t *testing.T) {
@@ -77,6 +79,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		target.inProgress[connectionName] = faker.Word()
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.NotEmpty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.ErrorIs(t, err, ErrStillUpdating)
 	})
@@ -94,6 +97,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
@@ -111,6 +115,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
@@ -131,6 +136,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
@@ -151,6 +157,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
@@ -173,6 +180,7 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
@@ -195,12 +203,13 @@ func TestSettingManagerBuilder_Build(t *testing.T) {
 
 		target := NewSettingManagerBuilder(c, mockConn, mockDatadog, mockArgoClient, mockArgo)
 		actual, err := target.Build(t.Context(), namespace, connectionName, logger)
+		assert.Empty(t, target.inProgress)
 		assert.Nil(t, actual)
 		assert.Error(t, err)
 	})
 }
 
-func TestSettingManagerBuilder_Done(t *testing.T) {
+func TestSettingManagerBuilder_Release(t *testing.T) {
 	t.Parallel()
 
 	connectionName := faker.Word()
@@ -214,7 +223,7 @@ func TestSettingManagerBuilder_Done(t *testing.T) {
 		id := faker.Word()
 		target.inProgress[connectionName] = id
 
-		target.Done(t.Context(), connectionName, id)
+		target.Release(t.Context(), connectionName, id)
 
 		assert.Empty(t, target.inProgress)
 	})
@@ -226,7 +235,7 @@ func TestSettingManagerBuilder_Done(t *testing.T) {
 		id := faker.Word()
 		target.inProgress[connectionName] = faker.UUIDDigit()
 
-		target.Done(t.Context(), connectionName, id)
+		target.Release(t.Context(), connectionName, id)
 
 		assert.Contains(t, target.inProgress, connectionName)
 	})
@@ -237,7 +246,7 @@ func TestSettingManagerBuilder_Done(t *testing.T) {
 		target := NewSettingManagerBuilder(c, nil, nil, nil, nil)
 		id := faker.Word()
 
-		target.Done(t.Context(), connectionName, id)
+		target.Release(t.Context(), connectionName, id)
 
 		assert.Empty(t, target.inProgress)
 	})

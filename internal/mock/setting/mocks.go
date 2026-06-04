@@ -447,26 +447,26 @@ func (_c *MockManagerBuilder_Build_Call) RunAndReturn(run func(ctx context.Conte
 	return _c
 }
 
-// Done provides a mock function for the type MockManagerBuilder
-func (_mock *MockManagerBuilder) Done(ctx context.Context, connectionName string, id string) {
+// Release provides a mock function for the type MockManagerBuilder
+func (_mock *MockManagerBuilder) Release(ctx context.Context, connectionName string, id string) {
 	_mock.Called(ctx, connectionName, id)
 	return
 }
 
-// MockManagerBuilder_Done_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Done'
-type MockManagerBuilder_Done_Call struct {
+// MockManagerBuilder_Release_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Release'
+type MockManagerBuilder_Release_Call struct {
 	*mock.Call
 }
 
-// Done is a helper method to define mock.On call
+// Release is a helper method to define mock.On call
 //   - ctx context.Context
 //   - connectionName string
 //   - id string
-func (_e *MockManagerBuilder_Expecter) Done(ctx interface{}, connectionName interface{}, id interface{}) *MockManagerBuilder_Done_Call {
-	return &MockManagerBuilder_Done_Call{Call: _e.mock.On("Done", ctx, connectionName, id)}
+func (_e *MockManagerBuilder_Expecter) Release(ctx interface{}, connectionName interface{}, id interface{}) *MockManagerBuilder_Release_Call {
+	return &MockManagerBuilder_Release_Call{Call: _e.mock.On("Release", ctx, connectionName, id)}
 }
 
-func (_c *MockManagerBuilder_Done_Call) Run(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Done_Call {
+func (_c *MockManagerBuilder_Release_Call) Run(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Release_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -489,12 +489,12 @@ func (_c *MockManagerBuilder_Done_Call) Run(run func(ctx context.Context, connec
 	return _c
 }
 
-func (_c *MockManagerBuilder_Done_Call) Return() *MockManagerBuilder_Done_Call {
+func (_c *MockManagerBuilder_Release_Call) Return() *MockManagerBuilder_Release_Call {
 	_c.Call.Return()
 	return _c
 }
 
-func (_c *MockManagerBuilder_Done_Call) RunAndReturn(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Done_Call {
+func (_c *MockManagerBuilder_Release_Call) RunAndReturn(run func(ctx context.Context, connectionName string, id string)) *MockManagerBuilder_Release_Call {
 	_c.Run(run)
 	return _c
 }

@@ -25,13 +25,13 @@ type ManagerBuilder interface {
 		logger *zap.Logger,
 	) (Manager, error)
 
-	// Done let the builder know that
+	// Release let the builder know that
 	// setting update for the given connection is done.
 	// So that the builder will release the lock to allow
 	// other threads to perform setting update.
 	//
 	// PS: ID can be retrieved from Manager.ID().
-	Done(
+	Release(
 		ctx context.Context,
 		connectionName string,
 		id string,
@@ -94,26 +94,26 @@ func (smb *SettingManagerBuilder) Build( //nolint:ireturn
 		Logger:         logger,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("no connection:%w", err)
+		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no connection:%w", err))
 	}
 	if con == nil {
-		return nil, errors.New("connection empty")
+		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("connection empty"))
 	}
 
 	dd, err := smb.datadog.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
-		return nil, fmt.Errorf("no datadog integration:%w", err)
+		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no datadog integration:%w", err))
 	}
 	if dd == nil {
-		return nil, errors.New("datadog integration empty")
+		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("datadog integration empty"))
 	}
 
 	argo, err := smb.argoIntegration.GetIntegrationByName(ctx, connectionName)
 	if err != nil {
-		return nil, fmt.Errorf("no argocd integration:%w", err)
+		return nil, smb.releaseAndErr(ctx, connectionName, id, fmt.Errorf("no argocd integration:%w", err))
 	}
 	if argo == nil {
-		return nil, errors.New("argo integration empty")
+		return nil, smb.releaseAndErr(ctx, connectionName, id, errors.New("argo integration empty"))
 	}
 
 	return &SettingManager{
@@ -133,13 +133,13 @@ func (smb *SettingManagerBuilder) Build( //nolint:ireturn
 	}, nil
 }
 
-// Done let the builder know that
+// Release let the builder know that
 // setting update for the given connection is done.
 // So that the builder will release the lock to allow
 // other threads to perform setting update.
 //
 // PS: ID can be retrieved from Manager.ID().
-func (smb *SettingManagerBuilder) Done(
+func (smb *SettingManagerBuilder) Release(
 	ctx context.Context,
 	connectionName string,
 	id string,
@@ -149,4 +149,14 @@ func (smb *SettingManagerBuilder) Done(
 		delete(smb.inProgress, connectionName)
 	}
 	smb.mutex.Unlock()
+}
+
+func (smb *SettingManagerBuilder) releaseAndErr(
+	ctx context.Context,
+	connectionName string,
+	id string,
+	err error,
+) error {
+	smb.Release(ctx, connectionName, id)
+	return err
 }
