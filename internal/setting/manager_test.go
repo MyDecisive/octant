@@ -276,7 +276,7 @@ func TestSettingManager_DeployAndWait(t *testing.T) {
 		target := newTestManager(t, mockConn, nil, mockArgoClient)
 
 		mockConn.EXPECT().SaveConnection(mock.Anything, *target.connection, mock.MatchedBy(func(in connection.ConnectionCRUDInput) bool {
-			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.Skip
+			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.OnlyDeploy
 		})).Return(nil).Once()
 		mockArgoClient.EXPECT().AppOperationState(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 			return in.ClientOpts.AuthToken == target.argo.AccountToken &&
@@ -342,7 +342,7 @@ func TestSettingManager_DeployAndWait(t *testing.T) {
 		target := newTestManager(t, mockConn, nil, mockArgoClient)
 
 		mockConn.EXPECT().SaveConnection(mock.Anything, *target.connection, mock.MatchedBy(func(in connection.ConnectionCRUDInput) bool {
-			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.Skip
+			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.OnlyDeploy
 		})).Return(assert.AnError).Once()
 
 		target.shouldUpdateDatadog = true
@@ -374,7 +374,7 @@ func TestSettingManager_DeployAndWait(t *testing.T) {
 		target := newTestManager(t, mockConn, nil, mockArgoClient)
 
 		mockConn.EXPECT().SaveConnection(mock.Anything, *target.connection, mock.MatchedBy(func(in connection.ConnectionCRUDInput) bool {
-			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.Skip
+			return in.Namespace == target.namespace && in.ConnectionName == target.connectionName && in.OnlyDeploy
 		})).Return(nil).Once()
 		mockArgoClient.EXPECT().AppOperationState(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 			return in.ClientOpts.AuthToken == target.argo.AccountToken &&

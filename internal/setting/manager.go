@@ -165,7 +165,7 @@ func (sm *SettingManager) DeployAndWait(ctx context.Context, out chan SettingUpd
 		Logger:         sm.logger,
 		Namespace:      sm.namespace,
 		ConnectionName: sm.connectionName,
-		Skip:           true,
+		OnlyDeploy:           true,
 	}); err != nil {
 		out <- SettingUpdateResult{
 			Err: fmt.Errorf("%w:%w", ErrDeploy, err),

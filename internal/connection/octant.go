@@ -237,7 +237,7 @@ func (oc *OctantConnection) SaveConnection(
 	connection OctantConnectionData,
 	input ConnectionCRUDInput,
 ) error {
-	if !input.Skip {
+	if !input.OnlyDeploy {
 		if err := oc.createOrUpdate(ctx, connection, input); err != nil {
 			return err
 		}

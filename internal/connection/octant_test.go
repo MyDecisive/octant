@@ -337,7 +337,7 @@ func TestSaveConnection(t *testing.T) {
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
 			Logger:         zaptest.NewLogger(t),
-			Skip:           true,
+			OnlyDeploy:           true,
 			NoDeploy:       true,
 		}))
 	})
