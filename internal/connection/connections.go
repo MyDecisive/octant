@@ -18,6 +18,16 @@ type ConnectionCRUDInput struct {
 	Logger         *zap.Logger
 	Namespace      string
 	ConnectionName string
+	// OnlyDeploy does nothing for most connection CRUD,
+	// except SaveConnection.
+	// If this is set to true for SaveConnection,
+	// the operation will only perform ArgoCD app sync and
+	// skip saving the connection.
+	OnlyDeploy bool
+	// NoDeploy does nothing for most connection CRUD,
+	// except SaveConnection.
+	// If this is set to true, the operation will skip ArgoCD app sync.
+	NoDeploy bool
 }
 
 type Connection[T any] interface {

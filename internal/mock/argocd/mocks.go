@@ -6,10 +6,12 @@ package argocdmock
 
 import (
 	"context"
+	"time"
 
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	"github.com/mydecisive/octant/internal/argocd"
 	mock "github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )
@@ -41,17 +43,81 @@ func (_m *MockAPIClient) EXPECT() *MockAPIClient_Expecter {
 	return &MockAPIClient_Expecter{mock: &_m.Mock}
 }
 
+// AppOperationState provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) AppOperationState(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult) {
+	_mock.Called(ctx, input, interval, timeout, out)
+	return
+}
+
+// MockAPIClient_AppOperationState_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppOperationState'
+type MockAPIClient_AppOperationState_Call struct {
+	*mock.Call
+}
+
+// AppOperationState is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input argocd.Input
+//   - interval time.Duration
+//   - timeout time.Duration
+//   - out chan argocd.InstallResult
+func (_e *MockAPIClient_Expecter) AppOperationState(ctx interface{}, input interface{}, interval interface{}, timeout interface{}, out interface{}) *MockAPIClient_AppOperationState_Call {
+	return &MockAPIClient_AppOperationState_Call{Call: _e.mock.On("AppOperationState", ctx, input, interval, timeout, out)}
+}
+
+func (_c *MockAPIClient_AppOperationState_Call) Run(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppOperationState_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 argocd.Input
+		if args[1] != nil {
+			arg1 = args[1].(argocd.Input)
+		}
+		var arg2 time.Duration
+		if args[2] != nil {
+			arg2 = args[2].(time.Duration)
+		}
+		var arg3 time.Duration
+		if args[3] != nil {
+			arg3 = args[3].(time.Duration)
+		}
+		var arg4 chan argocd.InstallResult
+		if args[4] != nil {
+			arg4 = args[4].(chan argocd.InstallResult)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_AppOperationState_Call) Return() *MockAPIClient_AppOperationState_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockAPIClient_AppOperationState_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration, out chan argocd.InstallResult)) *MockAPIClient_AppOperationState_Call {
+	_c.Run(run)
+	return _c
+}
+
 // DeleteArgoApp provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) DeleteArgoApp(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string) error {
-	ret := _mock.Called(ctx, logger, clientOpts, appName)
+func (_mock *MockAPIClient) DeleteArgoApp(ctx context.Context, input argocd.Input) error {
+	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteArgoApp")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string) error); ok {
-		r0 = returnFunc(ctx, logger, clientOpts, appName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, argocd.Input) error); ok {
+		r0 = returnFunc(ctx, input)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -65,36 +131,24 @@ type MockAPIClient_DeleteArgoApp_Call struct {
 
 // DeleteArgoApp is a helper method to define mock.On call
 //   - ctx context.Context
-//   - logger *zap.Logger
-//   - clientOpts *apiclient.ClientOptions
-//   - appName string
-func (_e *MockAPIClient_Expecter) DeleteArgoApp(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}) *MockAPIClient_DeleteArgoApp_Call {
-	return &MockAPIClient_DeleteArgoApp_Call{Call: _e.mock.On("DeleteArgoApp", ctx, logger, clientOpts, appName)}
+//   - input argocd.Input
+func (_e *MockAPIClient_Expecter) DeleteArgoApp(ctx interface{}, input interface{}) *MockAPIClient_DeleteArgoApp_Call {
+	return &MockAPIClient_DeleteArgoApp_Call{Call: _e.mock.On("DeleteArgoApp", ctx, input)}
 }
 
-func (_c *MockAPIClient_DeleteArgoApp_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string)) *MockAPIClient_DeleteArgoApp_Call {
+func (_c *MockAPIClient_DeleteArgoApp_Call) Run(run func(ctx context.Context, input argocd.Input)) *MockAPIClient_DeleteArgoApp_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *zap.Logger
+		var arg1 argocd.Input
 		if args[1] != nil {
-			arg1 = args[1].(*zap.Logger)
-		}
-		var arg2 *apiclient.ClientOptions
-		if args[2] != nil {
-			arg2 = args[2].(*apiclient.ClientOptions)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
+			arg1 = args[1].(argocd.Input)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -105,14 +159,14 @@ func (_c *MockAPIClient_DeleteArgoApp_Call) Return(err error) *MockAPIClient_Del
 	return _c
 }
 
-func (_c *MockAPIClient_DeleteArgoApp_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string) error) *MockAPIClient_DeleteArgoApp_Call {
+func (_c *MockAPIClient_DeleteArgoApp_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input) error) *MockAPIClient_DeleteArgoApp_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetAppStatus provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) GetAppStatus(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error) {
-	ret := _mock.Called(ctx, logger, clientOpts)
+func (_mock *MockAPIClient) GetAppStatus(ctx context.Context, input argocd.Input) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error) {
+	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAppStatus")
@@ -121,23 +175,23 @@ func (_mock *MockAPIClient) GetAppStatus(ctx context.Context, logger *zap.Logger
 	var r0 octantv1alpha.InstallStatus
 	var r1 []*octantv1alpha.ResourceDetails
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)); ok {
-		return returnFunc(ctx, logger, clientOpts)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, argocd.Input) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)); ok {
+		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) octantv1alpha.InstallStatus); ok {
-		r0 = returnFunc(ctx, logger, clientOpts)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, argocd.Input) octantv1alpha.InstallStatus); ok {
+		r0 = returnFunc(ctx, input)
 	} else {
 		r0 = ret.Get(0).(octantv1alpha.InstallStatus)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) []*octantv1alpha.ResourceDetails); ok {
-		r1 = returnFunc(ctx, logger, clientOpts)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, argocd.Input) []*octantv1alpha.ResourceDetails); ok {
+		r1 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]*octantv1alpha.ResourceDetails)
 		}
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, *zap.Logger, *apiclient.ClientOptions) error); ok {
-		r2 = returnFunc(ctx, logger, clientOpts)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, argocd.Input) error); ok {
+		r2 = returnFunc(ctx, input)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -151,30 +205,24 @@ type MockAPIClient_GetAppStatus_Call struct {
 
 // GetAppStatus is a helper method to define mock.On call
 //   - ctx context.Context
-//   - logger *zap.Logger
-//   - clientOpts *apiclient.ClientOptions
-func (_e *MockAPIClient_Expecter) GetAppStatus(ctx interface{}, logger interface{}, clientOpts interface{}) *MockAPIClient_GetAppStatus_Call {
-	return &MockAPIClient_GetAppStatus_Call{Call: _e.mock.On("GetAppStatus", ctx, logger, clientOpts)}
+//   - input argocd.Input
+func (_e *MockAPIClient_Expecter) GetAppStatus(ctx interface{}, input interface{}) *MockAPIClient_GetAppStatus_Call {
+	return &MockAPIClient_GetAppStatus_Call{Call: _e.mock.On("GetAppStatus", ctx, input)}
 }
 
-func (_c *MockAPIClient_GetAppStatus_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions)) *MockAPIClient_GetAppStatus_Call {
+func (_c *MockAPIClient_GetAppStatus_Call) Run(run func(ctx context.Context, input argocd.Input)) *MockAPIClient_GetAppStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *zap.Logger
+		var arg1 argocd.Input
 		if args[1] != nil {
-			arg1 = args[1].(*zap.Logger)
-		}
-		var arg2 *apiclient.ClientOptions
-		if args[2] != nil {
-			arg2 = args[2].(*apiclient.ClientOptions)
+			arg1 = args[1].(argocd.Input)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -185,7 +233,7 @@ func (_c *MockAPIClient_GetAppStatus_Call) Return(installStatus octantv1alpha.In
 	return _c
 }
 
-func (_c *MockAPIClient_GetAppStatus_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)) *MockAPIClient_GetAppStatus_Call {
+func (_c *MockAPIClient_GetAppStatus_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)) *MockAPIClient_GetAppStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -260,16 +308,16 @@ func (_c *MockAPIClient_PushArgoApp_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // SyncApplication provides a mock function for the type MockAPIClient
-func (_mock *MockAPIClient) SyncApplication(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool) error {
-	ret := _mock.Called(ctx, logger, clientOpts, appName, manifests, prune)
+func (_mock *MockAPIClient) SyncApplication(ctx context.Context, input argocd.Input, manifests []string, prune bool) error {
+	ret := _mock.Called(ctx, input, manifests, prune)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SyncApplication")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *zap.Logger, *apiclient.ClientOptions, string, []string, bool) error); ok {
-		r0 = returnFunc(ctx, logger, clientOpts, appName, manifests, prune)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, argocd.Input, []string, bool) error); ok {
+		r0 = returnFunc(ctx, input, manifests, prune)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -283,48 +331,36 @@ type MockAPIClient_SyncApplication_Call struct {
 
 // SyncApplication is a helper method to define mock.On call
 //   - ctx context.Context
-//   - logger *zap.Logger
-//   - clientOpts *apiclient.ClientOptions
-//   - appName string
+//   - input argocd.Input
 //   - manifests []string
 //   - prune bool
-func (_e *MockAPIClient_Expecter) SyncApplication(ctx interface{}, logger interface{}, clientOpts interface{}, appName interface{}, manifests interface{}, prune interface{}) *MockAPIClient_SyncApplication_Call {
-	return &MockAPIClient_SyncApplication_Call{Call: _e.mock.On("SyncApplication", ctx, logger, clientOpts, appName, manifests, prune)}
+func (_e *MockAPIClient_Expecter) SyncApplication(ctx interface{}, input interface{}, manifests interface{}, prune interface{}) *MockAPIClient_SyncApplication_Call {
+	return &MockAPIClient_SyncApplication_Call{Call: _e.mock.On("SyncApplication", ctx, input, manifests, prune)}
 }
 
-func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool)) *MockAPIClient_SyncApplication_Call {
+func (_c *MockAPIClient_SyncApplication_Call) Run(run func(ctx context.Context, input argocd.Input, manifests []string, prune bool)) *MockAPIClient_SyncApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *zap.Logger
+		var arg1 argocd.Input
 		if args[1] != nil {
-			arg1 = args[1].(*zap.Logger)
+			arg1 = args[1].(argocd.Input)
 		}
-		var arg2 *apiclient.ClientOptions
+		var arg2 []string
 		if args[2] != nil {
-			arg2 = args[2].(*apiclient.ClientOptions)
+			arg2 = args[2].([]string)
 		}
-		var arg3 string
+		var arg3 bool
 		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		var arg4 []string
-		if args[4] != nil {
-			arg4 = args[4].([]string)
-		}
-		var arg5 bool
-		if args[5] != nil {
-			arg5 = args[5].(bool)
+			arg3 = args[3].(bool)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
-			arg4,
-			arg5,
 		)
 	})
 	return _c
@@ -335,7 +371,7 @@ func (_c *MockAPIClient_SyncApplication_Call) Return(err error) *MockAPIClient_S
 	return _c
 }
 
-func (_c *MockAPIClient_SyncApplication_Call) RunAndReturn(run func(ctx context.Context, logger *zap.Logger, clientOpts *apiclient.ClientOptions, appName string, manifests []string, prune bool) error) *MockAPIClient_SyncApplication_Call {
+func (_c *MockAPIClient_SyncApplication_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, manifests []string, prune bool) error) *MockAPIClient_SyncApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }

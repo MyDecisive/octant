@@ -425,18 +425,7 @@ func extractDeploymentFromRequest(
 }
 
 func extractDataTypesFromRequest(request *connect.Request[octantv1alpha.CreateConnectionRequest]) []telemetry.MLT {
-	var telemetries []telemetry.MLT
-	for _, t := range request.Msg.GetConnectionData().GetTelemetryTypes() {
-		switch t {
-		case octantv1alpha.MLTType_MLT_TYPE_METRIC:
-			telemetries = append(telemetries, telemetry.Metrics)
-		case octantv1alpha.MLTType_MLT_TYPE_TRACE:
-			telemetries = append(telemetries, telemetry.Traces)
-		case octantv1alpha.MLTType_MLT_TYPE_LOG:
-			telemetries = append(telemetries, telemetry.Logs)
-		}
-	}
-	return telemetries
+	return telemetry.ToMLTs(request.Msg.GetConnectionData().GetTelemetryTypes())
 }
 
 func extractDestinationsFromRequest(

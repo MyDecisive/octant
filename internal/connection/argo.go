@@ -97,9 +97,11 @@ func (oc *OctantConnection) doArgoAppSync(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	return oc.argoClient.SyncApplication(
 		ctx,
-		logger,
-		clientOpts,
-		templateData.ConnectionData.Deployment.IntegrationName,
+		argocd.Input{
+			Logger:     logger,
+			ClientOpts: clientOpts,
+			AppName:    templateData.ConnectionData.Deployment.IntegrationName,
+		},
 		manifestsSlice, false)
 }
 
@@ -138,9 +140,11 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	if syncErr := oc.argoClient.SyncApplication(
 		ctx,
-		logger,
-		clientOpts,
-		connectionName,
+		argocd.Input{
+			Logger:     logger,
+			ClientOpts: clientOpts,
+			AppName:    connectionName,
+		},
 		manifestsSlice, false); syncErr != nil {
 		return "", syncErr
 	}
@@ -163,7 +167,11 @@ func (oc *OctantConnection) deleteArgoApp(
 
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting argo app", zap.String("appName", name))
-	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
+	return oc.argoClient.DeleteArgoApp(ctx, argocd.Input{
+		Logger:     logger,
+		ClientOpts: clientOpts,
+		AppName:    name,
+	})
 }
 
 func (oc *OctantConnection) deleteValidatorResource(
@@ -202,7 +210,11 @@ func (oc *OctantConnection) deleteValidatorResource(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting telemetry validator resource")
 	// WITH prune so the validator resource gets removed.
-	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice, true)
+	return oc.argoClient.SyncApplication(ctx, argocd.Input{
+		Logger:     logger,
+		ClientOpts: clientOpts,
+		AppName:    connectionName,
+	}, manifestsSlice, true)
 }
 
 func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {

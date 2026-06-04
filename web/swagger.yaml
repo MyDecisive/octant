@@ -547,6 +547,182 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/budget.v1alpha.TimeframeStatusResponse'
+  /octant.v1alpha.ArgoCDService/GetArgoIntegrationByName:
+    get:
+      tags:
+        - ArgoCDService
+      summary: GetArgoIntegrationByName
+      description: GetIntegrations returns list of argo integration names.
+      operationId: octant.v1alpha.ArgoCDService.GetArgoIntegrationByName.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationByNameRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationByNameResponse'
+    post:
+      tags:
+        - ArgoCDService
+      summary: GetArgoIntegrationByName
+      description: GetIntegrations returns list of argo integration names.
+      operationId: octant.v1alpha.ArgoCDService.GetArgoIntegrationByName
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationByNameRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationByNameResponse'
+  /octant.v1alpha.ArgoCDService/GetArgoIntegrations:
+    get:
+      tags:
+        - ArgoCDService
+      summary: GetArgoIntegrations
+      description: GetIntegrations returns list of argo integration names.
+      operationId: octant.v1alpha.ArgoCDService.GetArgoIntegrations.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationsResponse'
+    post:
+      tags:
+        - ArgoCDService
+      summary: GetArgoIntegrations
+      description: GetIntegrations returns list of argo integration names.
+      operationId: octant.v1alpha.ArgoCDService.GetArgoIntegrations
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/google.protobuf.Empty'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetArgoIntegrationsResponse'
   /octant.v1alpha.ArgoCDService/SaveArgoConnection:
     post:
       tags:
@@ -1219,12 +1395,100 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/octant.v1alpha.GetConnectionsResponse'
+  /octant.v1alpha.DatadogService/GetDatadogIntegrationByName:
+    get:
+      tags:
+        - DatadogService
+      summary: GetDatadogIntegrationByName
+      description: GetDatadogIntegrationByName returns list of datadog integration names.
+      operationId: octant.v1alpha.DatadogService.GetDatadogIntegrationByName.get
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+        - name: message
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationByNameRequest'
+        - name: encoding
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/encoding'
+        - name: base64
+          in: query
+          schema:
+            $ref: '#/components/schemas/base64'
+        - name: compression
+          in: query
+          schema:
+            $ref: '#/components/schemas/compression'
+        - name: connect
+          in: query
+          schema:
+            $ref: '#/components/schemas/connect'
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationByNameResponse'
+    post:
+      tags:
+        - DatadogService
+      summary: GetDatadogIntegrationByName
+      description: GetDatadogIntegrationByName returns list of datadog integration names.
+      operationId: octant.v1alpha.DatadogService.GetDatadogIntegrationByName
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationByNameRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.GetDatadogIntegrationByNameResponse'
   /octant.v1alpha.DatadogService/GetDatadogIntegrations:
     get:
       tags:
         - DatadogService
       summary: GetDatadogIntegrations
-      description: GetDatadogIntegrations returns list of datadog integration names.
+      description: GetIntegrations returns list of datadog integration names.
       operationId: octant.v1alpha.DatadogService.GetDatadogIntegrations.get
       parameters:
         - name: Connect-Protocol-Version
@@ -1276,7 +1540,7 @@ paths:
       tags:
         - DatadogService
       summary: GetDatadogIntegrations
-      description: GetDatadogIntegrations returns list of datadog integration names.
+      description: GetIntegrations returns list of datadog integration names.
       operationId: octant.v1alpha.DatadogService.GetDatadogIntegrations
       parameters:
         - name: Connect-Protocol-Version
@@ -1480,6 +1744,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
+  /octant.v1alpha.SettingService/Update:
+    post:
+      tags:
+        - SettingService
+      summary: Update
+      description: |-
+        Update updates the relevant configmap/secret and then redeploy necessary collectors to relfect the changes.
+         If an update is in progress, this will immediately return with an error code `unavailable`.
+         Otherwise, this will continuously give update until the update is complete or errored.
+         Note: Please take a look at https://connectrpc.com/docs/protocol/#error-codes for all other possible error codes.
+      operationId: octant.v1alpha.SettingService.Update
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/connect+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/connect+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc-web:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc-web+proto:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+          application/grpc-web+json:
+            schema:
+              $ref: '#/components/schemas/octant.v1alpha.UpdateRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/connect+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/connect+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc-web:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc-web+proto:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
+            application/grpc-web+json:
+              schema:
+                $ref: '#/components/schemas/octant.v1alpha.UpdateResponse'
 components:
   schemas:
     base64:
@@ -2126,6 +2493,35 @@ components:
           description: type is the MIME type of the file. (e.g., zip)
       title: GenerateManifestsResponse
       additionalProperties: false
+    octant.v1alpha.GetArgoIntegrationByNameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name contains name of the integration to retrieve
+      title: GetArgoIntegrationByNameRequest
+      additionalProperties: false
+    octant.v1alpha.GetArgoIntegrationByNameResponse:
+      type: object
+      properties:
+        argoEndpoint:
+          type: string
+          title: argo_endpoint
+          description: argo_endpoint is the endpoint to the argo cd cluster to communicate with.
+      title: GetArgoIntegrationByNameResponse
+      additionalProperties: false
+    octant.v1alpha.GetArgoIntegrationsResponse:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: names contains the list of integration names
+      title: GetArgoIntegrationsResponse
+      additionalProperties: false
     octant.v1alpha.GetConnectionRequest:
       type: object
       properties:
@@ -2216,6 +2612,24 @@ components:
       title: GetConnectionsResponse
       additionalProperties: false
       description: GetConnectionsResponse contains a list of all the connections in a namespace
+    octant.v1alpha.GetDatadogIntegrationByNameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: name contains name of the integration to retrieve
+      title: GetDatadogIntegrationByNameRequest
+      additionalProperties: false
+    octant.v1alpha.GetDatadogIntegrationByNameResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          title: url
+          description: url is the datadog api url to send telemetry data to.
+      title: GetDatadogIntegrationByNameResponse
+      additionalProperties: false
     octant.v1alpha.GetDatadogIntegrationsResponse:
       type: object
       properties:
@@ -2224,7 +2638,7 @@ components:
           items:
             type: string
           title: names
-          description: names contains the list of datadog integration names
+          description: names contains the list of integration names
       title: GetDatadogIntegrationsResponse
       additionalProperties: false
     octant.v1alpha.GetInstallStatusRequest:
@@ -2339,9 +2753,11 @@ components:
         apiKey:
           type: string
           title: api_key
+          description: api_key is the 32-character api key generated from datadog.
         url:
           type: string
           title: url
+          description: url is the datadog api url to send telemetry data to.
       title: SaveDatadogIntegrationRequest
       additionalProperties: false
     octant.v1alpha.TelemetryDestination:
@@ -2380,6 +2796,63 @@ components:
           description: success indicates whether the operation was succesful or not.
       title: TestConnectionResponse
       additionalProperties: false
+    octant.v1alpha.UpdateRequest:
+      type: object
+      properties:
+        scope:
+          title: scope
+          description: scope indicates which connection to modify.
+          $ref: '#/components/schemas/octant.v1alpha.ConnectionScope'
+        telemetryTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/octant.v1alpha.MLTType'
+          title: telemetry_types
+          description: |-
+            telemetry_types contains the new telemetry types to enable for the given connection.
+             If telemetry_types is empty, the connection's current telemetry_types will not be modified.
+             If telemetry_types is not empty, the octant connection cofigmap will be updated with the new telemetry_types,
+             lb collector will be updated to include relevant pipelines, and relevant sampling collectors will be spinned up/down.
+        datadogUrl:
+          type: string
+          title: datadog_url
+          description: |-
+            datadog_url contains the new datadog URL to be applied.
+             If datadog_url is empty, existing URL will not be modified.
+             If datadog_url is not empty, the datadog integration secret will be updated with the new URL,
+             and the sampling collectors will be restarted to use the new data.
+        datadogApiKey:
+          type: string
+          title: datadog_api_key
+          description: |-
+            datadog_api_key contains the new datadog API key to be applied.
+             If datadog_api_key is empty, existing API key will not be modified.
+             If datadog_api_key is not empty, the datadog integration secret will be updated with the new API key,
+             and the sampling collectors will be restarted to use the new data.
+      title: UpdateRequest
+      additionalProperties: false
+    octant.v1alpha.UpdateResponse:
+      type: object
+      properties:
+        status:
+          title: status
+          description: |-
+            status indicates current status of the update.
+             For more details, see comments in Status enum.
+          $ref: '#/components/schemas/octant.v1alpha.UpdateResponse.Status'
+      title: UpdateResponse
+      additionalProperties: false
+    octant.v1alpha.UpdateResponse.Status:
+      type: string
+      title: Status
+      enum:
+        - STATUS_UNSPECIFIED
+        - STATUS_UPDATING
+        - STATUS_UPDATED
+        - STATUS_DEPLOY
+        - STATUS_WAIT
+        - STATUS_COMPLETED
+        - STATUS_TIMEOUT
     octant.v1alpha.ValidationAttributes:
       type: object
       properties:
@@ -2464,3 +2937,4 @@ tags:
   - name: DatadogService
   - name: InstallService
     description: InstallService provides an interface for managing the MDAI smart hub installation.
+  - name: SettingService

@@ -33,10 +33,11 @@ type Server struct {
 	budgetFilterHandler    *rpchandler.BudgetFilterHandler
 	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler
 	budgetHandler          *rpchandler.BudgetHandler
+	settingHandler         *rpchandler.SettingHandler
 }
 
 // NewServer create a new Server.
-func NewServer(
+func NewServer( //nolint:revive // yes, there are a lot of args...
 	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
@@ -45,6 +46,7 @@ func NewServer(
 	budgetFilterHandler *rpchandler.BudgetFilterHandler,
 	budgetTimeframeHandler *rpchandler.BudgetTimeframeHandler,
 	budgetHandler *rpchandler.BudgetHandler,
+	settingHandler *rpchandler.SettingHandler,
 ) *Server {
 	return &Server{
 		configuration:          configuration,
@@ -55,6 +57,7 @@ func NewServer(
 		budgetFilterHandler:    budgetFilterHandler,
 		budgetTimeframeHandler: budgetTimeframeHandler,
 		budgetHandler:          budgetHandler,
+		settingHandler:         settingHandler,
 	}
 }
 
@@ -82,6 +85,7 @@ func (s Server) Handler() (http.Handler, error) {
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewSettingServiceHandler(s.settingHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewFilterServiceHandler(s.budgetFilterHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewTimeframeServiceHandler(s.budgetTimeframeHandler, interceptors))
 	mux.Handle(budgetv1alphaconnect.NewBudgetServiceHandler(s.budgetHandler, interceptors))
@@ -99,6 +103,7 @@ func (Server) getServices() []string {
 		octantv1alphaconnect.InstallServiceName,
 		octantv1alphaconnect.DatadogServiceName,
 		octantv1alphaconnect.ConnectionServiceName,
+		octantv1alphaconnect.SettingServiceName,
 		budgetv1alphaconnect.FilterServiceName,
 		budgetv1alphaconnect.TimeframeServiceName,
 		budgetv1alphaconnect.BudgetServiceName,

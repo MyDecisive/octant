@@ -237,47 +237,15 @@ func (oc *OctantConnection) SaveConnection(
 	connection OctantConnectionData,
 	input ConnectionCRUDInput,
 ) error {
-	if connection.Deployment == nil {
-		return errors.New("no deployment object found on octant connection; unable to create connection")
-	}
-
-	if !slices.Contains(
-		[]DeploymentType{ArgoManifestsDeploymentType, ArgoSideloadDeploymentType},
-		connection.Deployment.Type,
-	) {
-		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
-	}
-
-	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
-		connectionsConfigmapName,
-		oc.configuration.CurrentNamespace,
-	)
-	if err != nil {
-		if !k8serrors.IsNotFound(err) {
-			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
-		}
-		if createErr := oc.createConnection(
-			ctx,
-			connection,
-			oc.configuration.CurrentNamespace,
-			input.ConnectionName,
-		); createErr != nil {
-			return createErr
-		}
-	} else {
-		if updateErr := oc.updateConnection(
-			ctx,
-			cm,
-			connection,
-			oc.configuration.CurrentNamespace,
-			input.ConnectionName,
-		); updateErr != nil {
-			return updateErr
+	if !input.OnlyDeploy {
+		if err := oc.createOrUpdate(ctx, connection, input); err != nil {
+			return err
 		}
 	}
 
-	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err = oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
+	if !input.NoDeploy &&
+		connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
+		err := oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
 		if err != nil {
 			return err
 		}
@@ -331,6 +299,54 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName, templateData)
 	}
 
+	return nil
+}
+
+// createOrUpdate creates a connection if it doesn't already exist;
+// Otherwise, this will update the existing connection.
+func (oc *OctantConnection) createOrUpdate(
+	ctx context.Context,
+	connection OctantConnectionData,
+	input ConnectionCRUDInput,
+) error {
+	if connection.Deployment == nil {
+		return errors.New("no deployment object found on octant connection; unable to create connection")
+	}
+
+	if !slices.Contains(
+		[]DeploymentType{ArgoManifestsDeploymentType, ArgoSideloadDeploymentType},
+		connection.Deployment.Type,
+	) {
+		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
+	}
+
+	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+		connectionsConfigmapName,
+		oc.configuration.CurrentNamespace,
+	)
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return fmt.Errorf("failed to fetch configmap %s: %w", connectionsConfigmapName, err)
+		}
+		if createErr := oc.createConnection(
+			ctx,
+			connection,
+			oc.configuration.CurrentNamespace,
+			input.ConnectionName,
+		); createErr != nil {
+			return createErr
+		}
+	} else {
+		if updateErr := oc.updateConnection(
+			ctx,
+			cm,
+			connection,
+			oc.configuration.CurrentNamespace,
+			input.ConnectionName,
+		); updateErr != nil {
+			return updateErr
+		}
+	}
 	return nil
 }
 
