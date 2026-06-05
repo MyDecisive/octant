@@ -116,8 +116,8 @@ func (oc *OctantConnection) createTemplateData(
 		DatadogIntegrationData: datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload:         connection.Deployment.Type == ArgoSideloadDeploymentType,
-		DefaultLogRatio:        strconv.FormatFloat(oc.configuration.Budget.DefaultLogCostRate, 'g', -1, 64),
-		DefaultTraceRatio:      strconv.FormatFloat(oc.configuration.Budget.DefaultTraceCostRate, 'g', -1, 64),
+		DefaultLogRatio:        strconv.FormatUint(uint64(oc.configuration.Budget.DefaultLogSamplingRatio), 10),
+		DefaultTraceRatio:      strconv.FormatUint(uint64(oc.configuration.Budget.DefaultTraceSamplingRatio), 10),
 		DefaultLogIncludeErr:   oc.configuration.Budget.DefaultLogIncludeErr,
 		DefaultTraceIncludeErr: oc.configuration.Budget.DefaultTraceIncludeErr,
 	}
@@ -235,8 +235,8 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 		DatadogIntegrationData: &datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
 		IsArgoSideload:         connection.Deployment.Type == ArgoSideloadDeploymentType,
-		DefaultLogRatio:        strconv.FormatFloat(cmg.configuration.Budget.DefaultLogCostRate, 'g', -1, 64),
-		DefaultTraceRatio:      strconv.FormatFloat(cmg.configuration.Budget.DefaultTraceCostRate, 'g', -1, 64),
+		DefaultLogRatio:        strconv.FormatUint(uint64(cmg.configuration.Budget.DefaultLogSamplingRatio), 10),
+		DefaultTraceRatio:      strconv.FormatUint(uint64(cmg.configuration.Budget.DefaultTraceSamplingRatio), 10),
 		DefaultLogIncludeErr:   cmg.configuration.Budget.DefaultLogIncludeErr,
 		DefaultTraceIncludeErr: cmg.configuration.Budget.DefaultTraceIncludeErr,
 	}
