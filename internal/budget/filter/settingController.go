@@ -31,16 +31,6 @@ type SettingController interface {
 		updates *budgetv1alpha.Filter,
 		out chan UpdateFilterResult,
 	)
-	// InitializeFilter initializes both log filter setting and
-	// trace filter setting with the default values from configuration.
-	// If an update is already in progress for the given type, this will return `ErrStillUpdating`.
-	// If the update takes longer than the timeout, this will return `ErrTimeout`.
-	InitializeFilter(
-		ctx context.Context,
-		namespace string,
-		connection string,
-		out chan UpdateFilterResult,
-	)
 }
 
 // UpdateFilterResult represents results UpdateFilter method can send.
@@ -145,61 +135,6 @@ func (sc *MDAISettingController) GetFilter(
 		return nil, ErrInvalid
 	}
 	return sc.get(input)
-}
-
-// InitializeFilter initializes both log filter setting and
-// trace filter setting with the default values from configuration.
-// If an update is already in progress for the given type, this will return `ErrStillUpdating`.
-// If the update takes longer than the timeout, this will return `ErrTimeout`.
-func (sc *MDAISettingController) InitializeFilter(
-	ctx context.Context,
-	namespace string,
-	connection string,
-	out chan UpdateFilterResult,
-) {
-	outs := []chan UpdateFilterResult{
-		make(chan UpdateFilterResult),
-		make(chan UpdateFilterResult),
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(len(outs))
-
-	go sc.UpdateFilter(ctx, namespace, connection, &budgetv1alpha.Filter{
-		Type:       budgetv1alpha.FilterType_FILTER_TYPE_LOG,
-		PctSampled: sc.configuration.Budget.DefaultLogSamplingRatio,
-		IncludeErr: sc.configuration.Budget.DefaultLogIncludeErr,
-	}, outs[0])
-
-	go sc.UpdateFilter(ctx, namespace, connection, &budgetv1alpha.Filter{
-		Type:       budgetv1alpha.FilterType_FILTER_TYPE_TRACE,
-		PctSampled: sc.configuration.Budget.DefaultTraceSamplingRatio,
-		IncludeErr: sc.configuration.Budget.DefaultTraceIncludeErr,
-	}, outs[1])
-
-	for _, ch := range outs {
-		go func(ch chan UpdateFilterResult) {
-			for o := range ch {
-				select {
-				case <-ctx.Done():
-					wg.Done()
-					out <- UpdateFilterResult{
-						Type: budgetv1alpha.FilterType_FILTER_TYPE_UNSPECIFIED,
-						Err:  errors.New("context cancelled"),
-					}
-					return
-				default:
-				}
-				out <- o
-			}
-			wg.Done()
-		}(ch)
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
 }
 
 // UpdateFilter updates the filter setting of the given type with the provided values.
