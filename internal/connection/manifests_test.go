@@ -565,6 +565,10 @@ func TestRenderHubManifest(t *testing.T) {
 			DatadogIntegrationData: &integration.DataDogIntegrationData{
 				DDUrl: "https://datadoghq.com",
 			},
+			DefaultLogRatio:        "100",
+			DefaultLogIncludeErr:   true,
+			DefaultTraceRatio:      "99",
+			DefaultTraceIncludeErr: false,
 		}
 
 		manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
@@ -580,18 +584,22 @@ func TestRenderHubManifest(t *testing.T) {
 			logRatio := varSlice[0].(map[string]any)
 			assert.Equal(t, "logs_ratio_number", logRatio["key"])
 			assert.Equal(t, "string", logRatio["dataType"])
+			assert.Equal(t, "100", logRatio["default"])
 			assert.Contains(t, "LOGS_RATIO_NUMBER", logRatio["serializeAs"].([]any)[0].(map[string]any)["name"])
 			logErr := varSlice[1].(map[string]any)
 			assert.Equal(t, "logs_persist_errors", logErr["key"])
 			assert.Equal(t, "boolean", logErr["dataType"])
+			assert.Equal(t, true, logErr["default"])
 			assert.Contains(t, "LOGS_PERSIST_ERRORS", logErr["serializeAs"].([]any)[0].(map[string]any)["name"])
 			traceRatio := varSlice[2].(map[string]any)
 			assert.Equal(t, "traces_ratio_number", traceRatio["key"])
 			assert.Equal(t, "string", traceRatio["dataType"])
+			assert.Equal(t, "99", traceRatio["default"])
 			assert.Contains(t, "TRACES_RATIO_NUMBER", traceRatio["serializeAs"].([]any)[0].(map[string]any)["name"])
 			traceErr := varSlice[3].(map[string]any)
 			assert.Equal(t, "traces_persist_errors", traceErr["key"])
 			assert.Equal(t, "boolean", traceErr["dataType"])
+			assert.Equal(t, false, traceErr["default"])
 			assert.Contains(t, "TRACES_PERSIST_ERRORS", traceErr["serializeAs"].([]any)[0].(map[string]any)["name"])
 		}
 	})
