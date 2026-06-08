@@ -2,14 +2,12 @@ package connection
 
 import (
 	"context"
-	"fmt"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const connectionsConfigmapName = "mdai-octant-connections"
@@ -37,7 +35,7 @@ type Connection[T any] interface {
 
 func updateConfigMapWithConnection(
 	ctx context.Context,
-	k8sClient kubernetes.Interface,
+	cmStore kube.ConfigMapStore,
 	namespace string,
 	cm *corev1.ConfigMap,
 	connectionName, connectionData string,
@@ -47,15 +45,12 @@ func updateConfigMapWithConnection(
 	}
 	cm.Data[connectionName] = connectionData
 
-	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("error while updating configmap: %w", err)
-	}
-	return nil
+	return cmStore.UpdateConfigMap(ctx, namespace, cm)
 }
 
 func createConnectionConfigMap(
 	ctx context.Context,
-	k8sClient kubernetes.Interface,
+	cmStore kube.ConfigMapStore,
 	namespace, configmapName, connectionName, connectionData string,
 ) error {
 	newCM := &corev1.ConfigMap{
@@ -70,9 +65,5 @@ func createConnectionConfigMap(
 			connectionName: connectionData,
 		},
 	}
-
-	if _, err := k8sClient.CoreV1().ConfigMaps(namespace).Create(ctx, newCM, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create configmap %s: %w", configmapName, err)
-	}
-	return nil
+	return cmStore.CreateConfigMap(ctx, namespace, newCM)
 }

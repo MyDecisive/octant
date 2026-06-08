@@ -9,8 +9,6 @@ import (
 	"github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/config"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const datadogSecretName = "mdai-datadog-integration" // nolint: gosec
@@ -31,20 +29,17 @@ func (d DataDogIntegrationData) IsKnownDatadogTLD() bool {
 }
 
 type DataDogIntegration struct {
-	K8sClient     kubernetes.Interface
-	SecretStore   kube.SecretStore
+	secretStore   kube.SecretStore
 	configuration *config.Configuration
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
 func NewDataDogIntegration(
-	k8sClient kubernetes.Interface,
 	secretStore kube.SecretStore,
 	configuration *config.Configuration,
 ) *DataDogIntegration {
 	return &DataDogIntegration{
-		K8sClient:     k8sClient,
-		SecretStore:   secretStore,
+		secretStore:   secretStore,
 		configuration: configuration,
 	}
 }
@@ -55,7 +50,7 @@ var _ Integration[DataDogIntegrationData] = (*DataDogIntegration)(nil)
 func (ddi *DataDogIntegration) GetIntegrations(
 	ctx context.Context,
 ) (map[string]DataDogIntegrationData, error) {
-	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
+	secret, err := ddi.secretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -81,7 +76,7 @@ func (ddi *DataDogIntegration) GetIntegrationByName(
 	ctx context.Context,
 	name string,
 ) (*DataDogIntegrationData, error) {
-	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
+	secret, err := ddi.secretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, nil // nolint: nilnil
@@ -111,7 +106,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 		return fmt.Errorf("failed to marshal integration data: %w", err)
 	}
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
+	secret, err := ddi.secretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
 	isNotFound := k8serrors.IsNotFound(err)
 	if err != nil && !isNotFound {
 		return fmt.Errorf("failed to fetch secret %s: %w", datadogSecretName, err)
@@ -121,7 +116,7 @@ func (ddi *DataDogIntegration) SetIntegration(
 		// Create the secret if it does not exist
 		return createIntegrationSecret(
 			ctx,
-			ddi.K8sClient,
+			ddi.secretStore,
 			namespace,
 			integrationName,
 			datadogSecretName,
@@ -130,13 +125,13 @@ func (ddi *DataDogIntegration) SetIntegration(
 		)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, ddi.K8sClient, namespace, integrationName, secret, jsonData)
+	return updateSecretWithIntegration(ctx, ddi.secretStore, namespace, integrationName, secret, jsonData)
 }
 
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.
 func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, integrationName string) error {
 	namespace := ddi.configuration.CurrentNamespace
-	secret, err := ddi.SecretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
+	secret, err := ddi.secretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil
@@ -153,10 +148,5 @@ func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, integratio
 
 	delete(secret.Data, integrationName)
 
-	_, err = ddi.K8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update secret %s after deletion: %w", datadogSecretName, err)
-	}
-
-	return nil
+	return ddi.secretStore.UpdateSecret(ctx, namespace, secret)
 }
