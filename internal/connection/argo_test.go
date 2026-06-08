@@ -45,17 +45,6 @@ func validatorSyncManifestsMatcher(manifests []string) bool {
 	return kinds.Cardinality() == 1 && kinds.Contains("TelemetryValidation")
 }
 
-// expectWaitForAppOperation programs the mocked Argo client's WaitForAppOperation for appName to
-// return err, standing in for the connection app's sync settling (nil) or failing to settle.
-func expectWaitForAppOperation(mockArgoClient *argocdmock.MockAPIClient, appName string, err error) {
-	mockArgoClient.EXPECT().
-		WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-			return in.AppName == appName
-		}), mock.Anything, mock.Anything).
-		Return(err).
-		Once()
-}
-
 func TestDeleteArgoApp(t *testing.T) {
 	t.Parallel()
 
@@ -321,7 +310,12 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Once()
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		expectWaitForAppOperation(mockArgoClient, "coolIntegration", nil)
+		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
 		mockArgoClient.EXPECT().
 			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 				return in.AppName == "coolIntegration"
@@ -351,7 +345,12 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Once()
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		expectWaitForAppOperation(mockArgoClient, "coolIntegration", nil)
+		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
 		mockArgoClient.EXPECT().
 			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 				return in.AppName == "coolIntegration"
@@ -381,7 +380,12 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 			Once()
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		expectWaitForAppOperation(mockArgoClient, "coolIntegration", assert.AnError)
+		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(assert.AnError).
+			Once()
 
 		oc := NewOctantConnection(
 			nil,
