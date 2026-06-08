@@ -22,7 +22,7 @@ func (oc *OctantConnection) sideloadConnectionApp(
 	name string,
 	connection OctantConnectionData,
 ) error {
-	templateData, err := createTemplateData(ctx, name, connection, oc.datadogIntegration, *oc.configuration)
+	templateData, err := oc.createTemplateData(ctx, name, connection)
 	if err != nil {
 		return err
 	}
@@ -103,6 +103,50 @@ func (oc *OctantConnection) doArgoAppSync(
 		manifestsSlice, false)
 }
 
+func (oc *OctantConnection) sideloadValidatorForConnection(
+	ctx context.Context,
+	logger *zap.Logger,
+	connectionName string,
+	namespace string,
+) (string, error) {
+	// TODO: This is wonky today; we are pushing a new sync on the same app as the connection, but with just the
+	//       validator. This should work because prune = false (argo won't remove those other "orphaned" resources). The
+	//       entire sideload behavior has this ephemerality problem... but feels weird to push new manifests on top of
+	//       the old ones like this. Clean this up for the git integration.
+
+	argoIntegration, err := oc.getArgoIntegration(ctx, connectionName)
+	if err != nil {
+		return "", err
+	}
+
+	templateData := &ArgoValidatorTemplateData{
+		ConnectionName: connectionName,
+		Namespace:      namespace,
+		ValidatorRunID: getRunID(),
+	}
+
+	manifest, err := oc.generator.RenderValidatorManifestForConnection(templateData, YAMLOutputFormat)
+	if err != nil {
+		return "", err
+	}
+
+	manifestsSlice, err := yamlDocsToJSON(manifest)
+	if err != nil {
+		return "", fmt.Errorf("preparing validator manifest for argo sync: %w", err)
+	}
+
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
+	if syncErr := oc.argoClient.SyncApplication(
+		ctx,
+		logger,
+		clientOpts,
+		connectionName,
+		manifestsSlice, false); syncErr != nil {
+		return "", syncErr
+	}
+	return templateData.ValidatorRunID, nil
+}
+
 func (oc *OctantConnection) deleteArgoApp(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -120,6 +164,45 @@ func (oc *OctantConnection) deleteArgoApp(
 	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	logger.Debug("deleting argo app", zap.String("appName", name))
 	return oc.argoClient.DeleteArgoApp(ctx, logger, clientOpts, name)
+}
+
+func (oc *OctantConnection) deleteValidatorResource(
+	ctx context.Context,
+	logger *zap.Logger,
+	connectionName string,
+	templateData *ArgoConnectionTemplateData,
+) error {
+	argoIntegration, err := oc.argoIntegration.GetIntegrationByName(
+		ctx,
+		connectionName,
+	)
+	if err != nil {
+		return err
+	}
+
+	// the appTemplates is everything BUT the validator resource, so we'll sync to that and prune out the validator.
+	manifests, err := oc.generator.RenderCollectorDeploymentManifests(
+		templateData,
+		getDefaultAppTemplates(),
+		YAMLOutputFormat,
+	)
+	if err != nil {
+		return err
+	}
+
+	var manifestsSlice []string
+	for _, manifest := range manifests {
+		docs, convertErr := yamlDocsToJSON(manifest)
+		if convertErr != nil {
+			return fmt.Errorf("preparing manifests for argo sync: %w", convertErr)
+		}
+		manifestsSlice = append(manifestsSlice, docs...)
+	}
+
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
+	logger.Debug("deleting telemetry validator resource")
+	// WITH prune so the validator resource gets removed.
+	return oc.argoClient.SyncApplication(ctx, logger, clientOpts, connectionName, manifestsSlice, true)
 }
 
 func yamlDocsToJSON(yamlBytes []byte) ([]string, error) {

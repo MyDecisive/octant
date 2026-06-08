@@ -77,12 +77,10 @@ func getRunID() string {
 	return time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
 }
 
-func createTemplateData(
+func (oc *OctantConnection) createTemplateData(
 	ctx context.Context,
 	name string,
 	connection OctantConnectionData,
-	ddIntegration integration.Integration[integration.DataDogIntegrationData],
-	configuration config.Configuration,
 ) (*ArgoConnectionTemplateData, error) {
 	if len(connection.Destinations) > 1 {
 		// TODO: Implement multiple destination handling and handling of non-dd integrations
@@ -95,7 +93,7 @@ func createTemplateData(
 	for _, destination := range connection.Destinations {
 		switch destination.DestinationType {
 		case "datadog":
-			datadogIntegration, err = ddIntegration.GetIntegrationByName(ctx, destination.IntegrationName)
+			datadogIntegration, err = oc.datadogIntegration.GetIntegrationByName(ctx, destination.IntegrationName)
 			if err != nil {
 				return nil, err
 			}
@@ -106,8 +104,8 @@ func createTemplateData(
 
 	templateData := ArgoConnectionTemplateData{
 		AppName:                name,
-		CurrentNamespace:       configuration.CurrentNamespace,
-		ServiceAccount:         configuration.ServiceAccountName,
+		CurrentNamespace:       oc.configuration.CurrentNamespace,
+		ServiceAccount:         oc.configuration.ServiceAccountName,
 		Namespace:              connection.MdaiNamespace,
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
