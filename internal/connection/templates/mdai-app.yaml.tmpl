@@ -13,7 +13,6 @@ spec:
     targetRevision: {{ .MdaiVersion }}
     helm:
       valueFiles:
-      - greptimedb-values.yaml
       - tracealyzer-values.yaml
       - $values/examples/argocd/mdai/chart/values.yaml
   - repoURL: https://github.com/MyDecisive/octant.git

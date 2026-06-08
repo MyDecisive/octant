@@ -10,11 +10,14 @@ import (
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"github.com/argoproj/gitops-engine/pkg/sync/common"
+	"github.com/go-faker/faker/v4"
 	applicationmock "github.com/mydecisive/octant/internal/mock/application"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/net/nettest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -182,6 +185,137 @@ func TestPushArgoApp(t *testing.T) {
 			testCase.validateResult(testErr)
 		})
 	}
+}
+
+func TestAppOperationState(t *testing.T) {
+	t.Parallel()
+
+	connection := faker.Word()
+	interval := time.Duration(1)
+	timeout := time.Duration(1) * time.Second
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		lis, err := nettest.NewLocalListener("tcp")
+		require.NoError(t, err)
+
+		s := grpc.NewServer()
+		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+			return req.GetName() == connection
+		})).Return(&v1alpha1.Application{
+			Status: v1alpha1.ApplicationStatus{
+				OperationState: &v1alpha1.OperationState{
+					Phase: common.OperationRunning,
+				},
+			},
+		}, nil).Once()
+		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+			return req.GetName() == connection
+		})).Return(&v1alpha1.Application{
+			Status: v1alpha1.ApplicationStatus{
+				OperationState: &v1alpha1.OperationState{
+					Phase: common.OperationSucceeded,
+				},
+			},
+		}, nil).Once()
+		application.RegisterApplicationServiceServer(s, mockAppServer)
+
+		go s.Serve(lis) // nolint: errcheck
+		t.Cleanup(s.Stop)
+
+		clientOpts := &apiclient.ClientOptions{
+			ServerAddr: lis.Addr().String(),
+			Insecure:   true,
+			PlainText:  true, // needed for local testing
+		}
+
+		target := NewArgoCDClient()
+
+		actual := make(chan InstallResult)
+		go target.AppOperationState(t.Context(), Input{
+			Logger:     zaptest.NewLogger(t),
+			ClientOpts: clientOpts,
+			AppName:    connection,
+		}, interval, timeout, actual)
+
+		count := 0
+		for result := range actual {
+			switch count {
+			case 0:
+				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, result.Status)
+			case 1:
+				assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED, result.Status)
+			default:
+				assert.Fail(t, "too many statuses")
+			}
+			assert.NoError(t, result.Err)
+			count++
+		}
+	})
+
+	t.Run("err get app", func(t *testing.T) {
+		t.Parallel()
+		lis, err := nettest.NewLocalListener("tcp")
+		require.NoError(t, err)
+
+		s := grpc.NewServer()
+		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+			return req.GetName() == connection
+		})).Return(nil, assert.AnError).Once()
+		application.RegisterApplicationServiceServer(s, mockAppServer)
+
+		go s.Serve(lis) // nolint: errcheck
+		t.Cleanup(s.Stop)
+
+		clientOpts := &apiclient.ClientOptions{
+			ServerAddr: lis.Addr().String(),
+			Insecure:   true,
+			PlainText:  true, // needed for local testing
+		}
+
+		target := NewArgoCDClient()
+
+		actual := make(chan InstallResult)
+		go target.AppOperationState(t.Context(), Input{
+			Logger:     zaptest.NewLogger(t),
+			ClientOpts: clientOpts,
+			AppName:    connection,
+		}, timeout, timeout, actual)
+
+		count := 0
+		for result := range actual {
+			require.Less(t, count, 1)
+			assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, result.Status)
+			assert.Error(t, result.Err)
+			count++
+		}
+	})
+
+	t.Run("err client", func(t *testing.T) {
+		t.Parallel()
+
+		target := NewArgoCDClient()
+
+		actual := make(chan InstallResult)
+		go target.AppOperationState(t.Context(), Input{
+			Logger: zaptest.NewLogger(t),
+			ClientOpts: &apiclient.ClientOptions{
+				ServerAddr: "",
+			},
+			AppName: connection,
+		}, interval, timeout, actual)
+
+		count := 0
+		for result := range actual {
+			require.Less(t, count, 1)
+			assert.Equal(t, octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR, result.Status)
+			assert.Error(t, result.Err)
+			count++
+		}
+	})
 }
 
 func TestGetAppStatus(t *testing.T) {
@@ -385,7 +519,11 @@ func TestGetAppStatus(t *testing.T) {
 			}
 
 			testClient := NewArgoCDClient()
-			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), zaptest.NewLogger(t), clientOpts)
+			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), Input{
+				Logger:     zaptest.NewLogger(t),
+				ClientOpts: clientOpts,
+				AppName:    "mdai",
+			})
 			testCase.validateResult(installStatus, resourceDetails, testErr)
 		})
 	}
@@ -515,7 +653,11 @@ func TestDeleteArgoApp(t *testing.T) {
 			}
 
 			testClient := NewArgoCDClient()
-			testErr := testClient.DeleteArgoApp(t.Context(), zaptest.NewLogger(t), clientOpts, "mdai")
+			testErr := testClient.DeleteArgoApp(t.Context(), Input{
+				Logger:     zaptest.NewLogger(t),
+				ClientOpts: clientOpts,
+				AppName:    "mdai",
+			})
 			testCase.validateResult(testErr)
 		})
 	}
@@ -601,9 +743,11 @@ func TestSyncApplication(t *testing.T) {
 			testClient := NewArgoCDClient()
 			testErr := testClient.SyncApplication(
 				t.Context(),
-				zaptest.NewLogger(t),
-				clientOpts,
-				"mdai",
+				Input{
+					Logger:     zaptest.NewLogger(t),
+					ClientOpts: clientOpts,
+					AppName:    "mdai",
+				},
 				[]string{"manifest 1 content", "manifest 2 content"},
 				false,
 			)

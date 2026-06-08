@@ -2,22 +2,37 @@ package argocd
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"github.com/argoproj/gitops-engine/pkg/sync/common"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
 	clientRetryMax = 3
 )
+
+type Input struct {
+	Logger     *zap.Logger
+	ClientOpts *apiclient.ClientOptions
+	AppName    string
+}
+
+type InstallResult struct {
+	Status octantv1alpha.InstallStatus
+	Err    error
+}
 
 type APIClient interface {
 	TestConnection(
@@ -33,26 +48,33 @@ type APIClient interface {
 	) error
 	DeleteArgoApp(
 		ctx context.Context,
-		logger *zap.Logger,
-		clientOpts *apiclient.ClientOptions,
-		appName string,
+		input Input,
 	) error
+	// AppOperationState continuously retrieves the app operation state until
+	// either the timeout is reached or the state is succeeded.
+	AppOperationState(
+		ctx context.Context,
+		input Input,
+		interval time.Duration,
+		timeout time.Duration,
+		out chan InstallResult,
+	)
 	GetAppStatus(
 		ctx context.Context,
-		logger *zap.Logger,
-		clientOpts *apiclient.ClientOptions,
+		input Input,
 	) (octantv1alpha.InstallStatus, []*octantv1alpha.ResourceDetails, error)
 	SyncApplication(
 		ctx context.Context,
-		logger *zap.Logger,
-		clientOpts *apiclient.ClientOptions,
-		appName string,
+		input Input,
 		manifests []string,
 		prune bool,
 	) error
 }
 
 type Client struct{}
+
+// Ensure Client implements APIClient.
+var _ APIClient = (*Client)(nil)
 
 func NewArgoCDClient() *Client {
 	return &Client{}
@@ -140,32 +162,30 @@ func (*Client) PushArgoApp(
 
 func (*Client) DeleteArgoApp(
 	ctx context.Context,
-	logger *zap.Logger,
-	clientOpts *apiclient.ClientOptions,
-	appName string,
+	input Input,
 ) error {
-	argoClient, err := apiclient.NewClient(clientOpts)
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
 	if err != nil {
-		logger.Error("creating argo api client", zap.Error(err))
+		input.Logger.Error("creating argo api client", zap.Error(err))
 		return err
 	}
 	closer, applicationClient, err := argoClient.NewApplicationClient()
 	if err != nil {
-		logger.Error("creating argo application client", zap.Error(err))
+		input.Logger.Error("creating argo application client", zap.Error(err))
 		return err
 	}
 	defer func() {
 		if err = closer.Close(); err != nil {
-			logger.Warn("closing argo api client", zap.Error(err))
+			input.Logger.Warn("closing argo api client", zap.Error(err))
 		}
 	}()
 	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
-		Name:              lo.ToPtr(appName),
+		Name:              lo.ToPtr(input.AppName),
 		AppNamespace:      lo.ToPtr("argocd"),
 		Cascade:           lo.ToPtr(true),
 		PropagationPolicy: lo.ToPtr("foreground"),
 	}); err != nil {
-		logger.Error("deleting argo app", zap.Error(err))
+		input.Logger.Error("deleting argo app", zap.Error(err))
 		return err
 	}
 	return nil
@@ -173,30 +193,28 @@ func (*Client) DeleteArgoApp(
 
 func (*Client) SyncApplication(
 	ctx context.Context,
-	logger *zap.Logger,
-	clientOpts *apiclient.ClientOptions,
-	appName string,
+	input Input,
 	manifests []string,
 	prune bool,
 ) error {
-	argoClient, err := apiclient.NewClient(clientOpts)
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
 	if err != nil {
-		logger.Error("creating argo api client", zap.Error(err))
+		input.Logger.Error("creating argo api client", zap.Error(err))
 		return err
 	}
 	closer, applicationClient, err := argoClient.NewApplicationClient()
 	if err != nil {
-		logger.Error("creating argo application client", zap.Error(err))
+		input.Logger.Error("creating argo application client", zap.Error(err))
 		return err
 	}
 	defer func() {
 		if err = closer.Close(); err != nil {
-			logger.Warn("closing argo api client", zap.Error(err))
+			input.Logger.Warn("closing argo api client", zap.Error(err))
 		}
 	}()
 
 	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
-		Name:     lo.ToPtr(appName),
+		Name:     lo.ToPtr(input.AppName),
 		Revision: lo.ToPtr("HEAD"),
 		Prune:    lo.ToPtr(prune),
 		DryRun:   lo.ToPtr(false),
@@ -207,44 +225,111 @@ func (*Client) SyncApplication(
 		},
 		Manifests: manifests,
 	}); err != nil {
-		logger.Error("syncing argo application", zap.Error(err))
+		input.Logger.Error("syncing argo application", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
+// AppOperationState continuously retrieves the app operation state until
+// either the timeout is reached or the state is succeeded.
+func (*Client) AppOperationState(
+	ctx context.Context,
+	input Input,
+	interval time.Duration,
+	timeout time.Duration,
+	out chan InstallResult,
+) {
+	defer close(out) // Tell caller the operation is complete
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
+	if err != nil {
+		input.Logger.Error("creating argo api client", zap.Error(err))
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		input.Logger.Error("creating argo application client", zap.Error(err))
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
+	defer closer.Close() //nolint:errcheck
+
+	if err := wait.PollUntilContextTimeout(ctx, interval, timeout, true,
+		func(ctx context.Context) (bool, error) {
+			argoApp, err := applicationClient.Get(ctx, &application.ApplicationQuery{
+				Name: &input.AppName,
+			})
+			if err != nil {
+				input.Logger.Error("getting argo application", zap.Error(err))
+				return true, err
+			}
+
+			done := false
+			state := octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING
+			if argoApp.Status.OperationState != nil &&
+				argoApp.Status.OperationState.Phase == common.OperationSucceeded {
+				state = octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLED
+				done = true
+			}
+			out <- InstallResult{
+				Status: state,
+			}
+			return done, nil
+		}); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			out <- InstallResult{
+				Status: octantv1alpha.InstallStatus_INSTALL_STATUS_TIMEOUT,
+			}
+			return
+		}
+		out <- InstallResult{
+			Status: octantv1alpha.InstallStatus_INSTALL_STATUS_ERROR,
+			Err:    err,
+		}
+		return
+	}
+}
+
 // GetAppStatus retrieves the argo application status and any resource details available for a non-healthy state.
 func (*Client) GetAppStatus(
 	ctx context.Context,
-	logger *zap.Logger,
-	clientOpts *apiclient.ClientOptions,
+	input Input,
 ) (
 	octantv1alpha.InstallStatus,
 	[]*octantv1alpha.ResourceDetails,
 	error,
 ) {
-	argoClient, err := apiclient.NewClient(clientOpts)
+	input.Logger = input.Logger.With(zap.String("appName", input.AppName))
+	name := lo.ToPtr(input.AppName)
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
 	if err != nil {
-		logger.Error("creating argo api client", zap.Error(err))
+		input.Logger.Error("creating argo api client", zap.Error(err))
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, err
 	}
 	closer, applicationClient, err := argoClient.NewApplicationClient()
 	if err != nil {
-		logger.Error("creating argo application client", zap.Error(err))
+		input.Logger.Error("creating argo application client", zap.Error(err))
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, err
 	}
 	defer func() {
 		if err = closer.Close(); err != nil {
-			logger.Warn("closing argo api client", zap.Error(err))
+			input.Logger.Warn("closing argo api client", zap.Error(err))
 		}
 	}()
 
 	var resourceDetails []*octantv1alpha.ResourceDetails
 	argoApp, err := applicationClient.Get(ctx, &application.ApplicationQuery{
-		Name: lo.ToPtr("mdai"),
+		Name: name,
 	})
 	if err != nil {
-		logger.Error("getting argo application", zap.Error(err), zap.String("appName", "mdai"))
+		input.Logger.Error("getting argo application", zap.Error(err))
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, nil, err
 	}
 	appHealth := argoApp.Status.Health.Status
@@ -263,10 +348,10 @@ func (*Client) GetAppStatus(
 	// the number of resources coming back, but apparently the `ApplicationName` and `Kind` parameters are
 	// mutually exclusive.
 	tree, err := applicationClient.ResourceTree(ctx, &application.ResourcesQuery{
-		ApplicationName: lo.ToPtr("mdai"),
+		ApplicationName: name,
 	})
 	if err != nil {
-		logger.Error("getting argo application resource tree", zap.Error(err), zap.String("appName", "mdai"))
+		input.Logger.Error("getting argo application resource tree", zap.Error(err))
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_UNSPECIFIED, resourceDetails, err
 	}
 
@@ -274,7 +359,7 @@ func (*Client) GetAppStatus(
 		return item.Kind == "Pod"
 	})
 	if len(pods) == 0 {
-		logger.Debug("no pods found (yet)", zap.String("appName", "mdai"))
+		input.Logger.Debug("no pods found (yet)")
 		return octantv1alpha.InstallStatus_INSTALL_STATUS_INSTALLING, resourceDetails, nil
 	}
 

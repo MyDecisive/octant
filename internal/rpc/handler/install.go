@@ -120,7 +120,12 @@ func (ih *InstallHandler) GetInstallStatus(
 	}
 
 	clientOpts := argocd.CreateClientOpts(ih.config.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
-	status, details, err := ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
+	input := argocd.Input{
+		Logger:     logger,
+		ClientOpts: clientOpts,
+		AppName:    "mdai",
+	}
+	status, details, err := ih.argoClient.GetAppStatus(ctx, input)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
@@ -157,7 +162,7 @@ func (ih *InstallHandler) GetInstallStatus(
 			return nil
 		case <-ticker.C:
 			logger.Debug("checking install status")
-			status, details, err = ih.argoClient.GetAppStatus(ctx, logger, clientOpts)
+			status, details, err = ih.argoClient.GetAppStatus(ctx, input)
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}

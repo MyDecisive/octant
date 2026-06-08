@@ -19,6 +19,7 @@ import (
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
 	rpchandler "github.com/mydecisive/octant/internal/rpc/handler"
+	"github.com/mydecisive/octant/internal/setting"
 	"github.com/mydecisive/octant/internal/wrapper"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
@@ -114,6 +115,9 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(provideOctantConnection); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(setting.NewSettingManagerBuilder, dig.As(new(setting.ManagerBuilder))); err != nil {
+		return nil, err
+	}
 
 	// RPC Server
 	if err := container.Provide(rpchandler.NewArgoCDHandler); err != nil {
@@ -135,6 +139,9 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewBudgetHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewSettingHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpc.NewServer); err != nil {

@@ -3,10 +3,12 @@ package connection
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
+	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
@@ -193,6 +195,9 @@ func TestSaveConnection(t *testing.T) {
 	t.Run("happy path - updated existing connection", func(t *testing.T) {
 		t.Parallel()
 
+		// set the Created timestamp to compare after the update
+		now := time.Now()
+		validConnection.Created = now
 		validConnectionBytes, err := json.Marshal(validConnection)
 		require.NoError(t, err)
 
@@ -227,7 +232,9 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -238,13 +245,18 @@ func TestSaveConnection(t *testing.T) {
 			Once()
 		mockCmStore.EXPECT().
 			UpdateConfigMap(mock.Anything, testConfig.CurrentNamespace, mock.MatchedBy(func(cm *corev1.ConfigMap) bool {
+				// verify the Created timestamp didn't get changed
+				var updatedConnection OctantConnectionData
+				err = json.Unmarshal([]byte(cm.Data["argo-test"]), &updatedConnection)
+				require.NoError(t, err)
+				assert.True(t, updatedConnection.Created.Equal(now), "expected created time to equal now")
+
 				return cm.Name == connectionsConfigmapName
 			})).
 			Return(nil).
 			Once()
 
 		generator := NewConnectionManifestGenerator(testConfig)
-
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
@@ -281,7 +293,9 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -312,6 +326,36 @@ func TestSaveConnection(t *testing.T) {
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
 			Logger:         zaptest.NewLogger(t),
+		}))
+	})
+
+	t.Run("success skip & no deploy", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+
+		mockCmStore := kubemock.NewMockConfigMapStore(t)
+
+		generator := NewConnectionManifestGenerator(testConfig)
+
+		octantConnection := NewOctantConnection(
+			mockCmStore,
+			testConfig,
+			WithArgoCDIntegration(mockArgoIntegration),
+			WithDatadogIntegration(mockDatadogIntegration),
+			WithArgoClient(mockArgoClient),
+			WithGenerator(generator),
+		)
+		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+			OnlyDeploy:     true,
+			NoDeploy:       true,
 		}))
 	})
 }
@@ -468,7 +512,9 @@ func TestDeleteConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			DeleteArgoApp(mock.Anything, mock.Anything, mock.Anything, "argo-test").
+			DeleteArgoApp(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			})).
 			Return(nil).
 			Once()
 
@@ -727,7 +773,9 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, false).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, false).
 			Return(nil).
 			Once()
 
@@ -910,7 +958,9 @@ func TestDeleteConnectionValidator(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.Anything, mock.Anything, "argo-test", mock.Anything, true).
+			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, true).
 			Return(nil).
 			Once()
 
