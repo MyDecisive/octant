@@ -3,6 +3,7 @@ package argocd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
@@ -59,6 +60,14 @@ type APIClient interface {
 		timeout time.Duration,
 		out chan InstallResult,
 	)
+	// WaitForAppOperation blocks until the application has no sync operation in flight (the current
+	// operation reached a terminal phase, or there is none).
+	WaitForAppOperation(
+		ctx context.Context,
+		input Input,
+		interval time.Duration,
+		timeout time.Duration,
+	) error
 	GetAppStatus(
 		ctx context.Context,
 		input Input,
@@ -295,6 +304,45 @@ func (*Client) AppOperationState(
 		}
 		return
 	}
+}
+
+// WaitForAppOperation blocks until the application has no sync operation in flight.
+func (*Client) WaitForAppOperation(
+	ctx context.Context,
+	input Input,
+	interval time.Duration,
+	timeout time.Duration,
+) error {
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
+	if err != nil {
+		input.Logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		input.Logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			input.Logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	waitErr := wait.PollUntilContextTimeout(ctx, interval, timeout, true,
+		func(ctx context.Context) (bool, error) {
+			argoApp, getErr := applicationClient.Get(ctx, &application.ApplicationQuery{Name: &input.AppName})
+			if getErr != nil {
+				input.Logger.Error("getting argo application", zap.Error(getErr))
+				return false, getErr
+			}
+			opState := argoApp.Status.OperationState
+			return opState == nil || opState.Phase.Completed(), nil
+		})
+	if waitErr != nil {
+		return fmt.Errorf("waiting for argo application %s operation to complete: %w", input.AppName, waitErr)
+	}
+	return nil
 }
 
 // GetAppStatus retrieves the argo application status and any resource details available for a non-healthy state.
