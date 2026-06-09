@@ -20,7 +20,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/mydecisive/mdai-data-core v0.4.3
+	github.com/mydecisive/mdai-data-core v0.4.5
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/rs/cors v1.11.1
