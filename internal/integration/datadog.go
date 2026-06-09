@@ -73,7 +73,7 @@ func (ddi *DataDogIntegration) GetIntegrations(
 // GetIntegrationByName retrieves the existing integration
 // in the provided namespace for the "octant-integration" secret, if it exists.
 func (ddi *DataDogIntegration) GetIntegrationByName(
-	ctx context.Context,
+	_ context.Context,
 	name string,
 ) (*DataDogIntegrationData, error) {
 	secret, err := ddi.secretStore.GetSecretByNameAndNamespace(datadogSecretName, ddi.configuration.CurrentNamespace)

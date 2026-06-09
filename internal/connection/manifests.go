@@ -102,6 +102,9 @@ func (oc *OctantConnection) createTemplateData(
 			if err != nil {
 				return nil, err
 			}
+			if datadogIntegration == nil {
+				return nil, errors.New("datadog integration not found")
+			}
 		default:
 			return nil, fmt.Errorf("unknown destination type: %s", destination.DestinationType)
 		}
