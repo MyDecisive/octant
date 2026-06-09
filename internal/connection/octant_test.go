@@ -197,8 +197,9 @@ func TestSaveConnection(t *testing.T) {
 
 		// set the Created timestamp to compare after the update
 		now := time.Now()
-		validConnection.Created = now
-		validConnectionBytes, err := json.Marshal(validConnection)
+		newConnection := validConnection
+		newConnection.Created = now
+		validConnectionBytes, err := json.Marshal(newConnection)
 		require.NoError(t, err)
 
 		theConfigmap := &corev1.ConfigMap{

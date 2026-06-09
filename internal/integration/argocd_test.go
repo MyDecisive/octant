@@ -264,9 +264,9 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			Once()
 		secretStore.EXPECT().
 			UpdateSecret(mock.Anything, defaultNamespace, mock.MatchedBy(func(secret *corev1.Secret) bool {
-				require.Contains(t, secret.Data, "team-a")
-				require.NotContains(t, secret.Data, "team-b") // this was deleted.
-				return secret.Name == argocdSecretName
+				return secret.Name == argocdSecretName &&
+					secret.Data["team-a"] == nil && // this one was deleted.
+					secret.Data["team-b"] != nil
 			})).
 			Return(nil).
 			Once()

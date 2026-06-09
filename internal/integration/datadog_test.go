@@ -252,9 +252,9 @@ func TestSetIntegration(t *testing.T) {
 			Once()
 		secretStore.EXPECT().
 			UpdateSecret(mock.Anything, defaultNamespace, mock.MatchedBy(func(secret *corev1.Secret) bool {
-				require.Contains(t, secret.Data, "team-a")
-				require.Contains(t, secret.Data, "team-b")
-				return secret.Name == datadogSecretName
+				return secret.Name == datadogSecretName &&
+					secret.Data["team-a"] != nil &&
+					secret.Data["team-b"] != nil
 			})).
 			Return(nil).
 			Once()
