@@ -645,6 +645,30 @@ func TestCreateTemplateData(t *testing.T) {
 		require.Nil(t, td)
 	})
 
+	t.Run("error - datadog integration not found", func(t *testing.T) {
+		t.Parallel()
+
+		connection := OctantConnectionData{
+			Destinations: []OctantConnectionDestination{
+				{DestinationType: "datadog", IntegrationName: "test-dd"},
+			},
+			Deployment: &Deployment{
+				Type: ArgoSideloadDeploymentType,
+			},
+		}
+
+		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadogIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "test-dd").
+			Return(nil, nil).
+			Once()
+
+		oc := NewOctantConnection(nil, testConfig, WithDatadogIntegration(mockDatadogIntegration))
+		td, err := oc.createTemplateData(t.Context(), "coolIntegration", connection)
+		require.Nil(t, td)
+		require.ErrorContains(t, err, "datadog integration not found")
+	})
+
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
