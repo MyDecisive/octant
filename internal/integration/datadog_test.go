@@ -8,12 +8,12 @@ import (
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 const defaultNamespace = "default"
@@ -43,7 +43,7 @@ func TestGetIntegrations(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -69,7 +69,7 @@ func TestGetIntegrations(t *testing.T) {
 			Return(existingSecret, nil).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -99,7 +99,7 @@ func TestGetIntegrations(t *testing.T) {
 			Return(existingSecret, nil).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -138,7 +138,7 @@ func TestGetIntegrationByName(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -164,7 +164,7 @@ func TestGetIntegrationByName(t *testing.T) {
 			Return(existingSecret, nil).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -190,7 +190,7 @@ func TestGetIntegrationByName(t *testing.T) {
 			Return(existingSecret, nil).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -211,43 +211,28 @@ func TestSetIntegration(t *testing.T) {
 	t.Run("creates secret when it does not exist", func(t *testing.T) {
 		t.Parallel()
 
-		mockK8sClient := fake.NewClientset()
-
 		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, datadogSecretName)
 		secretStore := kubemock.NewMockSecretStore(t)
 		secretStore.EXPECT().
 			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
 			Return(nil, notFoundError).
 			Once()
+		secretStore.EXPECT().
+			CreateSecret(mock.Anything, defaultNamespace, mock.MatchedBy(func(secret *corev1.Secret) bool {
+				require.Contains(t, secret.Data, "team-a")
+				return secret.Name == datadogSecretName
+			})).
+			Return(nil).
+			Once()
+
 		datadogIntegration := &DataDogIntegration{
-			K8sClient:   mockK8sClient,
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// Verify the secret doesn't exist yet
-		_, err := mockK8sClient.CoreV1().Secrets(defaultNamespace).Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.ErrorContains(t, err, "secrets \"mdai-datadog-integration\" not found")
-
-		err = datadogIntegration.SetIntegration(t.Context(), "team-a", newIntegration)
-		require.NoError(t, err)
-
-		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, getErr)
-		require.NotNil(t, secret.Data)
-		require.Len(t, secret.Data, 1)
-		require.Contains(t, secret.Data, "team-a")
-
-		var teamData DataDogIntegrationData
-		err = json.Unmarshal(secret.Data["team-a"], &teamData)
-		require.NoError(t, err)
-
-		assert.Equal(t, newIntegration, teamData)
+		require.NoError(t, datadogIntegration.SetIntegration(t.Context(), "team-a", newIntegration))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
@@ -265,41 +250,23 @@ func TestSetIntegration(t *testing.T) {
 			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
 			Return(existingSecret, nil).
 			Once()
-		mockK8sClient := fake.NewClientset(existingSecret)
+		secretStore.EXPECT().
+			UpdateSecret(mock.Anything, defaultNamespace, mock.MatchedBy(func(secret *corev1.Secret) bool {
+				return secret.Name == datadogSecretName &&
+					secret.Data["team-a"] != nil &&
+					secret.Data["team-b"] != nil
+			})).
+			Return(nil).
+			Once()
+
 		datadogIntegration := &DataDogIntegration{
-			K8sClient:   mockK8sClient,
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// Verify the secret DOES exist already
-		existingSecret, err := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingSecret.Data)
-		require.Len(t, existingSecret.Data, 1)
-		require.Contains(t, existingSecret.Data, "team-a")
-
-		err = datadogIntegration.SetIntegration(t.Context(), "team-b", newIntegration)
-		require.NoError(t, err)
-
-		// Verify the secret actually contains the added integration
-		secret, getErr := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, getErr)
-		require.NotNil(t, secret.Data)
-		require.Len(t, secret.Data, 2)
-		require.Contains(t, secret.Data, "team-b")
-
-		var teamData DataDogIntegrationData
-		err = json.Unmarshal(secret.Data["team-b"], &teamData)
-		require.NoError(t, err)
-
-		assert.Equal(t, newIntegration, teamData)
+		require.NoError(t, datadogIntegration.SetIntegration(t.Context(), "team-b", newIntegration))
 	})
 }
 
@@ -316,7 +283,7 @@ func TestDeleteIntegration(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -341,7 +308,7 @@ func TestDeleteIntegration(t *testing.T) {
 			Return(existingSecret, nil).
 			Once()
 		datadogIntegration := &DataDogIntegration{
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
@@ -367,35 +334,22 @@ func TestDeleteIntegration(t *testing.T) {
 			GetSecretByNameAndNamespace(datadogSecretName, defaultNamespace).
 			Return(existingSecret, nil).
 			Once()
-		mockK8sClient := fake.NewClientset(existingSecret)
+		secretStore.EXPECT().
+			UpdateSecret(mock.Anything, defaultNamespace, mock.MatchedBy(func(secret *corev1.Secret) bool {
+				require.NotContains(t, secret.Data, "team-a")
+				require.Contains(t, secret.Data, "team-b")
+				return secret.Name == datadogSecretName
+			})).
+			Return(nil).
+			Once()
+
 		datadogIntegration := &DataDogIntegration{
-			K8sClient:   mockK8sClient,
-			SecretStore: secretStore,
+			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
 		}
 
-		// validate secret exists with both integration names before we delete one of them.
-		existingSecret, err := mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingSecret.Data)
-		require.Len(t, existingSecret.Data, 2)
-		require.Contains(t, existingSecret.Data, "team-a")
-		require.Contains(t, existingSecret.Data, "team-b")
-
-		err = datadogIntegration.DeleteIntegration(t.Context(), "team-a")
-		require.NoError(t, err)
-
-		existingSecret, err = mockK8sClient.CoreV1().
-			Secrets(defaultNamespace).
-			Get(t.Context(), datadogSecretName, metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, existingSecret.Data)
-		require.Len(t, existingSecret.Data, 1)
-		require.NotContains(t, existingSecret.Data, "team-a") // team-a was deleted
-		require.Contains(t, existingSecret.Data, "team-b")
+		require.NoError(t, datadogIntegration.DeleteIntegration(t.Context(), "team-a"))
 	})
 }

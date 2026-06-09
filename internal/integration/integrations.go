@@ -2,12 +2,10 @@ package integration
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mydecisive/mdai-data-core/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Integration[T any] interface {
@@ -19,7 +17,7 @@ type Integration[T any] interface {
 
 func updateSecretWithIntegration(
 	ctx context.Context,
-	k8sClient kubernetes.Interface,
+	secretStore kube.SecretStore,
 	namespace, integrationName string,
 	secret *corev1.Secret,
 	jsonData []byte,
@@ -29,13 +27,12 @@ func updateSecretWithIntegration(
 	}
 	secret.Data[integrationName] = jsonData
 
-	_, err := k8sClient.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	return err
+	return secretStore.UpdateSecret(ctx, namespace, secret)
 }
 
 func createIntegrationSecret(
 	ctx context.Context,
-	k8sClient kubernetes.Interface,
+	secretStore kube.SecretStore,
 	namespace, integrationName, secretName, secretTypeLabel string,
 	jsonData []byte,
 ) error {
@@ -52,9 +49,5 @@ func createIntegrationSecret(
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
-
-	if _, err := k8sClient.CoreV1().Secrets(namespace).Create(ctx, newSecret, metav1.CreateOptions{}); err != nil {
-		return fmt.Errorf("failed to create secret %s: %w", secretName, err)
-	}
-	return nil
+	return secretStore.CreateSecret(ctx, namespace, newSecret)
 }

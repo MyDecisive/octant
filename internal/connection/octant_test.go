@@ -23,7 +23,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 var (
@@ -198,8 +197,9 @@ func TestSaveConnection(t *testing.T) {
 
 		// set the Created timestamp to compare after the update
 		now := time.Now()
-		validConnection.Created = now
-		validConnectionBytes, err := json.Marshal(validConnection)
+		newConnection := validConnection
+		newConnection.Created = now
+		validConnectionBytes, err := json.Marshal(newConnection)
 		require.NoError(t, err)
 
 		theConfigmap := &corev1.ConfigMap{
@@ -244,13 +244,23 @@ func TestSaveConnection(t *testing.T) {
 			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
 			Return(theConfigmap, nil).
 			Once()
+		mockCmStore.EXPECT().
+			UpdateConfigMap(mock.Anything, testConfig.CurrentNamespace, mock.MatchedBy(func(cm *corev1.ConfigMap) bool {
+				// verify the Created timestamp didn't get changed
+				var updatedConnection OctantConnectionData
+				err = json.Unmarshal([]byte(cm.Data["argo-test"]), &updatedConnection)
+				require.NoError(t, err)
+				assert.True(t, updatedConnection.Created.Equal(now), "expected created time to equal now")
+
+				return cm.Name == connectionsConfigmapName
+			})).
+			Return(nil).
+			Once()
 
 		generator := NewConnectionManifestGenerator(testConfig)
-		mockK8sClient := fake.NewClientset(theConfigmap)
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(mockK8sClient),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithDatadogIntegration(mockDatadogIntegration),
 			WithArgoClient(mockArgoClient),
@@ -261,15 +271,6 @@ func TestSaveConnection(t *testing.T) {
 			Namespace:      defaultNamespace,
 			Logger:         zaptest.NewLogger(t),
 		}))
-
-		// verify the Created timestamp didn't get changed
-		updatedCM, getErr := mockK8sClient.CoreV1().ConfigMaps(defaultNamespace).Get(t.Context(), connectionsConfigmapName, metav1.GetOptions{})
-		require.NoError(t, getErr)
-
-		var updatedConnection OctantConnectionData
-		err = json.Unmarshal([]byte(updatedCM.Data["argo-test"]), &updatedConnection)
-		require.NoError(t, err)
-		assert.True(t, updatedConnection.Created.Equal(now), "expected created time to equal now")
 	})
 
 	t.Run("happy path", func(t *testing.T) {
@@ -305,13 +306,18 @@ func TestSaveConnection(t *testing.T) {
 			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
 			Return(nil, notFoundError).
 			Once()
+		mockCmStore.EXPECT().
+			CreateConfigMap(mock.Anything, testConfig.CurrentNamespace, mock.MatchedBy(func(cm *corev1.ConfigMap) bool {
+				return cm.Name == connectionsConfigmapName
+			})).
+			Return(nil).
+			Once()
 
 		generator := NewConnectionManifestGenerator(testConfig)
 
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(fake.NewClientset()),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithDatadogIntegration(mockDatadogIntegration),
 			WithArgoClient(mockArgoClient),
@@ -340,7 +346,6 @@ func TestSaveConnection(t *testing.T) {
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(fake.NewClientset()),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithDatadogIntegration(mockDatadogIntegration),
 			WithArgoClient(mockArgoClient),
@@ -482,8 +487,14 @@ func TestDeleteConnection(t *testing.T) {
 			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
 			Return(theCM, nil).
 			Once()
+		mockCmStore.EXPECT().
+			UpdateConfigMap(mock.Anything, testConfig.CurrentNamespace, mock.MatchedBy(func(cm *corev1.ConfigMap) bool {
+				return cm.Name == connectionsConfigmapName
+			})).
+			Return(nil).
+			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, WithK8sClient(fake.NewClientset(theCM)))
+		octantConnection := NewOctantConnection(mockCmStore, testConfig)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -513,11 +524,16 @@ func TestDeleteConnection(t *testing.T) {
 			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
 			Return(theConfigmap, nil).
 			Once()
+		mockCmStore.EXPECT().
+			UpdateConfigMap(mock.Anything, testConfig.CurrentNamespace, mock.MatchedBy(func(cm *corev1.ConfigMap) bool {
+				return cm.Name == connectionsConfigmapName
+			})).
+			Return(nil).
+			Once()
 
 		octantConnection := NewOctantConnection(
 			mockCmStore,
 			testConfig,
-			WithK8sClient(fake.NewClientset(theConfigmap)),
 			WithArgoCDIntegration(mockArgoIntegration),
 			WithArgoClient(mockArgoClient),
 		)
