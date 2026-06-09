@@ -777,9 +777,7 @@ func TestWaitForAppOperation(t *testing.T) {
 
 		s := grpc.NewServer()
 		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
-		// connection sync still running...
 		mockAppServer.EXPECT().Get(mock.Anything, getMatcher).Return(runningApp, nil).Once()
-		// ...then it settles.
 		mockAppServer.EXPECT().Get(mock.Anything, getMatcher).Return(&v1alpha1.Application{
 			Status: v1alpha1.ApplicationStatus{
 				OperationState: &v1alpha1.OperationState{Phase: common.OperationSucceeded},
