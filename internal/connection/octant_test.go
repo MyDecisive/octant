@@ -774,6 +774,12 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "argo-test"
+			}), mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
+		mockArgoClient.EXPECT().
 			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 				return in.AppName == "argo-test"
 			}), mock.Anything, false).

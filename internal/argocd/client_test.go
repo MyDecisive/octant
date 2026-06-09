@@ -755,3 +755,69 @@ func TestSyncApplication(t *testing.T) {
 		})
 	}
 }
+
+func TestWaitForAppOperation(t *testing.T) {
+	t.Parallel()
+
+	appName := faker.Word()
+	getMatcher := mock.MatchedBy(func(req *application.ApplicationQuery) bool {
+		return req.GetName() == appName
+	})
+	runningApp := &v1alpha1.Application{
+		Status: v1alpha1.ApplicationStatus{
+			OperationState: &v1alpha1.OperationState{Phase: common.OperationRunning},
+		},
+	}
+
+	t.Run("returns once the operation reaches a terminal phase", func(t *testing.T) {
+		t.Parallel()
+
+		lis, err := nettest.NewLocalListener("tcp")
+		require.NoError(t, err)
+
+		s := grpc.NewServer()
+		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+		mockAppServer.EXPECT().Get(mock.Anything, getMatcher).Return(runningApp, nil).Once()
+		mockAppServer.EXPECT().Get(mock.Anything, getMatcher).Return(&v1alpha1.Application{
+			Status: v1alpha1.ApplicationStatus{
+				OperationState: &v1alpha1.OperationState{Phase: common.OperationSucceeded},
+			},
+		}, nil).Once()
+		application.RegisterApplicationServiceServer(s, mockAppServer)
+		go s.Serve(lis) // nolint: errcheck
+		t.Cleanup(s.Stop)
+
+		clientOpts := &apiclient.ClientOptions{ServerAddr: lis.Addr().String(), Insecure: true, PlainText: true}
+
+		err = NewArgoCDClient().WaitForAppOperation(t.Context(), Input{
+			Logger:     zaptest.NewLogger(t),
+			ClientOpts: clientOpts,
+			AppName:    appName,
+		}, time.Millisecond, time.Second)
+		require.NoError(t, err)
+	})
+
+	t.Run("times out while the operation stays in flight", func(t *testing.T) {
+		t.Parallel()
+
+		lis, err := nettest.NewLocalListener("tcp")
+		require.NoError(t, err)
+
+		s := grpc.NewServer()
+		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+		mockAppServer.EXPECT().Get(mock.Anything, getMatcher).Return(runningApp, nil)
+		application.RegisterApplicationServiceServer(s, mockAppServer)
+		go s.Serve(lis) // nolint: errcheck
+		t.Cleanup(s.Stop)
+
+		clientOpts := &apiclient.ClientOptions{ServerAddr: lis.Addr().String(), Insecure: true, PlainText: true}
+
+		err = NewArgoCDClient().WaitForAppOperation(t.Context(), Input{
+			Logger:     zaptest.NewLogger(t),
+			ClientOpts: clientOpts,
+			AppName:    appName,
+		}, 5*time.Millisecond, 40*time.Millisecond)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "operation to complete")
+	})
+}
