@@ -447,3 +447,72 @@ func (_c *MockAPIClient_TestConnection_Call) RunAndReturn(run func(ctx context.C
 	_c.Call.Return(run)
 	return _c
 }
+
+// WaitForAppOperation provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) WaitForAppOperation(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration) error {
+	ret := _mock.Called(ctx, input, interval, timeout)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WaitForAppOperation")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, argocd.Input, time.Duration, time.Duration) error); ok {
+		r0 = returnFunc(ctx, input, interval, timeout)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAPIClient_WaitForAppOperation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WaitForAppOperation'
+type MockAPIClient_WaitForAppOperation_Call struct {
+	*mock.Call
+}
+
+// WaitForAppOperation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input argocd.Input
+//   - interval time.Duration
+//   - timeout time.Duration
+func (_e *MockAPIClient_Expecter) WaitForAppOperation(ctx interface{}, input interface{}, interval interface{}, timeout interface{}) *MockAPIClient_WaitForAppOperation_Call {
+	return &MockAPIClient_WaitForAppOperation_Call{Call: _e.mock.On("WaitForAppOperation", ctx, input, interval, timeout)}
+}
+
+func (_c *MockAPIClient_WaitForAppOperation_Call) Run(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration)) *MockAPIClient_WaitForAppOperation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 argocd.Input
+		if args[1] != nil {
+			arg1 = args[1].(argocd.Input)
+		}
+		var arg2 time.Duration
+		if args[2] != nil {
+			arg2 = args[2].(time.Duration)
+		}
+		var arg3 time.Duration
+		if args[3] != nil {
+			arg3 = args[3].(time.Duration)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_WaitForAppOperation_Call) Return(err error) *MockAPIClient_WaitForAppOperation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAPIClient_WaitForAppOperation_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, interval time.Duration, timeout time.Duration) error) *MockAPIClient_WaitForAppOperation_Call {
+	_c.Call.Return(run)
+	return _c
+}

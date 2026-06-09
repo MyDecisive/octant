@@ -311,6 +311,12 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
+		mockArgoClient.EXPECT().
 			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 				return in.AppName == "coolIntegration"
 			}), mock.MatchedBy(validatorSyncManifestsMatcher), false).
@@ -340,6 +346,12 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 
 		mockArgoClient := argocdmock.NewMockAPIClient(t)
 		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(nil).
+			Once()
+		mockArgoClient.EXPECT().
 			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
 				return in.AppName == "coolIntegration"
 			}), mock.MatchedBy(validatorSyncManifestsMatcher), false).
@@ -356,5 +368,35 @@ func TestSideloadValidatorForConnection(t *testing.T) {
 		validatorRunID, err := oc.sideloadValidatorForConnection(t.Context(), zaptest.NewLogger(t), "coolIntegration", defaultNamespace)
 		require.NoError(t, err)
 		require.NotEmpty(t, validatorRunID)
+	})
+
+	t.Run("returns error and skips sync when connection app never finishes syncing", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgoIntegration.EXPECT().
+			GetIntegrationByName(mock.Anything, "coolIntegration").
+			Return(argoIntegrationData, nil).
+			Once()
+
+		mockArgoClient := argocdmock.NewMockAPIClient(t)
+		mockArgoClient.EXPECT().
+			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
+				return in.AppName == "coolIntegration"
+			}), mock.Anything, mock.Anything).
+			Return(assert.AnError).
+			Once()
+
+		oc := NewOctantConnection(
+			nil,
+			testConfig,
+			WithArgoCDIntegration(mockArgoIntegration),
+			WithArgoClient(mockArgoClient),
+			WithGenerator(generator),
+		)
+		// SyncApplication is intentionally not expected: the wait must fail before any validator sync.
+		validatorRunID, err := oc.sideloadValidatorForConnection(t.Context(), zaptest.NewLogger(t), "coolIntegration", defaultNamespace)
+		require.Error(t, err)
+		require.Empty(t, validatorRunID)
 	})
 }

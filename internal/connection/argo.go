@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/argocd"
@@ -121,6 +122,10 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		return "", err
 	}
 
+	if waitErr := oc.waitForArgoAppOperation(ctx, logger, connectionName, argoIntegration); waitErr != nil {
+		return "", waitErr
+	}
+
 	templateData := &ArgoValidatorTemplateData{
 		ConnectionName: connectionName,
 		Namespace:      namespace,
@@ -149,6 +154,21 @@ func (oc *OctantConnection) sideloadValidatorForConnection(
 		return "", syncErr
 	}
 	return templateData.ValidatorRunID, nil
+}
+
+func (oc *OctantConnection) waitForArgoAppOperation(
+	ctx context.Context,
+	logger *zap.Logger,
+	appName string,
+	argoIntegration *integration.ArgoCDIntegrationData,
+) error {
+	clientOpts := argocd.CreateClientOpts(oc.configuration.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
+	return oc.argoClient.WaitForAppOperation(
+		ctx,
+		argocd.Input{Logger: logger, ClientOpts: clientOpts, AppName: appName},
+		time.Duration(oc.configuration.Install.MdaiInstallPollingIntervalMillis)*time.Millisecond,
+		time.Duration(oc.configuration.Install.MdaiInstallTimeout)*time.Second,
+	)
 }
 
 func (oc *OctantConnection) deleteArgoApp(
