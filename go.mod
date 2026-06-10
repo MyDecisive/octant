@@ -18,8 +18,9 @@ require (
 	github.com/go-jet/jet/v2 v2.14.1
 	github.com/go-openapi/runtime v0.29.2
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/mydecisive/mdai-data-core v0.4.0
+	github.com/mydecisive/mdai-data-core v0.4.5
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/rs/cors v1.11.1
@@ -125,7 +126,6 @@ require (
 	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect

@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type OctantConnectionDestination struct {
@@ -39,8 +37,7 @@ type OctantConnectionData struct {
 
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
-	configMapWriter    kubernetes.Interface
-	configMapReader    kube.ConfigMapStore
+	configMapStore     kube.ConfigMapStore
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics  metrics.ConnectionStatus
@@ -59,21 +56,14 @@ func NewOctantConnection(
 	options ...OctantConnectionOption,
 ) *OctantConnection {
 	oc := &OctantConnection{
-		configMapReader: configMapStore,
-		configuration:   configuration,
+		configMapStore: configMapStore,
+		configuration:  configuration,
 	}
 
 	for _, option := range options {
 		option(oc)
 	}
 	return oc
-}
-
-// WithK8sClient provides a k8s client to the octant connection.
-func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.configMapWriter = k8sClient
-	}
 }
 
 // WithArgoCDIntegration provides an argocd integration to the octant connection.
@@ -146,7 +136,7 @@ func (oc *OctantConnection) GetConnectionByName(
 	_ context.Context,
 	input ConnectionCRUDInput,
 ) (*OctantConnectionData, error) {
-	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -171,7 +161,7 @@ func (oc *OctantConnection) GetConnectionByName(
 }
 
 func (oc *OctantConnection) DeleteConnection(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -199,17 +189,11 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	delete(cm.Data, input.ConnectionName)
 
-	if _, err := oc.configMapWriter.CoreV1().
-		ConfigMaps(oc.configuration.CurrentNamespace).
-		Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
-		return fmt.Errorf("failed to update configmap %s after deletion: %w", connectionsConfigmapName, err)
-	}
-
-	return nil
+	return oc.configMapStore.UpdateConfigMap(ctx, oc.configuration.CurrentNamespace, cm)
 }
 
 func (oc *OctantConnection) GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error) {
-	configmap, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	configmap, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -271,7 +255,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 }
 
 func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input ConnectionCRUDInput) error {
-	cm, getCMErr := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	cm, getCMErr := oc.configMapStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -320,7 +304,7 @@ func (oc *OctantConnection) createOrUpdate(
 		return fmt.Errorf("invalid deployment type: %s", connection.Deployment.Type)
 	}
 
-	cm, err := oc.configMapReader.GetConfigmapByNameAndNamespace(
+	cm, err := oc.configMapStore.GetConfigmapByNameAndNamespace(
 		connectionsConfigmapName,
 		oc.configuration.CurrentNamespace,
 	)
@@ -363,7 +347,7 @@ func (oc *OctantConnection) createConnection(
 	}
 	return createConnectionConfigMap(
 		ctx,
-		oc.configMapWriter,
+		oc.configMapStore,
 		namespace,
 		connectionsConfigmapName,
 		connectionName,
@@ -393,7 +377,7 @@ func (oc *OctantConnection) updateConnection(
 	}
 	return updateConfigMapWithConnection(
 		ctx,
-		oc.configMapWriter,
+		oc.configMapStore,
 		namespace,
 		cm,
 		connectionName,

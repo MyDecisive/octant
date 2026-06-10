@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -57,6 +58,10 @@ type ArgoConnectionTemplateData struct {
 	ConnectionData         OctantConnectionData
 	DatadogIntegrationData *integration.DataDogIntegrationData
 	IsArgoSideload         bool
+	DefaultLogRatio        string
+	DefaultLogIncludeErr   bool
+	DefaultTraceRatio      string
+	DefaultTraceIncludeErr bool
 }
 
 type ArgoValidatorTemplateData struct {
@@ -97,6 +102,9 @@ func (oc *OctantConnection) createTemplateData(
 			if err != nil {
 				return nil, err
 			}
+			if datadogIntegration == nil {
+				return nil, errors.New("datadog integration not found")
+			}
 		default:
 			return nil, fmt.Errorf("unknown destination type: %s", destination.DestinationType)
 		}
@@ -110,7 +118,11 @@ func (oc *OctantConnection) createTemplateData(
 		ConnectionData:         connection,
 		DatadogIntegrationData: datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
-		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
+		IsArgoSideload:         connection.Deployment.Type == ArgoSideloadDeploymentType,
+		DefaultLogRatio:        strconv.FormatUint(uint64(oc.configuration.Budget.DefaultLogSamplingRatio), 10),
+		DefaultTraceRatio:      strconv.FormatUint(uint64(oc.configuration.Budget.DefaultTraceSamplingRatio), 10),
+		DefaultLogIncludeErr:   oc.configuration.Budget.DefaultLogIncludeErr,
+		DefaultTraceIncludeErr: oc.configuration.Budget.DefaultTraceIncludeErr,
 	}
 	return &templateData, nil
 }
@@ -225,7 +237,11 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 		ConnectionData:         connection,
 		DatadogIntegrationData: &datadogIntegration,
 		// Tells template to manually inject Argo tracking annotations. We only want these for direct sync force push
-		IsArgoSideload: connection.Deployment.Type == ArgoSideloadDeploymentType,
+		IsArgoSideload:         connection.Deployment.Type == ArgoSideloadDeploymentType,
+		DefaultLogRatio:        strconv.FormatUint(uint64(cmg.configuration.Budget.DefaultLogSamplingRatio), 10),
+		DefaultTraceRatio:      strconv.FormatUint(uint64(cmg.configuration.Budget.DefaultTraceSamplingRatio), 10),
+		DefaultLogIncludeErr:   cmg.configuration.Budget.DefaultLogIncludeErr,
+		DefaultTraceIncludeErr: cmg.configuration.Budget.DefaultTraceIncludeErr,
 	}
 	return &templateData, nil
 }
