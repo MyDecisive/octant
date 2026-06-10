@@ -1,13 +1,13 @@
 package manifest
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/integration"
-	"github.com/mydecisive/octant/internal/telemetry"
+	manfiestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 )
 
 var (
@@ -17,65 +17,61 @@ var (
 	ErrConvertJSON    = errors.New("convert json")
 )
 
-// AllInput is the input for `All` method of the generator.
-type AllInput struct {
-	IsArgoSideload         bool
-	ConnectionName         string
-	Namespace              string // MDAI namespace
-	TelemetryTypes         []telemetry.MLT
-	DatadogIntegrationData *integration.DataDogIntegrationData
-	ValidatorRunID         string
-	MDAIVersion            string
-}
-
-// ConnectionInput is the input for `Connections` method of the generator.
-type ConnectionInput struct {
-	IsArgoSideload         bool
-	Name                   string // connection name
-	Namespace              string
-	TelemetryTypes         []telemetry.MLT
-	DatadogIntegrationData *integration.DataDogIntegrationData
-}
-
-// ValidatorInput is the input for `Validators` method of the generator.
-type ValidatorInput struct {
-	IsArgoSideload bool
-	Name           string // connection name
-	Namespace      string
-	RunID          string
-}
-
 // Generator generates manifest(s).
 type Generator interface {
 	// All returns manifests for all apps, connections, and validators.
-	All(input AllInput, format OutputFormat) (map[string][]byte, error)
+	All(ctx context.Context, input manfiestdata.AllInput, format manfiestdata.OutputFormat) (map[string][]byte, error)
 	// App returns manifest for the given App template type in the provided format using the data.
-	App(app App, data AppTemplateData, format OutputFormat) ([]byte, error)
+	App(app manfiestdata.App, data manfiestdata.AppTemplateData, format manfiestdata.OutputFormat) ([]byte, error)
 	// Connections returns manifest for all connection template files in the provided format using the input.
 	// Note: the map key will be the file name and the map value is the file content.
-	Connections(input ConnectionInput, format OutputFormat) (map[string][]byte, error)
+	Connections(
+		ctx context.Context,
+		input manfiestdata.ConnectionInput,
+		format manfiestdata.OutputFormat,
+	) (map[string][]byte, error)
 	// Validators returns manifest for all validator template files in the provided format using the input.
 	// Note: the map key will be the file name and the map value is the file content.
-	Validators(input ValidatorInput, format OutputFormat) (map[string][]byte, error)
+	Validators(input manfiestdata.ValidatorInput, format manfiestdata.OutputFormat) (map[string][]byte, error)
 }
 
 // ManifestGenerator implements Generator.
 type ManifestGenerator struct {
 	provider TemplateProvider
 	renderer TemplateRenderer
+	mapper   manfiestdata.Mapper
 	config   *config.Configuration
 }
 
 // Ensure ManifestGenerator implements Generator.
 var _ Generator = (*ManifestGenerator)(nil)
 
-func (mg *ManifestGenerator) All(input AllInput, format OutputFormat) (map[string][]byte, error) {
+// NewManifestGenerator returns a new instance of ManifestGenerator.
+func NewManifestGenerator(
+	conf *config.Configuration,
+	provider TemplateProvider,
+	renderer TemplateRenderer,
+	mapper manfiestdata.Mapper,
+) *ManifestGenerator {
+	return &ManifestGenerator{
+		config:   conf,
+		provider: provider,
+		renderer: renderer,
+		mapper:   mapper,
+	}
+}
+
+// All returns manifests for all apps, connections, and validators.
+func (mg *ManifestGenerator) All(
+	ctx context.Context,
+	input manfiestdata.AllInput,
+	format manfiestdata.OutputFormat,
+) (map[string][]byte, error) {
 	result := make(map[string][]byte)
-	for _, app := range AppValues() {
+	for _, app := range manfiestdata.AppValues() {
 		name := app.String()
-		data := GetAppTemplateData(
+		data := mg.mapper.AppTemplateData(
 			app,
-			mg.config,
 			input.MDAIVersion,
 			input.ConnectionName,
 			input.Namespace,
@@ -87,19 +83,18 @@ func (mg *ManifestGenerator) All(input AllInput, format OutputFormat) (map[strin
 		result[mg.getFilename(name, format)] = content
 	}
 
-	conn, err := mg.Connections(ConnectionInput{
-		IsArgoSideload:         input.IsArgoSideload,
-		Name:                   input.ConnectionName,
-		Namespace:              input.Namespace,
-		TelemetryTypes:         input.TelemetryTypes,
-		DatadogIntegrationData: input.DatadogIntegrationData,
+	conn, err := mg.Connections(ctx, manfiestdata.ConnectionInput{
+		IsArgoSideload: input.IsArgoSideload,
+		Name:           input.ConnectionName,
+		Namespace:      input.Namespace,
+		TelemetryTypes: input.TelemetryTypes,
 	}, format)
 	if err != nil {
 		return nil, fmt.Errorf("connection templates:%w", err)
 	}
 	maps.Copy(result, conn)
 
-	validator, err := mg.Validators(ValidatorInput{
+	validator, err := mg.Validators(manfiestdata.ValidatorInput{
 		IsArgoSideload: input.IsArgoSideload,
 		Name:           input.ConnectionName,
 		Namespace:      input.Namespace,
@@ -113,7 +108,11 @@ func (mg *ManifestGenerator) All(input AllInput, format OutputFormat) (map[strin
 }
 
 // App returns manifest for the given App template type in the provided format using the data.
-func (mg *ManifestGenerator) App(app App, data AppTemplateData, format OutputFormat) ([]byte, error) {
+func (mg *ManifestGenerator) App(
+	app manfiestdata.App,
+	data manfiestdata.AppTemplateData,
+	format manfiestdata.OutputFormat,
+) ([]byte, error) {
 	raw, err := mg.provider.GetApp(app)
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", ErrGetTemplate, err)
@@ -125,14 +124,19 @@ func (mg *ManifestGenerator) App(app App, data AppTemplateData, format OutputFor
 // Connections returns manifest for all connection template files in the provided format using the data.
 // Note: the map key will be the file name and the map value is the file content.
 func (mg *ManifestGenerator) Connections(
-	input ConnectionInput,
-	format OutputFormat,
+	ctx context.Context,
+	input manfiestdata.ConnectionInput,
+	format manfiestdata.OutputFormat,
 ) (map[string][]byte, error) {
 	templates, err := mg.provider.GetAllConnections()
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", ErrGetTemplate, err)
 	}
-	data := getConnectionTemplateData(mg.config, input)
+
+	data, err := mg.mapper.ConnectionTemplateData(ctx, input)
+	if err != nil {
+		return nil, err
+	}
 
 	result := make(map[string][]byte)
 	for conn, raw := range templates {
@@ -150,14 +154,14 @@ func (mg *ManifestGenerator) Connections(
 // Validators returns manifest for all validator template files in the provided format using the data.
 // Note: the map key will be the file name and the map value is the file content.
 func (mg *ManifestGenerator) Validators(
-	input ValidatorInput,
-	format OutputFormat,
+	input manfiestdata.ValidatorInput,
+	format manfiestdata.OutputFormat,
 ) (map[string][]byte, error) {
 	templates, err := mg.provider.GetAllValidators()
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", ErrGetTemplate, err)
 	}
-	data := getValidatorTemplateData(mg.config, input)
+	data := mg.mapper.ValidatorTemplateData(input)
 
 	result := make(map[string][]byte)
 	for conn, raw := range templates {
@@ -173,6 +177,6 @@ func (mg *ManifestGenerator) Validators(
 }
 
 // getFilename returns the file name base on given format.
-func (*ManifestGenerator) getFilename(name string, outputFormat OutputFormat) string {
-	return fmt.Sprintf("%s.%s", name, outputFormat)
+func (*ManifestGenerator) getFilename(name string, outputFormat manfiestdata.OutputFormat) string {
+	return fmt.Sprintf("%s.%s", name, outputFormat.String())
 }
