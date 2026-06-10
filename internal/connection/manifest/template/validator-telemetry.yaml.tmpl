@@ -1,0 +1,15 @@
+apiVersion: hub.mydecisive.ai/v1
+kind: TelemetryValidation
+metadata:
+  name: {{ .Name }}-telemetry-validation
+  namespace: {{ .Namespace }}
+  {{- if .IsArgoSideload }}
+  annotations:
+    argocd.argoproj.io/tracking-id: {{ .Name }}:hub.mydecisive.ai/v1:mdai/{{ .Name }}-validator
+  {{- end }}
+spec:
+  validator:
+    image: ghcr.io/mydecisive/mdai-fidelity-validator:{{ .Version }}
+  runID: {{ .RunID }}
+  collectorRef:
+    name: {{ .Name }}-sampling-lb
