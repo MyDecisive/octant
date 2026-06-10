@@ -6,6 +6,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/go-openapi/runtime/middleware"
 )
@@ -22,7 +23,25 @@ func OctantUIHandler() (http.Handler, error) {
 		return nil, err
 	}
 
-	return http.FileServerFS(octantApp), nil
+	fileServer := http.FileServerFS(octantApp)
+	octantAppHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+
+		// If the user is asking for the root, let the file server handle index.html natively
+		if path == "" {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// Check if the requested file exists in the embedded dist folder
+		if _, err = fs.Stat(octantApp, path); err != nil {
+			// If the file does NOT exist (like /dashboard), it's a React route!
+			// Rewrite the request path to root so FileServerFS serves index.html
+			r.URL.Path = "/"
+		}
+		fileServer.ServeHTTP(w, r)
+	})
+	return octantAppHandler, nil
 }
 
 // withFrameOptions wraps an http.Handler to set headers that prevent iframe embedding (clickjacking protection).
