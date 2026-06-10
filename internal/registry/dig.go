@@ -241,6 +241,7 @@ func provideSecretController( // nolint: ireturn
 
 func provideOctantConnection(
 	cmStore datacorekube.ConfigMapStore,
+	secretStore datacorekube.SecretStore,
 	theConfig *config.Configuration,
 	connectionMetrics metrics.ConnectionStatus,
 	manifestGenerator connection.ManifestGenerator,

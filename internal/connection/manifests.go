@@ -147,6 +147,10 @@ type ManifestGenerator interface {
 		templateData *ArgoConnectionTemplateData,
 		outputFormat ManifestOutputFormat,
 	) ([]byte, error)
+	RenderIntegrationSecret(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
 }
 
 // ConnectionManifestGenerator implements ManifestCompressor.
@@ -171,7 +175,6 @@ func getDefaultAppTemplates() map[string]string {
 		"trace-collector": traceCollectorTemplate,
 		"hub":             hubTemplate,
 		"observer":        observerTemplate,
-		"secret":          secretTemplate,
 		"additional":      additionalTemplate,
 	}
 }
@@ -263,6 +266,37 @@ func (*ConnectionManifestGenerator) RenderMdaiAppManifest(mdaiVersion, namespace
 	}
 	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
 		return []byte{}, templateErr
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
+func (*ConnectionManifestGenerator) RenderIntegrationSecret(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return []byte{}, errors.New("no output format specified")
+	}
+	theTemplate, err := template.New("integration-secret").Parse(secretTemplate)
+	if err != nil {
+		return []byte{}, err
+	}
+	var renderedYaml bytes.Buffer
+	if templateErr := theTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		return renderedYaml.Bytes(), nil
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return renderedJSON, nil
 	}
 
 	return renderedYaml.Bytes(), nil

@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/yaml"
 )
 
 type OctantConnectionDestination struct {
@@ -38,6 +39,7 @@ type OctantConnectionData struct {
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
 	configMapStore     kube.ConfigMapStore
+	secretStore        kube.SecretStore
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics  metrics.ConnectionStatus
@@ -52,11 +54,13 @@ type OctantConnectionOption func(*OctantConnection)
 // NewOctantConnection creates and returns a new OctantConnection.
 func NewOctantConnection(
 	configMapStore kube.ConfigMapStore, // required
+	secretStore kube.SecretStore,
 	configuration *config.Configuration, // required
 	options ...OctantConnectionOption,
 ) *OctantConnection {
 	oc := &OctantConnection{
 		configMapStore: configMapStore,
+		secretStore:    secretStore,
 		configuration:  configuration,
 	}
 
@@ -228,14 +232,38 @@ func (oc *OctantConnection) SaveConnection(
 	}
 
 	if !input.NoDeploy &&
-		connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err := oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
+		connection.Deployment != nil &&
+		connection.Deployment.Type == ArgoSideloadDeploymentType {
+		templateData, err := oc.createTemplateData(ctx, input.ConnectionName, connection)
 		if err != nil {
+			return err
+		}
+
+		// render and apply the integration secret and necessary rbac.
+		if err = oc.applyConnectionSecret(ctx, templateData); err != nil {
+			return err
+		}
+		if err = oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, templateData); err != nil {
+			// TODO: revert secret??
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (oc *OctantConnection) applyConnectionSecret(ctx context.Context, templateData *ArgoConnectionTemplateData) error {
+	secretManifest, err := oc.generator.RenderIntegrationSecret(templateData, YAMLOutputFormat)
+	if err != nil {
+		return fmt.Errorf("rendering secret template: %w", err)
+	}
+
+	var secret corev1.Secret
+	if err = yaml.Unmarshal(secretManifest, &secret); err != nil {
+		return fmt.Errorf("unmarshal secret template: %w", err)
+	}
+
+	return oc.secretStore.CreateSecret(ctx, templateData.Namespace, &secret)
 }
 
 func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input ConnectionCRUDInput) (string, error) {
