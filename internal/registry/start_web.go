@@ -13,9 +13,9 @@ import (
 )
 
 func Start(con *config.Configuration, rpcServer *rpc.Server) error {
-	uiHandler, err := web.OctantUIHandler()
+	octantUI, err := web.NewOctantApp()
 	if err != nil {
-		return fmt.Errorf("ui server: %w", err)
+		return fmt.Errorf("creating octant app: %w", err)
 	}
 
 	handler, err := rpcServer.Handler()
@@ -29,7 +29,7 @@ func Start(con *config.Configuration, rpcServer *rpc.Server) error {
 
 	mux.Handle("/api/", http.StripPrefix("/api", handler))
 
-	mux.Handle("/", uiHandler)
+	mux.Handle("/", http.StripPrefix("/", octantUI.UIHandler()))
 
 	zap.L().Info("starting web and rpc server", zap.Uint16("port", con.Port))
 	zap.L().Info("web server will be available from /")
