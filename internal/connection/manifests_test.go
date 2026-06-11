@@ -487,6 +487,87 @@ func TestRenderTraceCollectorManifest(t *testing.T) {
 	assert.Contains(t, includedLabels, "service.name")
 }
 
+// A sampling collector scaled to zero (its signal absent from the connection) must opt out
+// of ArgoCD health aggregation: ArgoCD's bundled OpenTelemetryCollector health check treats
+// 0/0 ready replicas as Degraded, which otherwise marks the whole app Degraded (ENG-1304).
+func TestRenderCollectors_ScaledToZeroGetsIgnoreHealthcheckAnnotation(t *testing.T) {
+	t.Parallel()
+
+	target := NewConnectionManifestGenerator(&config.Configuration{
+		ServiceAccountName: faker.Word(),
+		CurrentNamespace:   faker.Word(),
+	})
+
+	tests := []struct {
+		name           string
+		telemetryTypes []telemetry.MLT
+		zeroedManifest string
+		activeManifest string
+		isArgoSideload bool
+	}{
+		{
+			name:           "traces-only zeroes log collector (sideload)",
+			telemetryTypes: []telemetry.MLT{telemetry.Traces},
+			zeroedManifest: "log-collector.yaml",
+			activeManifest: "trace-collector.yaml",
+			isArgoSideload: true,
+		},
+		{
+			name:           "logs-only zeroes trace collector (sideload)",
+			telemetryTypes: []telemetry.MLT{telemetry.Logs},
+			zeroedManifest: "trace-collector.yaml",
+			activeManifest: "log-collector.yaml",
+			isArgoSideload: true,
+		},
+		{
+			name:           "annotation also applies to exported manifests (no sideload)",
+			telemetryTypes: []telemetry.MLT{telemetry.Traces},
+			zeroedManifest: "log-collector.yaml",
+			activeManifest: "trace-collector.yaml",
+			isArgoSideload: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			templateData := ArgoConnectionTemplateData{
+				AppName:        "test-app",
+				Namespace:      "mdai",
+				IsArgoSideload: tt.isArgoSideload,
+				ConnectionData: OctantConnectionData{
+					TelemetryTypes: tt.telemetryTypes,
+				},
+				DatadogIntegrationData: &integration.DataDogIntegrationData{
+					APIKey: "fake-key",
+					DDUrl:  "fake-url",
+				},
+			}
+
+			manifests, err := target.RenderCollectorDeploymentManifests(&templateData, getDefaultAppTemplates(), YAMLOutputFormat)
+			require.NoError(t, err)
+
+			var zeroed map[string]any
+			require.NoError(t, yaml.Unmarshal(manifests[tt.zeroedManifest], &zeroed))
+			replicas, ok := getNestedField(zeroed, "spec", "replicas")
+			require.True(t, ok, "%s should declare replicas", tt.zeroedManifest)
+			assert.EqualValues(t, 0, replicas)
+			ignore, ok := getNestedField(zeroed, "metadata", "annotations", "argocd.argoproj.io/ignore-healthcheck")
+			assert.True(t, ok, "%s with 0 replicas must carry the ignore-healthcheck annotation", tt.zeroedManifest)
+			assert.Equal(t, "true", ignore)
+
+			var active map[string]any
+			require.NoError(t, yaml.Unmarshal(manifests[tt.activeManifest], &active))
+			replicas, ok = getNestedField(active, "spec", "replicas")
+			require.True(t, ok, "%s should declare replicas", tt.activeManifest)
+			assert.EqualValues(t, 2, replicas)
+			_, ok = getNestedField(active, "metadata", "annotations", "argocd.argoproj.io/ignore-healthcheck")
+			assert.False(t, ok, "%s with running replicas must stay in health aggregation", tt.activeManifest)
+		})
+	}
+}
+
 func TestRenderValidatorManifest(t *testing.T) {
 	t.Parallel()
 	target := NewConnectionManifestGenerator(&config.Configuration{
