@@ -4,25 +4,28 @@ import (
 	"embed"
 	"fmt"
 
-	manfiestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 )
 
 //go:embed template/*.yaml.tmpl
 var templates embed.FS
 
-const templateFileFormatter = "template/%s.yaml.tmpl"
+const (
+	validatorAppNameFormatter = "%s-validation"
+	templateFileFormatter     = "template/%s.yaml.tmpl"
+)
 
 type TemplateProvider interface {
 	// GetApp returns content of the ArgoCD app template file correspond to the provided app template type.
-	GetApp(app manfiestdata.App) ([]byte, error)
+	GetApp(app manifestdata.App) ([]byte, error)
 	// GetConnection returns content of the template file correspond to the provided connection template type.
-	GetConnection(conn manfiestdata.Connection) ([]byte, error)
+	GetConnection(conn manifestdata.Connection) ([]byte, error)
 	// GetAllConnections returns content of the template files for all connection template types.
-	GetAllConnections() (map[manfiestdata.Connection][]byte, error)
+	GetAllConnections() (map[manifestdata.Connection][]byte, error)
 	// GetValidator returns content of the template file correspond to the provided validator template type.
-	GetValidator(validator manfiestdata.Validator) ([]byte, error)
+	GetValidator(validator manifestdata.Validator) ([]byte, error)
 	// GetAllValidators returns content of the template files for all validator template types.
-	GetAllValidators() (map[manfiestdata.Validator][]byte, error)
+	GetAllValidators() (map[manifestdata.Validator][]byte, error)
 }
 
 // EmbeddedTemplateProvider implements TemplateProvider using embedded file system.
@@ -37,19 +40,19 @@ func NewEmbeddedTemplateProvider() *EmbeddedTemplateProvider {
 }
 
 // GetApp returns content of the ArgoCD app template file correspond to the provided app template type.
-func (mtp *EmbeddedTemplateProvider) GetApp(app manfiestdata.App) ([]byte, error) {
+func (mtp *EmbeddedTemplateProvider) GetApp(app manifestdata.App) ([]byte, error) {
 	return mtp.format(app.String())
 }
 
 // GetConnection returns content of the template file correspond to the provided connection template type.
-func (mtp *EmbeddedTemplateProvider) GetConnection(conn manfiestdata.Connection) ([]byte, error) {
+func (mtp *EmbeddedTemplateProvider) GetConnection(conn manifestdata.Connection) ([]byte, error) {
 	return mtp.format(conn.String())
 }
 
 // GetAllConnections returns content of the template files for all connection template types.
-func (mtp *EmbeddedTemplateProvider) GetAllConnections() (map[manfiestdata.Connection][]byte, error) {
-	result := make(map[manfiestdata.Connection][]byte)
-	for _, conn := range manfiestdata.ConnectionValues() {
+func (mtp *EmbeddedTemplateProvider) GetAllConnections() (map[manifestdata.Connection][]byte, error) {
+	result := make(map[manifestdata.Connection][]byte)
+	for _, conn := range manifestdata.ConnectionValues() {
 		content, err := mtp.GetConnection(conn)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", conn.String(), err)
@@ -60,14 +63,14 @@ func (mtp *EmbeddedTemplateProvider) GetAllConnections() (map[manfiestdata.Conne
 }
 
 // GetValidator returns content of the template file correspond to the provided validator template type.
-func (mtp *EmbeddedTemplateProvider) GetValidator(validator manfiestdata.Validator) ([]byte, error) {
+func (mtp *EmbeddedTemplateProvider) GetValidator(validator manifestdata.Validator) ([]byte, error) {
 	return mtp.format(validator.String())
 }
 
 // GetAllValidators returns content of the template files for all validator template types.
-func (mtp *EmbeddedTemplateProvider) GetAllValidators() (map[manfiestdata.Validator][]byte, error) {
-	result := make(map[manfiestdata.Validator][]byte)
-	for _, val := range manfiestdata.ValidatorValues() {
+func (mtp *EmbeddedTemplateProvider) GetAllValidators() (map[manifestdata.Validator][]byte, error) {
+	result := make(map[manifestdata.Validator][]byte)
+	for _, val := range manifestdata.ValidatorValues() {
 		content, err := mtp.GetValidator(val)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", val.String(), err)

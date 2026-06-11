@@ -1,4 +1,4 @@
-package manfiestdata
+package manifestdata
 
 import (
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -6,28 +6,33 @@ import (
 
 // AllInput is the input for `All` method of the generator.
 type AllInput struct {
-	IsArgoSideload bool
 	ConnectionName string
 	Namespace      string // MDAI namespace
 	TelemetryTypes []telemetry.MLT
 	ValidatorRunID string
 	MDAIVersion    string
+	Exported       bool
+}
+
+type Destination struct {
+	Type            DestinationType
+	IntegrationName string
 }
 
 // ConnectionInput is the input for `Connections` method of the generator.
 type ConnectionInput struct {
-	IsArgoSideload bool
-	Name           string // connection name
-	Namespace      string
-	TelemetryTypes []telemetry.MLT
-	Destinations   []Destination
-	Dummy          bool
+	ConnectionName            string
+	DeploymentIntegrationName string // only used by manifest manager
+	Namespace                 string
+	TelemetryTypes            []telemetry.MLT
+	Destinations              []Destination
+	Exported                  bool
 }
 
 // ValidatorInput is the input for `Validators` method of the generator.
 type ValidatorInput struct {
-	IsArgoSideload bool
-	Name           string // connection name
-	Namespace      string
-	RunID          string
+	ConnectionName            string
+	DeploymentIntegrationName string // only used by manifest manager
+	Namespace                 string
+	RunID                     string
 }

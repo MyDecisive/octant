@@ -1,4 +1,4 @@
-package manfiestdata
+package manifestdata
 
 import (
 	"context"
@@ -37,6 +37,17 @@ type DataMapper struct {
 // Ensure ManifestGenerator implements Generator.
 var _ Mapper = (*DataMapper)(nil)
 
+// NewDataMapper returns a new instance of DataMapper.
+func NewDataMapper(
+	conf *config.Configuration,
+	datadog integration.Integration[integration.DataDogIntegrationData],
+) *DataMapper {
+	return &DataMapper{
+		config:  conf,
+		datadog: datadog,
+	}
+}
+
 // AppTemplateData generates GetAppTemplateData corresponds to the given app type.
 // Note: mdaiVersion is only needed for MDAI app type,
 // and connectionName is only needed for Connection and validator app type.
@@ -71,19 +82,15 @@ func (dm *DataMapper) ConnectionTemplateData(
 	ctx context.Context,
 	input ConnectionInput,
 ) (*ConnectionTemplateData, error) {
-	if len(input.Destinations) > 1 {
-		return nil, fmt.Errorf("%w:multiple destination", ErrUnsupported)
-	}
-
 	datadog := &integration.DataDogIntegrationData{ // nolint:gosec // no, these are not secrets lol
 		APIKey: "<YOUR_API_KEY>",
 		DDUrl:  "<YOUR_DD_URL>",
 	}
 	for _, destination := range input.Destinations {
-		switch destination {
+		switch destination.Type {
 		case DATADOG:
-			if !input.Dummy {
-				data, err := dm.datadog.GetIntegrationByName(ctx, input.Name)
+			if !input.Exported {
+				data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
 				if err != nil {
 					return nil, fmt.Errorf("%w: %w", ErrIntegration, err)
 				}
@@ -97,8 +104,7 @@ func (dm *DataMapper) ConnectionTemplateData(
 		}
 	}
 	return &ConnectionTemplateData{
-		IsArgoSideload:         input.IsArgoSideload,
-		Name:                   input.Name,
+		Name:                   input.ConnectionName,
 		Namespace:              input.Namespace,
 		TelemetryTypes:         input.TelemetryTypes,
 		DatadogIntegrationData: datadog,
@@ -113,10 +119,9 @@ func (dm *DataMapper) ConnectionTemplateData(
 // ValidatorTemplateData generates ValidatorTemplateData using the given config.
 func (dm *DataMapper) ValidatorTemplateData(input ValidatorInput) ValidatorTemplateData {
 	return ValidatorTemplateData{
-		IsArgoSideload: input.IsArgoSideload,
-		Name:           input.Name,
-		Namespace:      input.Namespace,
-		Version:        dm.config.Install.MdaiValidatorVersion,
-		RunID:          input.RunID,
+		Name:      input.ConnectionName,
+		Namespace: input.Namespace,
+		Version:   dm.config.Install.MdaiValidatorVersion,
+		RunID:     input.RunID,
 	}
 }

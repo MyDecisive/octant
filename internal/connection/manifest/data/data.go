@@ -1,4 +1,4 @@
-package manfiestdata
+package manifestdata
 
 import (
 	"github.com/mydecisive/octant/internal/integration"
@@ -20,7 +20,6 @@ type AppTemplateData struct {
 // ConnectionTemplateData will be passed to the renderer as the data input
 // for connection manifest template.
 type ConnectionTemplateData struct {
-	IsArgoSideload         bool
 	Name                   string // connection name
 	Namespace              string
 	CurrentNamespace       string // from config
@@ -35,9 +34,8 @@ type ConnectionTemplateData struct {
 // ValidatorTemplateData will be passed to the renderer as the data input
 // for validator manifest template.
 type ValidatorTemplateData struct {
-	IsArgoSideload bool
-	Name           string // connection name
-	Namespace      string
-	Version        string // from config
-	RunID          string
+	Name      string // connection name
+	Namespace string
+	Version   string // from config
+	RunID     string
 }

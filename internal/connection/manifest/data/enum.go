@@ -1,4 +1,4 @@
-package manfiestdata
+package manifestdata
 
 // OutputFormat defines the possible validator app specific templates octant can generate.
 //
@@ -43,11 +43,11 @@ const (
 	TELEMETRY Validator = iota
 )
 
-// Destination defines the possible Octant connection destination types.
+// DestinationType defines the possible Octant connection destination types.
 //
-//go:generate enumer -type=Destination -transform=lower -text
-type Destination int // nolint: recvcheck // the methods are generated
+//go:generate enumer -type=DestinationType -transform=lower -text
+type DestinationType int // nolint: recvcheck // the methods are generated
 
 const (
-	DATADOG Destination = iota
+	DATADOG DestinationType = iota
 )
