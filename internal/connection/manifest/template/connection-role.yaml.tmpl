@@ -6,11 +6,9 @@ metadata:
   labels:
     app: {{ .Name }}
     app.kubernetes.io/instance: {{ .Name }}
-  {{- if .IsArgoSideload }}
   annotations:
     argocd.argoproj.io/tracking-id: {{ .Name }}:rbac.authorization.k8s.io/v1:mdai/{{ .Name }}-octant-access
     argocd.argoproj.io/sync-wave: "-1"
-  {{- end }}
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]

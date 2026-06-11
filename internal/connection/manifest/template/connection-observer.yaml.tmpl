@@ -6,10 +6,8 @@ metadata:
   labels:
     app: {{ .Name }}
     app.kubernetes.io/instance: {{ .Name }}
-  {{- if .IsArgoSideload }}
   annotations:
     argocd.argoproj.io/tracking-id: {{ .Name }}:hub.mydecisive.ai/v1:mdai/{{ .Name }}-observer
-  {{- end }}
 spec:
   observers:
     - name: observer-in

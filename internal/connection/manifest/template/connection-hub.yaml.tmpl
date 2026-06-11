@@ -6,10 +6,8 @@ metadata:
   labels:
     app: {{ .Name }}
     app.kubernetes.io/instance: {{ .Name }}
-  {{- if .IsArgoSideload }}
   annotations:
     argocd.argoproj.io/tracking-id: {{ .Name }}:hub.mydecisive.ai/v1:mdai/{{ .Name }}
-  {{- end }}
 spec:
   variables:
     - key: logs_ratio_number
