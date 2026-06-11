@@ -3,19 +3,19 @@ package rpchandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/connection/manifest"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/integration"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"sigs.k8s.io/yaml"
 )
 
 type InstallHandler struct {
@@ -24,20 +24,23 @@ type InstallHandler struct {
 	config          *config.Configuration
 	argoClient      argocd.APIClient
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData]
-	generator       connection.ManifestGenerator
+	manifestMapper  manifestdata.Mapper
+	manifestManager manifest.Manager
 }
 
 func NewInstallHandler(
 	theConfig *config.Configuration,
 	argoClient argocd.APIClient,
 	argoIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	generator connection.ManifestGenerator,
+	manifestMapper manifestdata.Mapper,
+	manifestManager manifest.Manager,
 ) *InstallHandler {
 	return &InstallHandler{
 		config:          theConfig,
 		argoClient:      argoClient,
 		argoIntegration: argoIntegration,
-		generator:       generator,
+		manifestMapper:  manifestMapper,
+		manifestManager: manifestManager,
 	}
 }
 
@@ -56,45 +59,30 @@ func (ih *InstallHandler) InstallMDAIHub(
 
 	logger.Debug("received request")
 
-	// 1) get the argo integration details
-	argoIntegration, err := ih.argoIntegration.GetIntegrationByName(ctx, connectionName)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if argoIntegration == nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+	input := manifest.ManagerInput{
+		Logger:                    logger,
+		DeploymentIntegrationName: connectionName,
 	}
 
-	// 2) render the argo app template(s)
-	manifestBytes, err := ih.generator.RenderMdaiAppManifest(installVersion, installNamespace)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	logger.Debug("install cert manager")
+	if err := ih.manifestManager.LoadCertManager(
+		ctx,
+		input,
+		ih.manifestMapper.AppTemplateData(manifestdata.CERT, "", "", ""),
+	); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("install cert manager:%w", err))
 	}
 
-	var argoApp argoapp.Application
-	if err = yaml.Unmarshal(manifestBytes, &argoApp); err != nil {
-		logger.Error("unmarshalling ArgoCD application manifest", zap.Error(err))
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	var certManagerApp argoapp.Application
-	if err = yaml.Unmarshal(connection.CertManagerAppManifest, &certManagerApp); err != nil {
-		logger.Error("unmarshalling cert manager application manifest", zap.Error(err))
-		return nil, connect.NewError(connect.CodeInternal, err)
+	logger.Debug("install MDAI")
+	if err := ih.manifestManager.LoadMDAI(
+		ctx,
+		input,
+		ih.manifestMapper.AppTemplateData(manifestdata.MDAI, installVersion, "", installNamespace),
+	); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("install MDAI:%w", err))
 	}
 
-	// 3) apply the application to the argo cluster
-	clientOpts := argocd.CreateClientOpts(ih.config.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
-	// first, apply the cert manager app manifest
-	logger.Debug("pushing cert-manager app install")
-	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, certManagerApp); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	logger.Debug("pushing mdai app install")
-	if err = ih.argoClient.PushArgoApp(ctx, logger, clientOpts, argoApp); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	logger.Debug("install done")
 	return &connect.Response[emptypb.Empty]{}, nil
 }
 
