@@ -20,6 +20,11 @@ type ZipCompressor struct{}
 // Ensure ZipCompressor implements Compressor.
 var _ Compressor = (*ZipCompressor)(nil)
 
+// NewZipCompressor returns a new instance of ZipCompressor.
+func NewZipCompressor() *ZipCompressor {
+	return &ZipCompressor{}
+}
+
 // Compress compresses the given manifests into zip.
 func (*ZipCompressor) Compress(ctx context.Context, manifests map[string][]byte) (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)

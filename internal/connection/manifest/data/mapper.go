@@ -109,6 +109,7 @@ func (dm *DataMapper) ConnectionTemplateData(
 		TelemetryTypes:         input.TelemetryTypes,
 		DatadogIntegrationData: datadog,
 		CurrentNamespace:       dm.config.CurrentNamespace,
+		ServiceAccount:         dm.config.ServiceAccountName,
 		DefaultLogRatio:        strconv.FormatUint(uint64(dm.config.Budget.DefaultLogSamplingRatio), 10),
 		DefaultLogPersistErr:   dm.config.Budget.DefaultLogIncludeErr,
 		DefaultTraceRatio:      strconv.FormatUint(uint64(dm.config.Budget.DefaultTraceSamplingRatio), 10),

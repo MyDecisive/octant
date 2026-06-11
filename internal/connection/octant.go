@@ -194,12 +194,14 @@ func (oc *OctantConnection) SaveConnection(
 		if len(connection.Destinations) > 1 {
 			return errors.New("multiple destination")
 		}
-		destination := lo.FilterMap(connection.Destinations, func(item OctantConnectionDestination, _ int) (manifestdata.Destination, bool) {
-			return manifestdata.Destination{
-				Type:            manifestdata.DATADOG, // TODO: Default to datadog cause we only allow datadog for now
-				IntegrationName: item.IntegrationName,
-			}, item.DestinationType == "datadog"
-		})
+		destination := lo.FilterMap(
+			connection.Destinations,
+			func(item OctantConnectionDestination, _ int) (manifestdata.Destination, bool) {
+				return manifestdata.Destination{
+					Type:            manifestdata.DATADOG, // TODO: Default to datadog cause we only allow datadog for now
+					IntegrationName: item.IntegrationName,
+				}, item.DestinationType == "datadog"
+			})
 		if len(destination) < 1 {
 			return errors.New("unrecognized destination")
 		}

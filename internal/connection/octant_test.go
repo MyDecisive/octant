@@ -11,7 +11,6 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
-	"github.com/mydecisive/octant/internal/integration"
 	manifestmock "github.com/mydecisive/octant/internal/mock/manifest"
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -30,16 +29,8 @@ var (
 		telemetry.Logs,
 		telemetry.Traces,
 	}
-	defaultNamespace    = "default"
-	argoIntegrationData = &integration.ArgoCDIntegrationData{
-		APIUrl:       "http://argo.com",
-		AccountToken: "abc123",
-	}
-	ddIntegrationData = &integration.DataDogIntegrationData{
-		APIKey: "abc123",
-		DDUrl:  "http://dd.com",
-	}
-	testConfig = &config.Configuration{
+	defaultNamespace = "default"
+	testConfig       = &config.Configuration{
 		CurrentNamespace:   defaultNamespace,
 		ServiceAccountName: "coolServiceAccount",
 		Env:                config.Dev,

@@ -1,5 +1,5 @@
 {{- $replicas:=0}}
-{{- range .ConnectionData.TelemetryTypes }}
+{{- range .TelemetryTypes }}
   {{- if eq . "logs" }}
     {{- $replicas = 2}}
     {{- break }}

@@ -30,7 +30,8 @@ import (
 )
 
 // Initialize adds all the dependencies to DI.
-func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we will have a lot if statements in here...
+// nolint: gocyclo,gocognit,cyclop,funlen // yes, we will have a lot if statements in here...
+func Initialize() (*dig.Container, error) {
 	container := dig.New(dig.DeferAcyclicVerification())
 	if err := container.Provide(config.Read); err != nil {
 		return nil, err
@@ -127,6 +128,11 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 	if err := container.Provide(
 		manifest.NewArgoCDManager,
 		dig.As(new(manifest.Manager))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		manifest.NewZipCompressor,
+		dig.As(new(manifest.Compressor))); err != nil {
 		return nil, err
 	}
 

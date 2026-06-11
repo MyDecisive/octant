@@ -25,6 +25,7 @@ type ConnectionTemplateData struct {
 	CurrentNamespace       string // from config
 	TelemetryTypes         []telemetry.MLT
 	DatadogIntegrationData *integration.DataDogIntegrationData
+	ServiceAccount         string // from config
 	DefaultLogRatio        string // from config
 	DefaultLogPersistErr   bool   // from config
 	DefaultTraceRatio      string // from config
