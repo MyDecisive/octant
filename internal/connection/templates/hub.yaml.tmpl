@@ -1,14 +1,14 @@
 apiVersion: hub.mydecisive.ai/v1
 kind: MdaiHub
 metadata:
-  name: {{ .AppName }}
+  name: {{ .ConnectionName }}
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
+    app: {{ .ConnectionName }}
+    app.kubernetes.io/instance: {{ .ConnectionName }}
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:hub.mydecisive.ai/v1:mdai/{{ .AppName }}
+    argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:hub.mydecisive.ai/v1:mdai/{{ .ConnectionName }}
   {{- end }}
 spec:
   variables:

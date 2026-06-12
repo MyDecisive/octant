@@ -86,7 +86,7 @@ func TestDeleteValidatorResource(t *testing.T) {
 	t.Parallel()
 
 	templateData := &ArgoConnectionTemplateData{
-		AppName:          "coolIntegration",
+		ConnectionName:   "coolIntegration",
 		Namespace:        "mdai",
 		ServiceAccount:   "coolServiceAccount",
 		CurrentNamespace: "default",

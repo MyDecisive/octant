@@ -1,15 +1,15 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: {{ .AppName }}-sampling-lb
+  name: {{ .ConnectionName }}-sampling-lb
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
+    app: {{ .ConnectionName }}
+    app.kubernetes.io/instance: {{ .ConnectionName }}
     hub.mydecisive.ai/role: connection-collector
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-sampling-lb
+    argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .ConnectionName }}-sampling-lb
     argocd.argoproj.io/sync-wave: "1"
   {{- end }}  
 spec:
@@ -102,7 +102,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-trace-sampling-collector.{{ .Namespace }}.svc.cluster.local
+            hostname: {{ .ConnectionName }}-trace-sampling-collector.{{ .Namespace }}.svc.cluster.local
             port: "4317"
             interval: 10s
             timeout: 5s
@@ -123,7 +123,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-log-sampling-collector.{{ .Namespace }}.svc.cluster.local
+            hostname: {{ .ConnectionName }}-log-sampling-collector.{{ .Namespace }}.svc.cluster.local
             port: "4317"
             interval: 10s
             timeout: 5s
@@ -174,8 +174,8 @@ spec:
         {{- end }}
       telemetry:
         resource:
-          mdai_connection: "{{ .AppName }}"
-          service.name: "{{ .AppName }}-sampling-lb-collector"
+          mdai_connection: "{{ .ConnectionName }}"
+          service.name: "{{ .ConnectionName }}-sampling-lb-collector"
         metrics:
           readers:
             - pull:

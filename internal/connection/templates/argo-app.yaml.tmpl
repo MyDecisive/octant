@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .AppName }}
+  name: {{ .ConnectionName }}
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -12,7 +12,7 @@ spec:
     targetRevision: main
     path: .
     kustomize:
-      namePrefix: {{ .AppName }}-
+      namePrefix: {{ .ConnectionName }}-
   destination:
     name: in-cluster
     namespace: {{ .Namespace }}
