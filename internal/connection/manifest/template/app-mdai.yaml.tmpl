@@ -12,10 +12,41 @@ spec:
     helm:
       valueFiles:
       - tracealyzer-values.yaml
-      - $values/examples/argocd/mdai/chart/values.yaml
-  - repoURL: https://github.com/MyDecisive/octant.git
-    targetRevision: HEAD
-    ref: values
+      valuesObject:
+        mdai-operator:
+          controllerManager:
+            manager:
+              env:
+                otelExporterOtlpEndpoint: http://hub-monitor-mdai-collector-service.{{ .Namespace }}.svc.cluster.local:4318
+        mdai-gateway:
+          otelExporterOtlpEndpoint: http://hub-monitor-mdai-collector-service.{{ .Namespace }}.svc.cluster.local:4318
+        mdai-event-hub:
+          otelExporterOtlpEndpoint: http://hub-monitor-mdai-collector-service.{{ .Namespace }}.svc.cluster.local:4318
+        greptimedb-standalone:
+          enabled: true
+        mdai-tracealyzer:
+          enabled: true
+        nats:
+          config:
+            cluster:
+              replicas: 2
+        opentelemetry-operator:
+          manager:
+            collectorImage:
+              repository: otel/opentelemetry-collector-contrib
+              tag: 0.148.0
+            env:
+              WATCH_NAMESPACE: {{ .Namespace }}
+        kubeprometheusstack:
+          alertmanager:
+              receivers:
+                - name: 'null'
+                - name: 'mdai-gateway'
+                  webhook_configs:
+                    - url: 'http://mdai-gateway.{{ .Namespace }}.svc.cluster.local:8081/alerts/alertmanager'
+        envoy:
+          xds:
+            serverAddress: mdai-operator-xds-service.{{ .Namespace }}.svc.cluster.local
   destination:
     name: "in-cluster"
     namespace: {{ .Namespace }}
