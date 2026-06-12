@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
@@ -11,7 +12,6 @@ import (
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/samber/lo"
-	"github.com/stretchr/testify/assert/yaml"
 	"go.uber.org/zap"
 )
 
@@ -176,10 +176,6 @@ func (am *ArgoCDManager) LoadValidator(
 		validators)
 }
 
-// func getRunID() string {
-// 	return time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
-// }
-
 func (am *ArgoCDManager) load(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -253,15 +249,15 @@ func (am *ArgoCDManager) getAppAsArgoCDApp(
 	app manifestdata.App,
 	data manifestdata.AppTemplateData,
 ) (*argoapp.Application, error) {
-	raw, err := am.generator.App(app, data, manifestdata.YAML)
+	raw, err := am.generator.App(app, data, manifestdata.JSON)
 	if err != nil {
 		return nil, err
 	}
 
-	var argoApp argoapp.Application
-	if err = yaml.Unmarshal(raw, &argoApp); err != nil {
+	var argoApp *argoapp.Application
+	if err = json.Unmarshal(raw, &argoApp); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrParseTemplate, err)
 	}
 
-	return &argoApp, nil
+	return argoApp, nil
 }
