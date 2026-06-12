@@ -56,19 +56,6 @@ var secretRoleBindingTemplate string
 //go:embed templates/additional.yaml.tmpl
 var additionalTemplate string
 
-var availableTemplates = map[string]string{
-	"lb-collector":     lbCollectorTemplate,
-	"log-collector":    logCollectorTemplate,
-	"trace-collector":  traceCollectorTemplate,
-	"hub":              hubTemplate,
-	"observer":         observerTemplate,
-	"additional":       additionalTemplate,
-	"connectionSecret": secretTemplate,
-	"validator":        validatorTemplate,
-	"mdaiAppTemplate":  mdaiAppTemplate,
-	"argoAppTemplate":  argoAppTemplate,
-}
-
 type ArgoConnectionTemplateData struct {
 	ConnectionName         string
 	Namespace              string
@@ -81,8 +68,6 @@ type ArgoConnectionTemplateData struct {
 	DefaultLogIncludeErr   bool
 	DefaultTraceRatio      string
 	DefaultTraceIncludeErr bool
-	ValidatorRunID         string
-	ValidatorVersion       string
 }
 
 type ArgoValidatorTemplateData struct {
@@ -219,16 +204,10 @@ func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
 		return nil, err
 	}
 
-	defaultAppTemplates := getDefaultAppTemplates()
-	manifests := make(map[string][]byte, len(defaultAppTemplates))
-	for _, templateName := range defaultAppTemplates {
-		manifestData, renderErr := cmg.RenderManifest(templateData, format, templateName)
-		if renderErr != nil {
-			return nil, renderErr
-		}
-		manifests[templateName] = manifestData
+	manifests, err := cmg.RenderCollectorDeploymentManifests(templateData, getDefaultAppTemplates(), format)
+	if err != nil {
+		return nil, err
 	}
-
 	validatorTemplateData := ArgoValidatorTemplateData{
 		ConnectionName: input.Connection,
 		Namespace:      input.Namespace,
@@ -281,8 +260,6 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 		DefaultTraceRatio:      strconv.FormatUint(uint64(cmg.configuration.Budget.DefaultTraceSamplingRatio), 10),
 		DefaultLogIncludeErr:   cmg.configuration.Budget.DefaultLogIncludeErr,
 		DefaultTraceIncludeErr: cmg.configuration.Budget.DefaultTraceIncludeErr,
-		ValidatorRunID:         getRunID(),
-		ValidatorVersion:       cmg.configuration.Install.MdaiValidatorVersion,
 	}
 	return &templateData, nil
 }
@@ -493,42 +470,6 @@ func (*ConnectionManifestGenerator) RenderConnectionSecretRoleBinding(
 	}
 	var renderedYaml bytes.Buffer
 	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
-		return []byte{}, templateErr
-	}
-
-	switch outputFormat {
-	case YAMLOutputFormat:
-		return renderedYaml.Bytes(), nil
-	case JSONOutputFormat:
-		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
-		if err != nil {
-			return []byte{}, err
-		}
-
-		return renderedJSON, nil
-	}
-
-	return renderedYaml.Bytes(), nil
-}
-
-func (*ConnectionManifestGenerator) RenderManifest(
-	templateData *ArgoConnectionTemplateData,
-	outputFormat ManifestOutputFormat,
-	templateName string,
-) ([]byte, error) {
-	if outputFormat == "" {
-		return []byte{}, errors.New("no output format specified")
-	}
-	if _, ok := availableTemplates[templateName]; !ok {
-		return []byte{}, fmt.Errorf("unknown template name: %s", templateName)
-	}
-
-	theTemplate, err := template.New(templateName).Parse(availableTemplates[templateName])
-	if err != nil {
-		return []byte{}, err
-	}
-	var renderedYaml bytes.Buffer
-	if templateErr := theTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
 		return []byte{}, templateErr
 	}
 
