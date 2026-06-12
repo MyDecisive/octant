@@ -213,13 +213,15 @@ func (am *ArgoCDManager) loadApp(
 	appData manifestdata.AppTemplateData,
 	argoClientOpt *apiclient.ClientOptions,
 ) error {
-	app, err := am.getAppAsArgoCDApp(appType, appData)
+	apps, err := am.getAppAsArgoCDApp(logger, appType, appData)
 	if err != nil {
 		return err
 	}
 
-	if err = am.argoClient.PushArgoApp(ctx, logger, argoClientOpt, *app); err != nil {
-		return fmt.Errorf("%w: %w", ErrPushApp, err)
+	for _, app := range apps {
+		if err = am.argoClient.PushArgoApp(ctx, logger, argoClientOpt, *app); err != nil {
+			return fmt.Errorf("%w: %w", ErrPushApp, err)
+		}
 	}
 	return nil
 }
@@ -246,18 +248,28 @@ func (*ArgoCDManager) getAppName(app manifestdata.App, connectionName string) st
 }
 
 func (am *ArgoCDManager) getAppAsArgoCDApp(
+	logger *zap.Logger,
 	app manifestdata.App,
 	data manifestdata.AppTemplateData,
-) (*argoapp.Application, error) {
-	raw, err := am.generator.App(app, data, manifestdata.JSON)
+) ([]*argoapp.Application, error) {
+	raws, err := am.generator.App(app, data, manifestdata.JSON)
 	if err != nil {
 		return nil, err
 	}
 
-	var argoApp *argoapp.Application
-	if err = json.Unmarshal(raw, &argoApp); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrParseTemplate, err)
+	apps := []*argoapp.Application{}
+	for _, raw := range raws {
+		var argoApp *argoapp.Application
+		if err = json.Unmarshal(raw, &argoApp); err != nil {
+			logger.Warn("ArgoCD app manifest contains manifest that is not a type Application, the manifest will be ignored",
+				zap.String("app", app.String()))
+		}
+		apps = append(apps, argoApp)
 	}
 
-	return argoApp, nil
+	if len(apps) == 0 {
+		logger.Warn("ArgoCD app manifest is empty", zap.String("app", app.String()))
+		return nil, ErrEmpty
+	}
+	return apps, nil
 }

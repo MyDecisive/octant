@@ -17,7 +17,7 @@ import (
 type TemplateRenderer interface {
 	// Render renders the provided template using the provided data.
 	// Note: format will define the format of the rendered manifest.
-	Render(name string, template []byte, format manifestdata.OutputFormat, data any) ([]byte, error)
+	Render(name string, template []byte, format manifestdata.OutputFormat, data any) ([][]byte, error)
 }
 
 // TextTemplateRenderer implements Renderer using "text/template" package.
@@ -38,7 +38,7 @@ func (*TextTemplateRenderer) Render(
 	template []byte,
 	format manifestdata.OutputFormat,
 	data any,
-) ([]byte, error) {
+) ([][]byte, error) {
 	gen, err := tmpl.New(name).Parse(string(template))
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", ErrParseTemplate, err)
@@ -49,20 +49,25 @@ func (*TextTemplateRenderer) Render(
 		return nil, fmt.Errorf("%w:%w", ErrRenderTemplate, err)
 	}
 
-	out := render.Bytes()
+	yml := render.Bytes()
+	out := [][]byte{}
 	if format == manifestdata.JSON {
-		reader := kyaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(out)))
-		raw, err := reader.Read()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return []byte{}, nil
+		reader := kyaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(yml)))
+		for {
+			raw, err := reader.Read()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					return out, nil
+				}
+				return nil, fmt.Errorf("%w:%w", ErrConvertJSON, err)
 			}
-			return nil, fmt.Errorf("%w:%w", ErrConvertJSON, err)
-		}
-		out, err = yaml.YAMLToJSON(raw)
-		if err != nil {
-			return nil, fmt.Errorf("%w:%w", ErrConvertJSON, err)
+			jsn, err := yaml.YAMLToJSON(raw)
+			if err != nil {
+				return nil, fmt.Errorf("%w:%w", ErrConvertJSON, err)
+			}
+			out = append(out, jsn)
 		}
 	}
+	out = append(out, yml)
 	return out, nil
 }

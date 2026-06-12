@@ -17,6 +17,7 @@ var (
 	ErrConvertJSON    = errors.New("convert json")
 	ErrPushApp        = errors.New("push app")
 	ErrPushManifests  = errors.New("push manifests")
+	ErrEmpty          = errors.New("empty")
 )
 
 // Generator generates manifest(s).
@@ -24,7 +25,7 @@ type Generator interface {
 	// All returns manifests for all apps, connections, and validators.
 	All(ctx context.Context, input manifestdata.AllInput, format manifestdata.OutputFormat) (map[string][]byte, error)
 	// App returns manifest for the given App template type in the provided format using the data.
-	App(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([]byte, error)
+	App(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([][]byte, error)
 	// Connections returns manifest for all connection template files in the provided format using the input.
 	// Note: the map key will be the file name and the map value is the file content.
 	Connections(
@@ -78,11 +79,13 @@ func (mg *ManifestGenerator) All(
 			input.ConnectionName,
 			input.Namespace,
 		)
-		content, err := mg.App(app, data, format)
+		contents, err := mg.App(app, data, format)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", name, err)
 		}
-		result[mg.getFilename(name, format)] = content
+		for i, content := range contents {
+			result[mg.getFilename(fmt.Sprintf("%s%d", name, i), format)] = content
+		}
 	}
 
 	conn, err := mg.Connections(ctx, manifestdata.ConnectionInput{
@@ -113,7 +116,7 @@ func (mg *ManifestGenerator) App(
 	app manifestdata.App,
 	data manifestdata.AppTemplateData,
 	format manifestdata.OutputFormat,
-) ([]byte, error) {
+) ([][]byte, error) {
 	raw, err := mg.provider.GetApp(app)
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", ErrGetTemplate, err)
@@ -142,11 +145,13 @@ func (mg *ManifestGenerator) Connections(
 	result := make(map[string][]byte)
 	for conn, raw := range templates {
 		name := conn.String()
-		manifest, err := mg.renderer.Render(name, raw, format, data)
+		manifests, err := mg.renderer.Render(name, raw, format, data)
 		if err != nil {
 			return nil, err
 		}
-		result[mg.getFilename(name, format)] = manifest
+		for i, manifest := range manifests {
+			result[mg.getFilename(fmt.Sprintf("%s%d", name, i), format)] = manifest
+		}
 	}
 
 	return result, nil
@@ -167,11 +172,13 @@ func (mg *ManifestGenerator) Validators(
 	result := make(map[string][]byte)
 	for conn, raw := range templates {
 		name := conn.String()
-		manifest, err := mg.renderer.Render(name, raw, format, data)
+		manifests, err := mg.renderer.Render(name, raw, format, data)
 		if err != nil {
 			return nil, err
 		}
-		result[mg.getFilename(name, format)] = manifest
+		for i, manifest := range manifests {
+			result[mg.getFilename(fmt.Sprintf("%s%d", name, i), format)] = manifest
+		}
 	}
 
 	return result, nil

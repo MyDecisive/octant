@@ -553,23 +553,23 @@ func (_c *MockGenerator_All_Call) RunAndReturn(run func(ctx context.Context, inp
 }
 
 // App provides a mock function for the type MockGenerator
-func (_mock *MockGenerator) App(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([]byte, error) {
+func (_mock *MockGenerator) App(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([][]byte, error) {
 	ret := _mock.Called(app, data, format)
 
 	if len(ret) == 0 {
 		panic("no return value specified for App")
 	}
 
-	var r0 []byte
+	var r0 [][]byte
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(manifestdata.App, manifestdata.AppTemplateData, manifestdata.OutputFormat) ([]byte, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(manifestdata.App, manifestdata.AppTemplateData, manifestdata.OutputFormat) ([][]byte, error)); ok {
 		return returnFunc(app, data, format)
 	}
-	if returnFunc, ok := ret.Get(0).(func(manifestdata.App, manifestdata.AppTemplateData, manifestdata.OutputFormat) []byte); ok {
+	if returnFunc, ok := ret.Get(0).(func(manifestdata.App, manifestdata.AppTemplateData, manifestdata.OutputFormat) [][]byte); ok {
 		r0 = returnFunc(app, data, format)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
+			r0 = ret.Get(0).([][]byte)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(manifestdata.App, manifestdata.AppTemplateData, manifestdata.OutputFormat) error); ok {
@@ -616,12 +616,12 @@ func (_c *MockGenerator_App_Call) Run(run func(app manifestdata.App, data manife
 	return _c
 }
 
-func (_c *MockGenerator_App_Call) Return(bytes1 []byte, err error) *MockGenerator_App_Call {
-	_c.Call.Return(bytes1, err)
+func (_c *MockGenerator_App_Call) Return(bytess [][]byte, err error) *MockGenerator_App_Call {
+	_c.Call.Return(bytess, err)
 	return _c
 }
 
-func (_c *MockGenerator_App_Call) RunAndReturn(run func(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([]byte, error)) *MockGenerator_App_Call {
+func (_c *MockGenerator_App_Call) RunAndReturn(run func(app manifestdata.App, data manifestdata.AppTemplateData, format manifestdata.OutputFormat) ([][]byte, error)) *MockGenerator_App_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -796,23 +796,23 @@ func (_m *MockTemplateRenderer) EXPECT() *MockTemplateRenderer_Expecter {
 }
 
 // Render provides a mock function for the type MockTemplateRenderer
-func (_mock *MockTemplateRenderer) Render(name string, template []byte, format manifestdata.OutputFormat, data any) ([]byte, error) {
+func (_mock *MockTemplateRenderer) Render(name string, template []byte, format manifestdata.OutputFormat, data any) ([][]byte, error) {
 	ret := _mock.Called(name, template, format, data)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Render")
 	}
 
-	var r0 []byte
+	var r0 [][]byte
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, []byte, manifestdata.OutputFormat, any) ([]byte, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, []byte, manifestdata.OutputFormat, any) ([][]byte, error)); ok {
 		return returnFunc(name, template, format, data)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, []byte, manifestdata.OutputFormat, any) []byte); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, []byte, manifestdata.OutputFormat, any) [][]byte); ok {
 		r0 = returnFunc(name, template, format, data)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
+			r0 = ret.Get(0).([][]byte)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, []byte, manifestdata.OutputFormat, any) error); ok {
@@ -865,12 +865,12 @@ func (_c *MockTemplateRenderer_Render_Call) Run(run func(name string, template [
 	return _c
 }
 
-func (_c *MockTemplateRenderer_Render_Call) Return(bytes1 []byte, err error) *MockTemplateRenderer_Render_Call {
-	_c.Call.Return(bytes1, err)
+func (_c *MockTemplateRenderer_Render_Call) Return(bytess [][]byte, err error) *MockTemplateRenderer_Render_Call {
+	_c.Call.Return(bytess, err)
 	return _c
 }
 
-func (_c *MockTemplateRenderer_Render_Call) RunAndReturn(run func(name string, template []byte, format manifestdata.OutputFormat, data any) ([]byte, error)) *MockTemplateRenderer_Render_Call {
+func (_c *MockTemplateRenderer_Render_Call) RunAndReturn(run func(name string, template []byte, format manifestdata.OutputFormat, data any) ([][]byte, error)) *MockTemplateRenderer_Render_Call {
 	_c.Call.Return(run)
 	return _c
 }
