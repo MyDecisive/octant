@@ -59,7 +59,7 @@ func (ih *InstallHandler) InstallMDAIHub(
 
 	logger.Debug("received request")
 
-	input := manifest.ManagerInput{
+	input := manifestdata.ManagerInput{
 		Logger:                    logger,
 		DeploymentIntegrationName: connectionName,
 	}

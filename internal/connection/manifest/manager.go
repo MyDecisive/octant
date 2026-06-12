@@ -15,30 +15,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type ManagerInput struct {
-	Logger                    *zap.Logger
-	DeploymentIntegrationName string
-	ConnectionName            string
-}
-
 // Manager manages loading/unloading apps/manifests from the system.
 type Manager interface {
 	// Unload removes all given apps from the system.
 	Unload(
 		ctx context.Context,
-		input ManagerInput,
+		input manifestdata.ManagerInput,
 		apps []manifestdata.App,
 	) error
 	// LoadCertManager install cert manager into the system.
 	LoadCertManager(
 		ctx context.Context,
-		input ManagerInput,
+		input manifestdata.ManagerInput,
 		data manifestdata.AppTemplateData,
 	) error
 	// LoadMDAI install MDAI hub into the system.
 	LoadMDAI(
 		ctx context.Context,
-		input ManagerInput,
+		input manifestdata.ManagerInput,
 		data manifestdata.AppTemplateData,
 	) error
 	// LoadConnection installs connection app and connection manifests into the system.
@@ -82,7 +76,7 @@ func NewArgoCDManager(
 
 func (am *ArgoCDManager) Unload(
 	ctx context.Context,
-	input ManagerInput,
+	input manifestdata.ManagerInput,
 	apps []manifestdata.App,
 ) error {
 	argoClientOpt, err := am.argoClientOpt(ctx, input.DeploymentIntegrationName)
@@ -104,7 +98,7 @@ func (am *ArgoCDManager) Unload(
 
 func (am *ArgoCDManager) LoadCertManager(
 	ctx context.Context,
-	input ManagerInput,
+	input manifestdata.ManagerInput,
 	data manifestdata.AppTemplateData,
 ) error {
 	argoClientOpt, err := am.argoClientOpt(ctx, input.DeploymentIntegrationName)
@@ -116,7 +110,7 @@ func (am *ArgoCDManager) LoadCertManager(
 
 func (am *ArgoCDManager) LoadMDAI(
 	ctx context.Context,
-	input ManagerInput,
+	input manifestdata.ManagerInput,
 	data manifestdata.AppTemplateData,
 ) error {
 	argoClientOpt, err := am.argoClientOpt(ctx, input.DeploymentIntegrationName)

@@ -9,7 +9,6 @@ import (
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	manifestmock "github.com/mydecisive/octant/internal/mock/manifest"
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
@@ -452,7 +451,7 @@ func TestDeleteConnection(t *testing.T) {
 			Once()
 
 		mockManager := manifestmock.NewMockManager(t)
-		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifest.ManagerInput) bool {
+		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifestdata.ManagerInput) bool {
 			return in.ConnectionName == input.ConnectionName &&
 				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
 		}), []manifestdata.App{manifestdata.CONNECTION, manifestdata.VALIDATOR}).Return(nil).Once()
@@ -863,7 +862,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Once()
 
 		mockManager := manifestmock.NewMockManager(t)
-		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifest.ManagerInput) bool {
+		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifestdata.ManagerInput) bool {
 			return in.ConnectionName == input.ConnectionName &&
 				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
 		}), []manifestdata.App{manifestdata.VALIDATOR}).Return(nil).Once()

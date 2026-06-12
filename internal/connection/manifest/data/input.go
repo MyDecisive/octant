@@ -2,7 +2,15 @@ package manifestdata
 
 import (
 	"github.com/mydecisive/octant/internal/telemetry"
+	"go.uber.org/zap"
 )
+
+// ManagerInput is the input for manifest manager.
+type ManagerInput struct {
+	Logger                    *zap.Logger
+	DeploymentIntegrationName string
+	ConnectionName            string
+}
 
 // AllInput is the input for `All` method of the generator.
 type AllInput struct {

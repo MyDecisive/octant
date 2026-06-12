@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/mydecisive/octant/internal/config"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 )
 
@@ -43,7 +42,6 @@ type ManifestGenerator struct {
 	provider TemplateProvider
 	renderer TemplateRenderer
 	mapper   manifestdata.Mapper
-	config   *config.Configuration
 }
 
 // Ensure ManifestGenerator implements Generator.
@@ -51,13 +49,11 @@ var _ Generator = (*ManifestGenerator)(nil)
 
 // NewManifestGenerator returns a new instance of ManifestGenerator.
 func NewManifestGenerator(
-	conf *config.Configuration,
 	provider TemplateProvider,
 	renderer TemplateRenderer,
 	mapper manifestdata.Mapper,
 ) *ManifestGenerator {
 	return &ManifestGenerator{
-		config:   conf,
 		provider: provider,
 		renderer: renderer,
 		mapper:   mapper,

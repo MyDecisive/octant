@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/mydecisive/octant/internal/connection/manifest"
 	"github.com/mydecisive/octant/internal/connection/manifest/data"
 	mock "github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
@@ -137,7 +136,7 @@ func (_m *MockManager) EXPECT() *MockManager_Expecter {
 }
 
 // LoadCertManager provides a mock function for the type MockManager
-func (_mock *MockManager) LoadCertManager(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData) error {
+func (_mock *MockManager) LoadCertManager(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData) error {
 	ret := _mock.Called(ctx, input, data)
 
 	if len(ret) == 0 {
@@ -145,7 +144,7 @@ func (_mock *MockManager) LoadCertManager(ctx context.Context, input manifest.Ma
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manifest.ManagerInput, manifestdata.AppTemplateData) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, manifestdata.ManagerInput, manifestdata.AppTemplateData) error); ok {
 		r0 = returnFunc(ctx, input, data)
 	} else {
 		r0 = ret.Error(0)
@@ -160,21 +159,21 @@ type MockManager_LoadCertManager_Call struct {
 
 // LoadCertManager is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input manifest.ManagerInput
+//   - input manifestdata.ManagerInput
 //   - data manifestdata.AppTemplateData
 func (_e *MockManager_Expecter) LoadCertManager(ctx interface{}, input interface{}, data interface{}) *MockManager_LoadCertManager_Call {
 	return &MockManager_LoadCertManager_Call{Call: _e.mock.On("LoadCertManager", ctx, input, data)}
 }
 
-func (_c *MockManager_LoadCertManager_Call) Run(run func(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData)) *MockManager_LoadCertManager_Call {
+func (_c *MockManager_LoadCertManager_Call) Run(run func(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData)) *MockManager_LoadCertManager_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 manifest.ManagerInput
+		var arg1 manifestdata.ManagerInput
 		if args[1] != nil {
-			arg1 = args[1].(manifest.ManagerInput)
+			arg1 = args[1].(manifestdata.ManagerInput)
 		}
 		var arg2 manifestdata.AppTemplateData
 		if args[2] != nil {
@@ -194,7 +193,7 @@ func (_c *MockManager_LoadCertManager_Call) Return(err error) *MockManager_LoadC
 	return _c
 }
 
-func (_c *MockManager_LoadCertManager_Call) RunAndReturn(run func(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData) error) *MockManager_LoadCertManager_Call {
+func (_c *MockManager_LoadCertManager_Call) RunAndReturn(run func(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData) error) *MockManager_LoadCertManager_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -263,7 +262,7 @@ func (_c *MockManager_LoadConnection_Call) RunAndReturn(run func(ctx context.Con
 }
 
 // LoadMDAI provides a mock function for the type MockManager
-func (_mock *MockManager) LoadMDAI(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData) error {
+func (_mock *MockManager) LoadMDAI(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData) error {
 	ret := _mock.Called(ctx, input, data)
 
 	if len(ret) == 0 {
@@ -271,7 +270,7 @@ func (_mock *MockManager) LoadMDAI(ctx context.Context, input manifest.ManagerIn
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manifest.ManagerInput, manifestdata.AppTemplateData) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, manifestdata.ManagerInput, manifestdata.AppTemplateData) error); ok {
 		r0 = returnFunc(ctx, input, data)
 	} else {
 		r0 = ret.Error(0)
@@ -286,21 +285,21 @@ type MockManager_LoadMDAI_Call struct {
 
 // LoadMDAI is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input manifest.ManagerInput
+//   - input manifestdata.ManagerInput
 //   - data manifestdata.AppTemplateData
 func (_e *MockManager_Expecter) LoadMDAI(ctx interface{}, input interface{}, data interface{}) *MockManager_LoadMDAI_Call {
 	return &MockManager_LoadMDAI_Call{Call: _e.mock.On("LoadMDAI", ctx, input, data)}
 }
 
-func (_c *MockManager_LoadMDAI_Call) Run(run func(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData)) *MockManager_LoadMDAI_Call {
+func (_c *MockManager_LoadMDAI_Call) Run(run func(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData)) *MockManager_LoadMDAI_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 manifest.ManagerInput
+		var arg1 manifestdata.ManagerInput
 		if args[1] != nil {
-			arg1 = args[1].(manifest.ManagerInput)
+			arg1 = args[1].(manifestdata.ManagerInput)
 		}
 		var arg2 manifestdata.AppTemplateData
 		if args[2] != nil {
@@ -320,7 +319,7 @@ func (_c *MockManager_LoadMDAI_Call) Return(err error) *MockManager_LoadMDAI_Cal
 	return _c
 }
 
-func (_c *MockManager_LoadMDAI_Call) RunAndReturn(run func(ctx context.Context, input manifest.ManagerInput, data manifestdata.AppTemplateData) error) *MockManager_LoadMDAI_Call {
+func (_c *MockManager_LoadMDAI_Call) RunAndReturn(run func(ctx context.Context, input manifestdata.ManagerInput, data manifestdata.AppTemplateData) error) *MockManager_LoadMDAI_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -389,7 +388,7 @@ func (_c *MockManager_LoadValidator_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // Unload provides a mock function for the type MockManager
-func (_mock *MockManager) Unload(ctx context.Context, input manifest.ManagerInput, apps []manifestdata.App) error {
+func (_mock *MockManager) Unload(ctx context.Context, input manifestdata.ManagerInput, apps []manifestdata.App) error {
 	ret := _mock.Called(ctx, input, apps)
 
 	if len(ret) == 0 {
@@ -397,7 +396,7 @@ func (_mock *MockManager) Unload(ctx context.Context, input manifest.ManagerInpu
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, manifest.ManagerInput, []manifestdata.App) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, manifestdata.ManagerInput, []manifestdata.App) error); ok {
 		r0 = returnFunc(ctx, input, apps)
 	} else {
 		r0 = ret.Error(0)
@@ -412,21 +411,21 @@ type MockManager_Unload_Call struct {
 
 // Unload is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input manifest.ManagerInput
+//   - input manifestdata.ManagerInput
 //   - apps []manifestdata.App
 func (_e *MockManager_Expecter) Unload(ctx interface{}, input interface{}, apps interface{}) *MockManager_Unload_Call {
 	return &MockManager_Unload_Call{Call: _e.mock.On("Unload", ctx, input, apps)}
 }
 
-func (_c *MockManager_Unload_Call) Run(run func(ctx context.Context, input manifest.ManagerInput, apps []manifestdata.App)) *MockManager_Unload_Call {
+func (_c *MockManager_Unload_Call) Run(run func(ctx context.Context, input manifestdata.ManagerInput, apps []manifestdata.App)) *MockManager_Unload_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 manifest.ManagerInput
+		var arg1 manifestdata.ManagerInput
 		if args[1] != nil {
-			arg1 = args[1].(manifest.ManagerInput)
+			arg1 = args[1].(manifestdata.ManagerInput)
 		}
 		var arg2 []manifestdata.App
 		if args[2] != nil {
@@ -446,7 +445,7 @@ func (_c *MockManager_Unload_Call) Return(err error) *MockManager_Unload_Call {
 	return _c
 }
 
-func (_c *MockManager_Unload_Call) RunAndReturn(run func(ctx context.Context, input manifest.ManagerInput, apps []manifestdata.App) error) *MockManager_Unload_Call {
+func (_c *MockManager_Unload_Call) RunAndReturn(run func(ctx context.Context, input manifestdata.ManagerInput, apps []manifestdata.App) error) *MockManager_Unload_Call {
 	_c.Call.Return(run)
 	return _c
 }

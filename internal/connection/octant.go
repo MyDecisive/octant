@@ -138,7 +138,7 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
 		if deleteErr := oc.manifestManager.Unload(
 			ctx,
-			manifest.ManagerInput{
+			manifestdata.ManagerInput{
 				Logger:                    input.Logger,
 				DeploymentIntegrationName: connection.Deployment.IntegrationName,
 				ConnectionName:            input.ConnectionName,
@@ -269,7 +269,7 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
 		if deleteErr := oc.manifestManager.Unload(
 			ctx,
-			manifest.ManagerInput{
+			manifestdata.ManagerInput{
 				Logger:                    input.Logger,
 				DeploymentIntegrationName: connection.Deployment.IntegrationName,
 				ConnectionName:            input.ConnectionName,

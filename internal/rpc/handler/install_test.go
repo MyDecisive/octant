@@ -13,7 +13,6 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/integration"
 	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
@@ -41,7 +40,7 @@ func TestInstallHandler_InstallMDAIHub(t *testing.T) {
 		Version: request.GetMdaiVersion(),
 	}
 
-	managerInputMatch := func(input manifest.ManagerInput) bool {
+	managerInputMatch := func(input manifestdata.ManagerInput) bool {
 		return input.DeploymentIntegrationName == request.GetConnectionName()
 	}
 
