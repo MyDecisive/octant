@@ -434,14 +434,7 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 		return nil, fmt.Errorf("getting prometheus client: %w", err)
 	}
 
-	allValidatorMetricsString := strings.Join(
-		[]string{
-			fmt.Sprintf("%s{mdai_connection=%q}", signalParityFidelityMetric, connectionName),
-			fmt.Sprintf("%s{mdai_connection=%q}", signalPolicyFidelityMetric, connectionName),
-			fmt.Sprintf("%s{mdai_connection=%q}", attributeParityFidelityMetric, connectionName),
-			fmt.Sprintf("%s{mdai_connection=%q}", attributePolicyFidelityMetric, connectionName),
-		}, " or ")
-	query := fmt.Sprintf(`count by (telemetry_validation_run_id) (%s)`, allValidatorMetricsString)
+	query := makeGetAllValidatorRunsQuery(connectionName)
 
 	vector, err := queryVector(ctx, promClient, query)
 	if err != nil {
@@ -473,4 +466,16 @@ func (cs *PrometheusConnectionStatus) GetConnectionValidatorRuns(
 		return 0
 	})
 	return runIDs, nil
+}
+
+func makeGetAllValidatorRunsQuery(connectionName string) string {
+	allValidatorMetricsString := strings.Join(
+		[]string{
+			fmt.Sprintf("%s{mdai_connection=~\".*%s.*\"}", signalParityFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=~\".*%s.*\"}", signalPolicyFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=~\".*%s.*\"}", attributeParityFidelityMetric, connectionName),
+			fmt.Sprintf("%s{mdai_connection=~\".*%s.*\"}", attributePolicyFidelityMetric, connectionName),
+		}, " or\n")
+	query := fmt.Sprintf("count by (telemetry_validation_run_id) (\n%s)", allValidatorMetricsString)
+	return query
 }

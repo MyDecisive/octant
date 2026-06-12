@@ -1,3 +1,10 @@
+{{- $replicas:=0}}
+{{- range .ConnectionData.TelemetryTypes }}
+  {{- if eq . "logs" }}
+    {{- $replicas = 2}}
+    {{- break }}
+  {{- end }}
+{{- end }}
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -7,22 +14,22 @@ metadata:
     app: {{ .ConnectionName }}
     app.kubernetes.io/instance: {{ .ConnectionName }}-log-sampling
     mydecisive.ai/hub-name: {{ .ConnectionName }}
-  {{- if .IsArgoSideload }}
+  {{- if or .IsArgoSideload (eq $replicas 0) }}
   annotations:
+    {{- if .IsArgoSideload }}
     argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .ConnectionName }}-log-sampling
     argocd.argoproj.io/sync-options: Force=true,Replace=true
     argocd.argoproj.io/sync-wave: "1"
+    {{- end }}
+    {{- if eq $replicas 0 }}
+    # ArgoCD's bundled OpenTelemetryCollector health check reports 0/0 ready replicas as
+    # Degraded; a deliberately scaled-to-zero collector must not drag down app health.
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    {{- end }}
   {{- end }}
 spec:
   managementState: managed
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
-  {{- $replicas:=0}}
-  {{- range .ConnectionData.TelemetryTypes }}
-    {{- if eq . "logs" }}
-      {{- $replicas = 2}}
-      {{- break }}
-    {{- end }}
-  {{- end }}
   replicas: {{$replicas | printf "%d"}}
   resources:
     requests:
