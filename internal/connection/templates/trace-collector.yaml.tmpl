@@ -1,3 +1,10 @@
+{{- $replicas:=0}}
+{{- range .ConnectionData.TelemetryTypes }}
+  {{- if eq . "traces" }}
+    {{- $replicas = 2}}
+    {{- break }}
+  {{- end }}
+{{- end }}
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -7,11 +14,18 @@ metadata:
     app: {{ .AppName }}
     app.kubernetes.io/instance: {{ .AppName }}-trace-sampling
     mydecisive.ai/hub-name: {{ .AppName }}
-  {{- if .IsArgoSideload }}
+  {{- if or .IsArgoSideload (eq $replicas 0) }}
   annotations:
+    {{- if .IsArgoSideload }}
     argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-trace-sampling
     argocd.argoproj.io/sync-options: Force=true,Replace=true
     argocd.argoproj.io/sync-wave: "1"
+    {{- end }}
+    {{- if eq $replicas 0 }}
+    # ArgoCD's bundled OpenTelemetryCollector health check reports 0/0 ready replicas as
+    # Degraded; a deliberately scaled-to-zero collector must not drag down app health.
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    {{- end }}
   {{- end }}
 spec:
   managementState: managed
@@ -19,13 +33,6 @@ spec:
   observability:
     metrics:
       enableMetrics: true
-  {{- $replicas:=0}}
-  {{- range .ConnectionData.TelemetryTypes }}
-    {{- if eq . "traces" }}
-      {{- $replicas = 2}}
-      {{- break }}
-    {{- end }}
-  {{- end }}
   replicas: {{$replicas | printf "%d"}}
   resources:
     requests:

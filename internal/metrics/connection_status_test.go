@@ -870,3 +870,16 @@ func TestGetClientsConnected(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeGetAllValidatorRuns(t *testing.T) {
+	t.Parallel()
+
+	givenConnectionName := "dd-connection"
+	expectedQuery := `count by (telemetry_validation_run_id) (
+mdai_fidelity_signal_checks_total{mdai_connection=~".*dd-connection.*"} or
+mdai_fidelity_required_signal_checks_total{mdai_connection=~".*dd-connection.*"} or
+mdai_fidelity_attribute_checks_total{mdai_connection=~".*dd-connection.*"} or
+mdai_fidelity_required_attribute_checks_total{mdai_connection=~".*dd-connection.*"})`
+	actualQuery := makeGetAllValidatorRunsQuery(givenConnectionName)
+	assert.Equal(t, expectedQuery, actualQuery)
+}
