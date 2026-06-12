@@ -15,7 +15,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Name }}-trace-sampling
     mydecisive.ai/hub-name: {{ .Name }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .Name }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .Name }}-trace-sampling
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:opentelemetry.io/OpenTelemetryCollector:{{ .Namespace }}/{{ .Name }}-trace-sampling"
     argocd.argoproj.io/sync-options: Force=true,Replace=true
     argocd.argoproj.io/sync-wave: "1"
     {{- if eq $replicas 0 }}

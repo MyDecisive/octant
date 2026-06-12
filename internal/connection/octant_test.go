@@ -455,7 +455,7 @@ func TestDeleteConnection(t *testing.T) {
 		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifest.ManagerInput) bool {
 			return in.ConnectionName == input.ConnectionName &&
 				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
-		}), []manifestdata.App{manifestdata.CONNECTION, manifestdata.VALIDATOR}).Return(nil).Once()
+		}), []manifestdata.App{manifestdata.CONNECTION}).Return(nil).Once()
 
 		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), input))

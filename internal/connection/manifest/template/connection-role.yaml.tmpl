@@ -7,7 +7,7 @@ metadata:
     app: {{ .Name }}
     app.kubernetes.io/instance: {{ .Name }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .Name }}:rbac.authorization.k8s.io/v1:mdai/{{ .Name }}-octant-access
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:rbac.authorization.k8s.io/Role:{{ .Namespace }}/{{ .Name }}-octant-access"
     argocd.argoproj.io/sync-wave: "-1"
 rules:
   - apiGroups: [ "" ]
@@ -28,7 +28,7 @@ metadata:
     app: {{ .Name }}
     app.kubernetes.io/instance: {{ .Name }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .Name }}:rbac.authorization.k8s.io/v1:mdai/{{ .Name }}-octant-access-binding
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:rbac.authorization.k8s.io/RoleBinding:{{ .Namespace }}/{{ .Name }}-octant-access-binding"
 subjects:
   - kind: ServiceAccount
     name: {{ .ServiceAccount }}

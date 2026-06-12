@@ -4,7 +4,10 @@ metadata:
   name: {{ .Name }}-telemetry-validation
   namespace: {{ .Namespace }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .Name }}:hub.mydecisive.ai/v1:mdai/{{ .Name }}-validator
+    argocd.argoproj.io/tracking-id: "{{ .Name }}-validation:hub.mydecisive.ai/TelemetryValidation:{{ .Namespace }}/{{ .Name }}-telemetry-validation"
+  labels:
+    app: {{ .Name }}-validation
+    app.kubernetes.io/instance: {{ .Name }}-validation
 spec:
   validator:
     image: ghcr.io/mydecisive/mdai-fidelity-validator:{{ .Version }}

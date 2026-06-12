@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Name }}
     hub.mydecisive.ai/role: connection-collector
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .Name }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .Name }}-sampling-lb
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:opentelemetry.io/OpenTelemetryCollector:{{ .Namespace }}/{{ .Name }}-sampling-lb"
     argocd.argoproj.io/sync-wave: "1"
 spec:
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
