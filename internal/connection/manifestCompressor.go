@@ -3,9 +3,12 @@ package connection
 import (
 	"archive/zip"
 	"bytes"
+	"compress/flate"
 	"context"
 	"errors"
 	"fmt"
+	"hash/crc32"
+	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -22,7 +25,7 @@ type CompressionInput struct {
 
 // ManifestCompressor provide functionality to generate a compressed connection manifest.
 type ManifestCompressor interface {
-	// CreateCompressed creates manifest files abse on the given inputs and then compress the files into a zip.
+	// CreateCompressed creates manifest files based on the given inputs and then compress the files into a zip.
 	CreateCompressed(ctx context.Context, input CompressionInput) (*bytes.Buffer, error)
 }
 
@@ -41,7 +44,7 @@ func NewConnectionManifestCompressor(generator ManifestGenerator) *ConnectionMan
 	}
 }
 
-// CreateCompressed creates manifest files abse on the given inputs and then compress the files into a zip.
+// CreateCompressed creates manifest files based on the given inputs and then compresses the files into a zip.
 func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	ctx context.Context,
 	input CompressionInput,
@@ -58,7 +61,7 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 
 	buf := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buf)
-	defer zipWriter.Close() //nolint:errcheck
+
 	for filename, content := range manifestsMap {
 		select {
 		case <-ctx.Done():
@@ -66,15 +69,57 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 		default:
 		}
 
-		fWriter, err := zipWriter.Create(filename)
+		// Manually compress the content in memory first
+		var compressedBuf bytes.Buffer
+		flateWriter, err := flate.NewWriter(&compressedBuf, flate.DefaultCompression)
 		if err != nil {
-			return nil, fmt.Errorf("generate zip for %s:%w", filename, err)
+			return nil, fmt.Errorf("create flate writer for %s:%w", filename, err)
+		}
+		if _, err := flateWriter.Write(content); err != nil {
+			return nil, fmt.Errorf("flate write for %s:%w", filename, err)
+		}
+		if err := flateWriter.Close(); err != nil {
+			return nil, fmt.Errorf("flate close for %s:%w", filename, err)
 		}
 
-		if _, err := fWriter.Write(content); err != nil {
-			return nil, fmt.Errorf("write zip for %s:%w", filename, err)
+		compressedContent := compressedBuf.Bytes()
+
+		// Now we know the exact compressed size. Build the header.
+		header := &zip.FileHeader{
+			Name:               filename,
+			Method:             zip.Deflate,
+			UncompressedSize64: uint64(len(content)),
+			CompressedSize64:   uint64(len(compressedContent)),
+			CRC32:              crc32.ChecksumIEEE(content),
+			CreatorVersion:     20,    // v2.0
+			ReaderVersion:      20,    // v2.0
+			Flags:              0x800, // Explicitly declare UTF-8 filenames (Bit 11)
+		}
+
+		// SetModTime converts time.Now() into the legacy MS-DOS uint16 fields
+		// that CreateRaw actually writes to the byte stream.
+		// Uses deprecated `SetModTime` due to https://github.com/golang/go/issues/76741
+		header.SetModTime(time.Now())
+
+		// SetMode establishes standard read/write file permissions (ExternalAttrs)
+		// which Windows Explorer relies on to know it's a standard file.
+		header.SetMode(0644)
+
+		// Use CreateRaw to inject the pre-compressed bytes directly
+		fWriter, err := zipWriter.CreateRaw(header)
+		if err != nil {
+			return nil, fmt.Errorf("generate zip header for %s:%w", filename, err)
+		}
+
+		if _, err := fWriter.Write(compressedContent); err != nil {
+			return nil, fmt.Errorf("write compressed zip data for %s:%w", filename, err)
 		}
 	}
+
+	if err := zipWriter.Close(); err != nil {
+		return nil, fmt.Errorf("close zip writer: %w", err)
+	}
+
 	return buf, nil
 }
 
