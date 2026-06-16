@@ -51,12 +51,12 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 ) (*bytes.Buffer, error) {
 	data := cmc.toConnectionData(input.Telemetries, input.DeploymentType)
 	data.MdaiNamespace = input.Namespace
-	manifestsMap, err := cmc.generator.CreateExportableArgoManifests(
+	manifestsMap, manifestErr := cmc.generator.CreateExportableArgoManifests(
 		input,
 		data,
 	)
-	if err != nil {
-		return nil, fmt.Errorf("render manifest:%w", err)
+	if manifestErr != nil {
+		return nil, fmt.Errorf("render manifest:%w", manifestErr)
 	}
 
 	buf := new(bytes.Buffer)
@@ -71,39 +71,42 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 
 		// Manually compress the content in memory first
 		var compressedBuf bytes.Buffer
-		flateWriter, err := flate.NewWriter(&compressedBuf, flate.DefaultCompression)
-		if err != nil {
-			return nil, fmt.Errorf("create flate writer for %s:%w", filename, err)
+		flateWriter, createErr := flate.NewWriter(&compressedBuf, flate.DefaultCompression)
+		if createErr != nil {
+			return nil, fmt.Errorf("create flate writer for %s:%w", filename, createErr)
 		}
-		if _, err := flateWriter.Write(content); err != nil {
-			return nil, fmt.Errorf("flate write for %s:%w", filename, err)
+		if _, writeErr := flateWriter.Write(content); writeErr != nil {
+			return nil, fmt.Errorf("flate write for %s:%w", filename, writeErr)
 		}
-		if err := flateWriter.Close(); err != nil {
-			return nil, fmt.Errorf("flate close for %s:%w", filename, err)
+		if closeErr := flateWriter.Close(); closeErr != nil {
+			return nil, fmt.Errorf("flate close for %s:%w", filename, closeErr)
 		}
 
 		compressedContent := compressedBuf.Bytes()
 
+		const utf8Flag = 0x800 // utf-8 filenames flag
 		// Now we know the exact compressed size. Build the header.
+		const versionTwo = 20 // zip spec v2.0, widely compatible
 		header := &zip.FileHeader{
 			Name:               filename,
 			Method:             zip.Deflate,
 			UncompressedSize64: uint64(len(content)),
 			CompressedSize64:   uint64(len(compressedContent)),
 			CRC32:              crc32.ChecksumIEEE(content),
-			CreatorVersion:     20,    // v2.0
-			ReaderVersion:      20,    // v2.0
-			Flags:              0x800, // Explicitly declare UTF-8 filenames (Bit 11)
+			CreatorVersion:     versionTwo,
+			ReaderVersion:      versionTwo,
+			Flags:              utf8Flag,
 		}
 
 		// SetModTime converts time.Now() into the legacy MS-DOS uint16 fields
 		// that CreateRaw actually writes to the byte stream.
 		// Uses deprecated `SetModTime` due to https://github.com/golang/go/issues/76741
-		header.SetModTime(time.Now())
+		header.SetModTime(time.Now()) // nolint:staticcheck
 
 		// SetMode establishes standard read/write file permissions (ExternalAttrs)
 		// which Windows Explorer relies on to know it's a standard file.
-		header.SetMode(0644)
+		const rwPermissions = 0o644
+		header.SetMode(rwPermissions)
 
 		// Use CreateRaw to inject the pre-compressed bytes directly
 		fWriter, err := zipWriter.CreateRaw(header)
@@ -116,8 +119,8 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 		}
 	}
 
-	if err := zipWriter.Close(); err != nil {
-		return nil, fmt.Errorf("close zip writer: %w", err)
+	if closeErr := zipWriter.Close(); closeErr != nil {
+		return nil, fmt.Errorf("close zip writer: %w", closeErr)
 	}
 
 	return buf, nil
