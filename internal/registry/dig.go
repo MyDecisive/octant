@@ -13,6 +13,7 @@ import (
 	budgetdata "github.com/mydecisive/octant/internal/budget/data"
 	budgetdb "github.com/mydecisive/octant/internal/budget/data/db"
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
+	"github.com/mydecisive/octant/internal/compression"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/integration"
@@ -106,8 +107,8 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		return nil, err
 	}
 	if err := container.Provide(
-		connection.NewConnectionManifestCompressor,
-		dig.As(new(connection.ManifestCompressor))); err != nil {
+		compression.NewConnectionManifestCompressor,
+		dig.As(new(compression.ManifestCompressor))); err != nil {
 		return nil, err
 	}
 

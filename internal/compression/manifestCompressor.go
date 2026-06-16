@@ -1,4 +1,4 @@
-package connection
+package compression
 
 import (
 	"archive/zip"
@@ -11,34 +11,26 @@ import (
 	"time"
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
 )
-
-type CompressionInput struct {
-	Namespace      string
-	Connection     string
-	MdaiVersion    string
-	Telemetries    []octantv1alpha.MLTType
-	Format         octantv1alpha.ManifestOutFormat
-	DeploymentType octantv1alpha.DeploymentType
-}
 
 // ManifestCompressor provide functionality to generate a compressed connection manifest.
 type ManifestCompressor interface {
 	// CreateCompressed creates manifest files based on the given inputs and then compress the files into a zip.
-	CreateCompressed(ctx context.Context, input CompressionInput) (*bytes.Buffer, error)
+	CreateCompressed(ctx context.Context, input connection.CompressionInput) (*bytes.Buffer, error)
 }
 
 // ConnectionManifestCompressor implements ManifestCompressor.
 type ConnectionManifestCompressor struct {
-	generator ManifestGenerator
+	generator connection.ManifestGenerator
 }
 
 // Ensure ConnectionManifestCompressor implements ManifestCompressor.
 var _ ManifestCompressor = &ConnectionManifestCompressor{}
 
 // NewConnectionManifestCompressor returns a new instance of ConnectionManifestCompressor.
-func NewConnectionManifestCompressor(generator ManifestGenerator) *ConnectionManifestCompressor {
+func NewConnectionManifestCompressor(generator connection.ManifestGenerator) *ConnectionManifestCompressor {
 	return &ConnectionManifestCompressor{
 		generator: generator,
 	}
@@ -47,7 +39,7 @@ func NewConnectionManifestCompressor(generator ManifestGenerator) *ConnectionMan
 // CreateCompressed creates manifest files based on the given inputs and then compresses the files into a zip.
 func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	ctx context.Context,
-	input CompressionInput,
+	input connection.CompressionInput,
 ) (*bytes.Buffer, error) {
 	data := cmc.toConnectionData(input.Telemetries, input.DeploymentType)
 	data.MdaiNamespace = input.Namespace
@@ -86,7 +78,7 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 
 		const utf8Flag = 0x800 // utf-8 filenames flag
 		// Now we know the exact compressed size. Build the header.
-		const versionTwo = 20 // zip spec v2.0, widely compatible
+		const versionTwo = uint16(20) // zip spec v2.0, widely compatible
 		header := &zip.FileHeader{
 			Name:               filename,
 			Method:             zip.Deflate,
@@ -130,7 +122,7 @@ func (cmc *ConnectionManifestCompressor) CreateCompressed(
 func (*ConnectionManifestCompressor) toConnectionData(
 	telemetries []octantv1alpha.MLTType,
 	deployment octantv1alpha.DeploymentType,
-) OctantConnectionData {
+) connection.OctantConnectionData {
 	telemetryTypes := make([]telemetry.MLT, len(telemetries))
 	for i, t := range telemetries {
 		switch t {
@@ -143,16 +135,16 @@ func (*ConnectionManifestCompressor) toConnectionData(
 		}
 	}
 
-	deploymentType := ArgoSideloadDeploymentType
+	deploymentType := connection.ArgoSideloadDeploymentType
 	if deployment == octantv1alpha.DeploymentType_DEPLOYMENT_TYPE_ARGO_MANIFEST {
-		deploymentType = ArgoManifestsDeploymentType
+		deploymentType = connection.ArgoManifestsDeploymentType
 	}
 
-	return OctantConnectionData{
+	return connection.OctantConnectionData{
 		TelemetryTypes: telemetryTypes,
-		Deployment: &Deployment{
+		Deployment: &connection.Deployment{
 			Type: deploymentType,
 		},
-		Destinations: make([]OctantConnectionDestination, 1),
+		Destinations: make([]connection.OctantConnectionDestination, 1),
 	}
 }

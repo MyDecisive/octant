@@ -28,6 +28,15 @@ type ConnectionCRUDInput struct {
 	NoDeploy bool
 }
 
+type CompressionInput struct {
+	Namespace      string
+	Connection     string
+	MdaiVersion    string
+	Telemetries    []octantv1alpha.MLTType
+	Format         octantv1alpha.ManifestOutFormat
+	DeploymentType octantv1alpha.DeploymentType
+}
+
 type Connection[T any] interface {
 	GetConnectionByName(ctx context.Context, input ConnectionCRUDInput) (*T, error)
 	GetConnections(ctx context.Context, input ConnectionCRUDInput) ([]string, error)

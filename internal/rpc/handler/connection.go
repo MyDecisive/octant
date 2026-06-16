@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
+	"github.com/mydecisive/octant/internal/compression"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -26,13 +27,13 @@ type ConnectionHandler struct {
 
 	config           *config.Configuration
 	octantConnection connection.Connection[connection.OctantConnectionData]
-	compressor       connection.ManifestCompressor
+	compressor       compression.ManifestCompressor
 }
 
 func NewConnectionHandler(
 	octantConfig *config.Configuration,
 	octantConnection connection.Connection[connection.OctantConnectionData],
-	compressor connection.ManifestCompressor,
+	compressor compression.ManifestCompressor,
 ) *ConnectionHandler {
 	return &ConnectionHandler{
 		config:           octantConfig,
