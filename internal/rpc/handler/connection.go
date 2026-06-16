@@ -9,9 +9,9 @@ import (
 	"connectrpc.com/connect"
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
-	"github.com/mydecisive/octant/internal/compression"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/connection/compression"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -88,7 +88,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 	)
 
 	logger.Debug("received request")
-	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
+	buf, err := ch.compressor.CreateCompressed(ctx, connection.ManifestGeneratorInput{
 		Namespace:   connScope.GetNamespace(),
 		Connection:  connScope.GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),

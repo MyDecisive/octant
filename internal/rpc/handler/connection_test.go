@@ -11,6 +11,7 @@ import (
 	"github.com/go-faker/faker/v4"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	compressionmock "github.com/mydecisive/octant/internal/mock/compression"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		t.Parallel()
 
 		expected := faker.Word()
-		mockCompressor := connectionmock.NewMockManifestCompressor(t)
+		mockCompressor := compressionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(bytes.NewBufferString(expected), nil)
 
 		target := NewConnectionHandler(nil, nil, mockCompressor)
@@ -57,7 +58,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 	t.Run("err", func(t *testing.T) {
 		t.Parallel()
 
-		mockCompressor := connectionmock.NewMockManifestCompressor(t)
+		mockCompressor := compressionmock.NewMockManifestCompressor(t)
 		mockCompressor.EXPECT().CreateCompressed(mock.Anything, mock.Anything).Return(nil, assert.AnError)
 
 		target := NewConnectionHandler(nil, nil, mockCompressor)

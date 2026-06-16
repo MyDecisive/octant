@@ -19,7 +19,7 @@ packages:
     interfaces:
       Connection:
       ManifestGenerator:
-  github.com/mydecisive/octant/internal/compression:
+  github.com/mydecisive/octant/internal/connection/compression:
     interfaces:
       ManifestCompressor:
   github.com/mydecisive/octant/internal/metrics:

@@ -28,7 +28,7 @@ type ConnectionCRUDInput struct {
 	NoDeploy bool
 }
 
-type CompressionInput struct {
+type ManifestGeneratorInput struct {
 	Namespace      string
 	Connection     string
 	MdaiVersion    string

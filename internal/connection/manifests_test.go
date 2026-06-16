@@ -797,7 +797,7 @@ func TestCreateExportableArgoManifests(t *testing.T) {
 		},
 	}
 
-	manifests, err := target.CreateExportableArgoManifests(CompressionInput{
+	manifests, err := target.CreateExportableArgoManifests(ManifestGeneratorInput{
 		MdaiVersion: "0.9.0-dev",
 		Namespace:   "test-namespace",
 		Connection:  "test-app",

@@ -588,7 +588,7 @@ func (_m *MockManifestGenerator) EXPECT() *MockManifestGenerator_Expecter {
 }
 
 // CreateExportableArgoManifests provides a mock function for the type MockManifestGenerator
-func (_mock *MockManifestGenerator) CreateExportableArgoManifests(input connection.CompressionInput, connection1 connection.OctantConnectionData) (map[string][]byte, error) {
+func (_mock *MockManifestGenerator) CreateExportableArgoManifests(input connection.ManifestGeneratorInput, connection1 connection.OctantConnectionData) (map[string][]byte, error) {
 	ret := _mock.Called(input, connection1)
 
 	if len(ret) == 0 {
@@ -597,17 +597,17 @@ func (_mock *MockManifestGenerator) CreateExportableArgoManifests(input connecti
 
 	var r0 map[string][]byte
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(connection.CompressionInput, connection.OctantConnectionData) (map[string][]byte, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(connection.ManifestGeneratorInput, connection.OctantConnectionData) (map[string][]byte, error)); ok {
 		return returnFunc(input, connection1)
 	}
-	if returnFunc, ok := ret.Get(0).(func(connection.CompressionInput, connection.OctantConnectionData) map[string][]byte); ok {
+	if returnFunc, ok := ret.Get(0).(func(connection.ManifestGeneratorInput, connection.OctantConnectionData) map[string][]byte); ok {
 		r0 = returnFunc(input, connection1)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string][]byte)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(connection.CompressionInput, connection.OctantConnectionData) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(connection.ManifestGeneratorInput, connection.OctantConnectionData) error); ok {
 		r1 = returnFunc(input, connection1)
 	} else {
 		r1 = ret.Error(1)
@@ -621,17 +621,17 @@ type MockManifestGenerator_CreateExportableArgoManifests_Call struct {
 }
 
 // CreateExportableArgoManifests is a helper method to define mock.On call
-//   - input connection.CompressionInput
+//   - input connection.ManifestGeneratorInput
 //   - connection1 connection.OctantConnectionData
 func (_e *MockManifestGenerator_Expecter) CreateExportableArgoManifests(input interface{}, connection1 interface{}) *MockManifestGenerator_CreateExportableArgoManifests_Call {
 	return &MockManifestGenerator_CreateExportableArgoManifests_Call{Call: _e.mock.On("CreateExportableArgoManifests", input, connection1)}
 }
 
-func (_c *MockManifestGenerator_CreateExportableArgoManifests_Call) Run(run func(input connection.CompressionInput, connection1 connection.OctantConnectionData)) *MockManifestGenerator_CreateExportableArgoManifests_Call {
+func (_c *MockManifestGenerator_CreateExportableArgoManifests_Call) Run(run func(input connection.ManifestGeneratorInput, connection1 connection.OctantConnectionData)) *MockManifestGenerator_CreateExportableArgoManifests_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 connection.CompressionInput
+		var arg0 connection.ManifestGeneratorInput
 		if args[0] != nil {
-			arg0 = args[0].(connection.CompressionInput)
+			arg0 = args[0].(connection.ManifestGeneratorInput)
 		}
 		var arg1 connection.OctantConnectionData
 		if args[1] != nil {
@@ -650,7 +650,7 @@ func (_c *MockManifestGenerator_CreateExportableArgoManifests_Call) Return(strin
 	return _c
 }
 
-func (_c *MockManifestGenerator_CreateExportableArgoManifests_Call) RunAndReturn(run func(input connection.CompressionInput, connection1 connection.OctantConnectionData) (map[string][]byte, error)) *MockManifestGenerator_CreateExportableArgoManifests_Call {
+func (_c *MockManifestGenerator_CreateExportableArgoManifests_Call) RunAndReturn(run func(input connection.ManifestGeneratorInput, connection1 connection.OctantConnectionData) (map[string][]byte, error)) *MockManifestGenerator_CreateExportableArgoManifests_Call {
 	_c.Call.Return(run)
 	return _c
 }

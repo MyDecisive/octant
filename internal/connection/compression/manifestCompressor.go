@@ -18,7 +18,7 @@ import (
 // ManifestCompressor provide functionality to generate a compressed connection manifest.
 type ManifestCompressor interface {
 	// CreateCompressed creates manifest files based on the given inputs and then compress the files into a zip.
-	CreateCompressed(ctx context.Context, input connection.CompressionInput) (*bytes.Buffer, error)
+	CreateCompressed(ctx context.Context, input connection.ManifestGeneratorInput) (*bytes.Buffer, error)
 }
 
 // ConnectionManifestCompressor implements ManifestCompressor.
@@ -39,7 +39,7 @@ func NewConnectionManifestCompressor(generator connection.ManifestGenerator) *Co
 // CreateCompressed creates manifest files based on the given inputs and then compresses the files into a zip.
 func (cmc *ConnectionManifestCompressor) CreateCompressed(
 	ctx context.Context,
-	input connection.CompressionInput,
+	input connection.ManifestGeneratorInput,
 ) (*bytes.Buffer, error) {
 	data := cmc.toConnectionData(input.Telemetries, input.DeploymentType)
 	data.MdaiNamespace = input.Namespace

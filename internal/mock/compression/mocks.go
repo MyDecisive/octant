@@ -40,7 +40,7 @@ func (_m *MockManifestCompressor) EXPECT() *MockManifestCompressor_Expecter {
 }
 
 // CreateCompressed provides a mock function for the type MockManifestCompressor
-func (_mock *MockManifestCompressor) CreateCompressed(ctx context.Context, input connection.CompressionInput) (*bytes.Buffer, error) {
+func (_mock *MockManifestCompressor) CreateCompressed(ctx context.Context, input connection.ManifestGeneratorInput) (*bytes.Buffer, error) {
 	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
@@ -49,17 +49,17 @@ func (_mock *MockManifestCompressor) CreateCompressed(ctx context.Context, input
 
 	var r0 *bytes.Buffer
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.CompressionInput) (*bytes.Buffer, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ManifestGeneratorInput) (*bytes.Buffer, error)); ok {
 		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.CompressionInput) *bytes.Buffer); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, connection.ManifestGeneratorInput) *bytes.Buffer); ok {
 		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*bytes.Buffer)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.CompressionInput) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, connection.ManifestGeneratorInput) error); ok {
 		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
@@ -74,20 +74,20 @@ type MockManifestCompressor_CreateCompressed_Call struct {
 
 // CreateCompressed is a helper method to define mock.On call
 //   - ctx context.Context
-//   - input connection.CompressionInput
+//   - input connection.ManifestGeneratorInput
 func (_e *MockManifestCompressor_Expecter) CreateCompressed(ctx interface{}, input interface{}) *MockManifestCompressor_CreateCompressed_Call {
 	return &MockManifestCompressor_CreateCompressed_Call{Call: _e.mock.On("CreateCompressed", ctx, input)}
 }
 
-func (_c *MockManifestCompressor_CreateCompressed_Call) Run(run func(ctx context.Context, input connection.CompressionInput)) *MockManifestCompressor_CreateCompressed_Call {
+func (_c *MockManifestCompressor_CreateCompressed_Call) Run(run func(ctx context.Context, input connection.ManifestGeneratorInput)) *MockManifestCompressor_CreateCompressed_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 connection.CompressionInput
+		var arg1 connection.ManifestGeneratorInput
 		if args[1] != nil {
-			arg1 = args[1].(connection.CompressionInput)
+			arg1 = args[1].(connection.ManifestGeneratorInput)
 		}
 		run(
 			arg0,
@@ -102,7 +102,7 @@ func (_c *MockManifestCompressor_CreateCompressed_Call) Return(buffer *bytes.Buf
 	return _c
 }
 
-func (_c *MockManifestCompressor_CreateCompressed_Call) RunAndReturn(run func(ctx context.Context, input connection.CompressionInput) (*bytes.Buffer, error)) *MockManifestCompressor_CreateCompressed_Call {
+func (_c *MockManifestCompressor_CreateCompressed_Call) RunAndReturn(run func(ctx context.Context, input connection.ManifestGeneratorInput) (*bytes.Buffer, error)) *MockManifestCompressor_CreateCompressed_Call {
 	_c.Call.Return(run)
 	return _c
 }
