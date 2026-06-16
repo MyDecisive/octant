@@ -1,7 +1,7 @@
 # Installation
 
 - [From Local Build](#local-deployment-notes) - Run as a local deployment.
-- [Via Argo CD](https://github.com/MyDecisive/octant-argo-example/blob/main/docs/installation.md) - follow our detailed Argo CD Example for running Octant in a cluster with Argo CD.
+- [Via Argo CD](https://github.com/MyDecisive/octant-argo-example/blob/main/docs/installation.md) - follow our detailed Argo CD Example for running Octant in a cluster with Argo CD. Note: This will take you to a different repo, we suggest opening this in a new tab.
 
 ## Local Deployment Notes
 
