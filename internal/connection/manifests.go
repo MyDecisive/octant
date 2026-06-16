@@ -128,7 +128,7 @@ func (oc *OctantConnection) createTemplateData(
 }
 
 type ManifestGenerator interface {
-	CreateExportableArgoManifests(input CompressionInput, connection OctantConnectionData) (map[string][]byte, error)
+	CreateExportableArgoManifests(input ManifestGeneratorInput, connection OctantConnectionData) (map[string][]byte, error)
 	CreateExportableTemplateData(
 		name string,
 		connection OctantConnectionData,
@@ -177,7 +177,7 @@ func getDefaultAppTemplates() map[string]string {
 }
 
 func (cmg *ConnectionManifestGenerator) CreateExportableArgoManifests(
-	input CompressionInput,
+	input ManifestGeneratorInput,
 	connection OctantConnectionData,
 ) (map[string][]byte, error) {
 	format := cmg.toConnectionFormat(input.Format)

@@ -18,8 +18,10 @@ packages:
   github.com/mydecisive/octant/internal/connection:
     interfaces:
       Connection:
-      ManifestCompressor:
       ManifestGenerator:
+  github.com/mydecisive/octant/internal/connection/compression:
+    interfaces:
+      ManifestCompressor:
   github.com/mydecisive/octant/internal/metrics:
     interfaces:
       PromClientFactory:

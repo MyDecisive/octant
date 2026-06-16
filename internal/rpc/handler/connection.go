@@ -11,6 +11,7 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
+	"github.com/mydecisive/octant/internal/connection/compression"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -26,13 +27,13 @@ type ConnectionHandler struct {
 
 	config           *config.Configuration
 	octantConnection connection.Connection[connection.OctantConnectionData]
-	compressor       connection.ManifestCompressor
+	compressor       compression.ManifestCompressor
 }
 
 func NewConnectionHandler(
 	octantConfig *config.Configuration,
 	octantConnection connection.Connection[connection.OctantConnectionData],
-	compressor connection.ManifestCompressor,
+	compressor compression.ManifestCompressor,
 ) *ConnectionHandler {
 	return &ConnectionHandler{
 		config:           octantConfig,
@@ -87,8 +88,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 	)
 
 	logger.Debug("received request")
-
-	buf, err := ch.compressor.CreateCompressed(ctx, connection.CompressionInput{
+	buf, err := ch.compressor.CreateCompressed(ctx, connection.ManifestGeneratorInput{
 		Namespace:   connScope.GetNamespace(),
 		Connection:  connScope.GetConnectionName(),
 		Telemetries: request.Msg.GetTelemetryTypes(),
@@ -110,7 +110,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 		}
 
 		chunk := make([]byte, chunkSize)
-		_, err = buf.Read(chunk)
+		readBytes, err := buf.Read(chunk)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
@@ -118,8 +118,9 @@ func (ch *ConnectionHandler) GenerateManifests(
 			logger.Error("Failed to read chunks of zip", zap.Error(err))
 			return connect.NewError(connect.CodeInternal, errors.New("transferring zip"))
 		}
+
 		if err := stream.Send(&octantv1alpha.GenerateManifestsResponse{
-			Data:  chunk,
+			Data:  chunk[:readBytes],
 			Total: uint64(total), // nolint:gosec //total will never be negative
 			Type:  manifestContentZip,
 		}); err != nil {
