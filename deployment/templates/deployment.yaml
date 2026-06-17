@@ -54,4 +54,8 @@ spec:
             value: "{{ .Values.clarity.default.traceIncludeErr }}"
           - name: MDAI_VALIDATOR_VERSION
             value: "{{ .Values.validator.version }}"
+          - name: CERT_MANAGER_VERSION
+            value: "{{ .Values.cert-manager.version }}"
+          - name: CERT_MANAGER_NAMESPACE
+            value: "{{ .Values.cert-manager.namespace }}"
 
