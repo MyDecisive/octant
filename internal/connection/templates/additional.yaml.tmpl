@@ -1,14 +1,14 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .AppName }}-octant-access
+  name: {{ .ConnectionName }}-octant-access
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
+    app: {{ .ConnectionName }}
+    app.kubernetes.io/instance: {{ .ConnectionName }}
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-access
+    argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:rbac.authorization.k8s.io/v1:mdai/{{ .ConnectionName }}-octant-access
     argocd.argoproj.io/sync-wave: "-1"
   {{- end }}
 rules:
@@ -19,19 +19,19 @@ rules:
   - apiGroups: [ "apps" ]
     resources: [ "deployments" ]
     verbs: [ "get" ]
-    resourceNames: ["{{ .AppName }}-log-sampling-collector", "{{ .AppName }}-trace-sampling-collector"]
+    resourceNames: ["{{ .ConnectionName }}-log-sampling-collector", "{{ .ConnectionName }}-trace-sampling-collector"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ .AppName }}-octant-access-binding
+  name: {{ .ConnectionName }}-octant-access-binding
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
+    app: {{ .ConnectionName }}
+    app.kubernetes.io/instance: {{ .ConnectionName }}
   {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:rbac.authorization.k8s.io/v1:mdai/{{ .AppName }}-octant-access-binding
+    argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:rbac.authorization.k8s.io/v1:mdai/{{ .ConnectionName }}-octant-access-binding
   {{- end }}
 subjects:
   - kind: ServiceAccount
@@ -39,5 +39,5 @@ subjects:
     namespace: {{ .CurrentNamespace }}
 roleRef:
   kind: Role
-  name: {{ .AppName }}-octant-access
+  name: {{ .ConnectionName }}-octant-access
   apiGroup: ""

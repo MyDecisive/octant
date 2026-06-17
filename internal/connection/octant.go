@@ -18,7 +18,11 @@ import (
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 )
 
 type OctantConnectionDestination struct {
@@ -38,6 +42,8 @@ type OctantConnectionData struct {
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
 	configMapStore     kube.ConfigMapStore
+	secretStore        kube.SecretStore
+	k8sClient          kubernetes.Interface
 	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
 	connectionMetrics  metrics.ConnectionStatus
@@ -52,11 +58,13 @@ type OctantConnectionOption func(*OctantConnection)
 // NewOctantConnection creates and returns a new OctantConnection.
 func NewOctantConnection(
 	configMapStore kube.ConfigMapStore, // required
+	secretStore kube.SecretStore,
 	configuration *config.Configuration, // required
 	options ...OctantConnectionOption,
 ) *OctantConnection {
 	oc := &OctantConnection{
 		configMapStore: configMapStore,
+		secretStore:    secretStore,
 		configuration:  configuration,
 	}
 
@@ -72,6 +80,13 @@ func WithArgoCDIntegration(
 ) OctantConnectionOption {
 	return func(o *OctantConnection) {
 		o.argoIntegration = theIntegration
+	}
+}
+
+// WithK8sClient provides a kubernetes client to the octant connection.
+func WithK8sClient(k8sClient kubernetes.Interface) OctantConnectionOption {
+	return func(o *OctantConnection) {
+		o.k8sClient = k8sClient
 	}
 }
 
@@ -228,13 +243,70 @@ func (oc *OctantConnection) SaveConnection(
 	}
 
 	if !input.NoDeploy &&
-		connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err := oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
+		connection.Deployment != nil &&
+		connection.Deployment.Type == ArgoSideloadDeploymentType {
+		templateData, err := oc.createTemplateData(ctx, input.ConnectionName, connection)
 		if err != nil {
+			return err
+		}
+
+		// render and apply the integration secret and necessary rbac.
+		if err = oc.applyConnectionSecret(ctx, templateData); err != nil {
+			return err
+		}
+		if err = oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, templateData); err != nil {
+			// TODO: revert secret??
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (oc *OctantConnection) applyConnectionSecret(ctx context.Context, templateData *ArgoConnectionTemplateData) error {
+	secretManifest, err := oc.generator.RenderConnectionSecret(templateData, YAMLOutputFormat)
+	if err != nil {
+		return fmt.Errorf("rendering secret template: %w", err)
+	}
+
+	var secret corev1.Secret
+	if err = yaml.Unmarshal(secretManifest, &secret); err != nil {
+		return fmt.Errorf("unmarshal secret template: %w", err)
+	}
+
+	if err = oc.secretStore.CreateSecret(ctx, templateData.Namespace, &secret); err != nil {
+		return fmt.Errorf("creating secret: %w", err)
+	}
+
+	// render and apply the role for the secret.
+	secretRoleManifest, err := oc.generator.RenderConnectionSecretRole(templateData, YAMLOutputFormat)
+	if err != nil {
+		return fmt.Errorf("rendering secret role template: %w", err)
+	}
+
+	var secretRole v1.Role
+	if err = yaml.Unmarshal(secretRoleManifest, &secretRole); err != nil {
+		return fmt.Errorf("unmarshal secret role template: %w", err)
+	}
+
+	if _, err = oc.k8sClient.RbacV1().Roles(templateData.Namespace).Create(ctx, &secretRole, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("creating role: %w", err)
+	}
+
+	// render and apply the role binding that binds the role to the service account for the secret.
+	secretRoleBindingManifest, err := oc.generator.RenderConnectionSecretRoleBinding(templateData, YAMLOutputFormat)
+	if err != nil {
+		return fmt.Errorf("rendering secret role binding template: %w", err)
+	}
+
+	var secretRoleBinding v1.RoleBinding
+	if err = yaml.Unmarshal(secretRoleBindingManifest, &secretRole); err != nil {
+		return fmt.Errorf("unmarshal secret role binding template: %w", err)
+	}
+
+	if _, err = oc.k8sClient.RbacV1().RoleBindings(templateData.Namespace).Create(ctx, &secretRoleBinding, metav1.CreateOptions{}); err != nil {
+		return fmt.Errorf("creating role binding: %w", err)
+	}
 	return nil
 }
 

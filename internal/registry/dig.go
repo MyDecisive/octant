@@ -242,16 +242,20 @@ func provideSecretController( // nolint: ireturn
 
 func provideOctantConnection(
 	cmStore datacorekube.ConfigMapStore,
+	secretStore datacorekube.SecretStore,
 	theConfig *config.Configuration,
 	connectionMetrics metrics.ConnectionStatus,
 	manifestGenerator connection.ManifestGenerator,
 	argocdIntegration integration.Integration[integration.ArgoCDIntegrationData],
 	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
 	argoClient argocd.APIClient,
+	k8sClient kubernetes.Interface,
 ) connection.Connection[connection.OctantConnectionData] { // nolint: ireturn
 	return connection.NewOctantConnection(
 		cmStore,
+		secretStore,
 		theConfig,
+		connection.WithK8sClient(k8sClient),
 		connection.WithConnectionMetrics(connectionMetrics),
 		connection.WithGenerator(manifestGenerator),
 		connection.WithArgoCDIntegration(argocdIntegration),

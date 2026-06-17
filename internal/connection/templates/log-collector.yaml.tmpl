@@ -8,16 +8,16 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: {{ .AppName }}-log-sampling
+  name: {{ .ConnectionName }}-log-sampling
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}-log-sampling
-    mydecisive.ai/hub-name: {{ .AppName }}
+    app: {{ .ConnectionName }}
+    app.kubernetes.io/instance: {{ .ConnectionName }}-log-sampling
+    mydecisive.ai/hub-name: {{ .ConnectionName }}
   {{- if or .IsArgoSideload (eq $replicas 0) }}
   annotations:
     {{- if .IsArgoSideload }}
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-log-sampling
+    argocd.argoproj.io/tracking-id: {{ .ConnectionName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .ConnectionName }}-log-sampling
     argocd.argoproj.io/sync-options: Force=true,Replace=true
     argocd.argoproj.io/sync-wave: "1"
     {{- end }}
@@ -40,17 +40,17 @@ spec:
     - name: DD_API_KEY
       valueFrom:
         secretKeyRef:
-          name: {{ .AppName }}-integration-secret
+          name: {{ .ConnectionName }}-integration-secret
           key: api-key
     - name: DD_SITE
       valueFrom:
         secretKeyRef:
-          name: {{ .AppName }}-integration-secret
+          name: {{ .ConnectionName }}-integration-secret
           key: site-url
     {{- end }}
   envFrom:
   - configMapRef:
-      name: {{ .AppName }}-variables
+      name: {{ .ConnectionName }}-variables
   config:
     receivers:
       otlp:
@@ -98,7 +98,7 @@ spec:
           site: "${env:DD_SITE}"
       {{- end }}
       otlp/observer:
-        endpoint: {{ .AppName }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
+        endpoint: {{ .ConnectionName }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
         tls:
           insecure: true
     extensions:
@@ -131,8 +131,8 @@ spec:
           exporters: [ otlp/observer ]
       telemetry:
         resource:
-          mdai_connection: "{{ .AppName }}"
-          service.name: "{{ .AppName }}-log-sampling-collector"
+          mdai_connection: "{{ .ConnectionName }}"
+          service.name: "{{ .ConnectionName }}-log-sampling-collector"
         metrics:
           readers:
             - pull:

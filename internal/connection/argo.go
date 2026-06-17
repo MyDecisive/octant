@@ -20,15 +20,10 @@ import (
 func (oc *OctantConnection) sideloadConnectionApp(
 	ctx context.Context,
 	logger *zap.Logger,
-	name string,
-	connection OctantConnectionData,
+	connectionName string,
+	templateData *ArgoConnectionTemplateData,
 ) error {
-	templateData, err := oc.createTemplateData(ctx, name, connection)
-	if err != nil {
-		return err
-	}
-
-	argoIntegration, err := oc.getArgoIntegration(ctx, connection.Deployment.IntegrationName)
+	argoIntegration, err := oc.getArgoIntegration(ctx, connectionName)
 	if err != nil {
 		return err
 	}

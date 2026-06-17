@@ -865,6 +865,210 @@ func (_c *MockManifestGenerator_RenderCollectorDeploymentManifests_Call) RunAndR
 	return _c
 }
 
+// RenderConnectionSecret provides a mock function for the type MockManifestGenerator
+func (_mock *MockManifestGenerator) RenderConnectionSecret(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error) {
+	ret := _mock.Called(templateData, outputFormat)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RenderConnectionSecret")
+	}
+
+	var r0 []byte
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) ([]byte, error)); ok {
+		return returnFunc(templateData, outputFormat)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) []byte); ok {
+		r0 = returnFunc(templateData, outputFormat)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) error); ok {
+		r1 = returnFunc(templateData, outputFormat)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockManifestGenerator_RenderConnectionSecret_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RenderConnectionSecret'
+type MockManifestGenerator_RenderConnectionSecret_Call struct {
+	*mock.Call
+}
+
+// RenderConnectionSecret is a helper method to define mock.On call
+//   - templateData *connection.ArgoConnectionTemplateData
+//   - outputFormat connection.ManifestOutputFormat
+func (_e *MockManifestGenerator_Expecter) RenderConnectionSecret(templateData interface{}, outputFormat interface{}) *MockManifestGenerator_RenderConnectionSecret_Call {
+	return &MockManifestGenerator_RenderConnectionSecret_Call{Call: _e.mock.On("RenderConnectionSecret", templateData, outputFormat)}
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecret_Call) Run(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat)) *MockManifestGenerator_RenderConnectionSecret_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *connection.ArgoConnectionTemplateData
+		if args[0] != nil {
+			arg0 = args[0].(*connection.ArgoConnectionTemplateData)
+		}
+		var arg1 connection.ManifestOutputFormat
+		if args[1] != nil {
+			arg1 = args[1].(connection.ManifestOutputFormat)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecret_Call) Return(bytes1 []byte, err error) *MockManifestGenerator_RenderConnectionSecret_Call {
+	_c.Call.Return(bytes1, err)
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecret_Call) RunAndReturn(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error)) *MockManifestGenerator_RenderConnectionSecret_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RenderConnectionSecretRole provides a mock function for the type MockManifestGenerator
+func (_mock *MockManifestGenerator) RenderConnectionSecretRole(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error) {
+	ret := _mock.Called(templateData, outputFormat)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RenderConnectionSecretRole")
+	}
+
+	var r0 []byte
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) ([]byte, error)); ok {
+		return returnFunc(templateData, outputFormat)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) []byte); ok {
+		r0 = returnFunc(templateData, outputFormat)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) error); ok {
+		r1 = returnFunc(templateData, outputFormat)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockManifestGenerator_RenderConnectionSecretRole_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RenderConnectionSecretRole'
+type MockManifestGenerator_RenderConnectionSecretRole_Call struct {
+	*mock.Call
+}
+
+// RenderConnectionSecretRole is a helper method to define mock.On call
+//   - templateData *connection.ArgoConnectionTemplateData
+//   - outputFormat connection.ManifestOutputFormat
+func (_e *MockManifestGenerator_Expecter) RenderConnectionSecretRole(templateData interface{}, outputFormat interface{}) *MockManifestGenerator_RenderConnectionSecretRole_Call {
+	return &MockManifestGenerator_RenderConnectionSecretRole_Call{Call: _e.mock.On("RenderConnectionSecretRole", templateData, outputFormat)}
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRole_Call) Run(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat)) *MockManifestGenerator_RenderConnectionSecretRole_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *connection.ArgoConnectionTemplateData
+		if args[0] != nil {
+			arg0 = args[0].(*connection.ArgoConnectionTemplateData)
+		}
+		var arg1 connection.ManifestOutputFormat
+		if args[1] != nil {
+			arg1 = args[1].(connection.ManifestOutputFormat)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRole_Call) Return(bytes1 []byte, err error) *MockManifestGenerator_RenderConnectionSecretRole_Call {
+	_c.Call.Return(bytes1, err)
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRole_Call) RunAndReturn(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error)) *MockManifestGenerator_RenderConnectionSecretRole_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RenderConnectionSecretRoleBinding provides a mock function for the type MockManifestGenerator
+func (_mock *MockManifestGenerator) RenderConnectionSecretRoleBinding(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error) {
+	ret := _mock.Called(templateData, outputFormat)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RenderConnectionSecretRoleBinding")
+	}
+
+	var r0 []byte
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) ([]byte, error)); ok {
+		return returnFunc(templateData, outputFormat)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) []byte); ok {
+		r0 = returnFunc(templateData, outputFormat)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*connection.ArgoConnectionTemplateData, connection.ManifestOutputFormat) error); ok {
+		r1 = returnFunc(templateData, outputFormat)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockManifestGenerator_RenderConnectionSecretRoleBinding_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RenderConnectionSecretRoleBinding'
+type MockManifestGenerator_RenderConnectionSecretRoleBinding_Call struct {
+	*mock.Call
+}
+
+// RenderConnectionSecretRoleBinding is a helper method to define mock.On call
+//   - templateData *connection.ArgoConnectionTemplateData
+//   - outputFormat connection.ManifestOutputFormat
+func (_e *MockManifestGenerator_Expecter) RenderConnectionSecretRoleBinding(templateData interface{}, outputFormat interface{}) *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call {
+	return &MockManifestGenerator_RenderConnectionSecretRoleBinding_Call{Call: _e.mock.On("RenderConnectionSecretRoleBinding", templateData, outputFormat)}
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call) Run(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat)) *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *connection.ArgoConnectionTemplateData
+		if args[0] != nil {
+			arg0 = args[0].(*connection.ArgoConnectionTemplateData)
+		}
+		var arg1 connection.ManifestOutputFormat
+		if args[1] != nil {
+			arg1 = args[1].(connection.ManifestOutputFormat)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call) Return(bytes1 []byte, err error) *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call {
+	_c.Call.Return(bytes1, err)
+	return _c
+}
+
+func (_c *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call) RunAndReturn(run func(templateData *connection.ArgoConnectionTemplateData, outputFormat connection.ManifestOutputFormat) ([]byte, error)) *MockManifestGenerator_RenderConnectionSecretRoleBinding_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RenderMdaiAppManifest provides a mock function for the type MockManifestGenerator
 func (_mock *MockManifestGenerator) RenderMdaiAppManifest(mdaiVersion string, namespace string) ([]byte, error) {
 	ret := _mock.Called(mdaiVersion, namespace)

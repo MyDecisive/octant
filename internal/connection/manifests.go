@@ -47,11 +47,17 @@ var validatorTemplate string
 //go:embed templates/secret.yaml.tmpl
 var secretTemplate string
 
+//go:embed templates/secret-role.yaml.tmpl
+var secretRoleTemplate string
+
+//go:embed templates/secret-role-binding.yaml.tmpl
+var secretRoleBindingTemplate string
+
 //go:embed templates/additional.yaml.tmpl
 var additionalTemplate string
 
 type ArgoConnectionTemplateData struct {
-	AppName                string
+	ConnectionName         string
 	Namespace              string
 	ServiceAccount         string
 	CurrentNamespace       string
@@ -111,7 +117,7 @@ func (oc *OctantConnection) createTemplateData(
 	}
 
 	templateData := ArgoConnectionTemplateData{
-		AppName:                name,
+		ConnectionName:         name,
 		CurrentNamespace:       oc.configuration.CurrentNamespace,
 		ServiceAccount:         oc.configuration.ServiceAccountName,
 		Namespace:              connection.MdaiNamespace,
@@ -144,6 +150,18 @@ type ManifestGenerator interface {
 		outputFormat ManifestOutputFormat,
 	) ([]byte, error)
 	RenderArgoAppManifest(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
+	RenderConnectionSecret(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
+	RenderConnectionSecretRole(
+		templateData *ArgoConnectionTemplateData,
+		outputFormat ManifestOutputFormat,
+	) ([]byte, error)
+	RenderConnectionSecretRoleBinding(
 		templateData *ArgoConnectionTemplateData,
 		outputFormat ManifestOutputFormat,
 	) ([]byte, error)
@@ -230,7 +248,7 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 	}
 
 	templateData := ArgoConnectionTemplateData{
-		AppName:                name,
+		ConnectionName:         name,
 		CurrentNamespace:       cmg.configuration.CurrentNamespace,
 		ServiceAccount:         cmg.configuration.ServiceAccountName,
 		Namespace:              connection.MdaiNamespace,
@@ -244,60 +262,6 @@ func (cmg *ConnectionManifestGenerator) CreateExportableTemplateData(
 		DefaultTraceIncludeErr: cmg.configuration.Budget.DefaultTraceIncludeErr,
 	}
 	return &templateData, nil
-}
-
-// RenderMdaiAppManifest renders the mdai argo application manifest with the provided template inputs.
-func (*ConnectionManifestGenerator) RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
-	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
-	if err != nil {
-		return []byte{}, fmt.Errorf("error parsing mdai app template: %w", err)
-	}
-
-	var renderedYaml bytes.Buffer
-	templateData := struct {
-		MdaiVersion string
-		Namespace   string
-	}{
-		MdaiVersion: mdaiVersion,
-		Namespace:   namespace,
-	}
-	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
-		return []byte{}, templateErr
-	}
-
-	return renderedYaml.Bytes(), nil
-}
-
-// RenderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
-func (*ConnectionManifestGenerator) RenderArgoAppManifest(
-	templateData *ArgoConnectionTemplateData,
-	outputFormat ManifestOutputFormat,
-) ([]byte, error) {
-	if outputFormat == "" {
-		return []byte{}, errors.New("no output format specified")
-	}
-	appManifestTemplate, err := template.New("argo-app").Parse(argoAppTemplate)
-	if err != nil {
-		return []byte{}, err
-	}
-	var renderedYaml bytes.Buffer
-	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
-		return []byte{}, templateErr
-	}
-
-	switch outputFormat {
-	case YAMLOutputFormat:
-		return renderedYaml.Bytes(), nil
-	case JSONOutputFormat:
-		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
-		if err != nil {
-			return []byte{}, err
-		}
-
-		return renderedJSON, nil
-	}
-
-	return renderedYaml.Bytes(), nil
 }
 
 func (cmg *ConnectionManifestGenerator) RenderCollectorDeploymentManifests(
@@ -340,6 +304,28 @@ func (cmg *ConnectionManifestGenerator) RenderCollectorDeploymentManifests(
 	return manifests, nil
 }
 
+// RenderMdaiAppManifest renders the mdai argo application manifest with the provided template inputs.
+func (*ConnectionManifestGenerator) RenderMdaiAppManifest(mdaiVersion, namespace string) ([]byte, error) {
+	appManifestTemplate, err := template.New("mdai-app").Parse(mdaiAppTemplate)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error parsing mdai app template: %w", err)
+	}
+
+	var renderedYaml bytes.Buffer
+	templateData := struct {
+		MdaiVersion string
+		Namespace   string
+	}{
+		MdaiVersion: mdaiVersion,
+		Namespace:   namespace,
+	}
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
 func (cmg *ConnectionManifestGenerator) RenderValidatorManifestForConnection(
 	templateData *ArgoValidatorTemplateData,
 	outputFormat ManifestOutputFormat,
@@ -375,6 +361,131 @@ func (cmg *ConnectionManifestGenerator) RenderValidatorManifestForConnection(
 	}
 
 	return manifest, nil
+}
+
+// RenderArgoAppManifest renders an argo app manifest which establishes a repo for syncing octant manifests with.
+func (*ConnectionManifestGenerator) RenderArgoAppManifest(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return []byte{}, errors.New("no output format specified")
+	}
+	appManifestTemplate, err := template.New("argo-app").Parse(argoAppTemplate)
+	if err != nil {
+		return []byte{}, err
+	}
+	var renderedYaml bytes.Buffer
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		return renderedYaml.Bytes(), nil
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return renderedJSON, nil
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
+func (*ConnectionManifestGenerator) RenderConnectionSecret(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return []byte{}, errors.New("no output format specified")
+	}
+	appManifestTemplate, err := template.New("connection-secret").Parse(secretTemplate)
+	if err != nil {
+		return []byte{}, err
+	}
+	var renderedYaml bytes.Buffer
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		return renderedYaml.Bytes(), nil
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return renderedJSON, nil
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
+func (*ConnectionManifestGenerator) RenderConnectionSecretRole(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return []byte{}, errors.New("no output format specified")
+	}
+	appManifestTemplate, err := template.New("connection-secret-role").Parse(secretRoleTemplate)
+	if err != nil {
+		return []byte{}, err
+	}
+	var renderedYaml bytes.Buffer
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		return renderedYaml.Bytes(), nil
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return renderedJSON, nil
+	}
+
+	return renderedYaml.Bytes(), nil
+}
+
+func (*ConnectionManifestGenerator) RenderConnectionSecretRoleBinding(
+	templateData *ArgoConnectionTemplateData,
+	outputFormat ManifestOutputFormat,
+) ([]byte, error) {
+	if outputFormat == "" {
+		return []byte{}, errors.New("no output format specified")
+	}
+	appManifestTemplate, err := template.New("connection-secret-role-binding").Parse(secretRoleBindingTemplate)
+	if err != nil {
+		return []byte{}, err
+	}
+	var renderedYaml bytes.Buffer
+	if templateErr := appManifestTemplate.Execute(&renderedYaml, templateData); templateErr != nil {
+		return []byte{}, templateErr
+	}
+
+	switch outputFormat {
+	case YAMLOutputFormat:
+		return renderedYaml.Bytes(), nil
+	case JSONOutputFormat:
+		renderedJSON, err := yaml.YAMLToJSON(renderedYaml.Bytes())
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return renderedJSON, nil
+	}
+
+	return renderedYaml.Bytes(), nil
 }
 
 // toConnectionFormat convertsManifestOutFormat enum to ManifestOutputFormat.
