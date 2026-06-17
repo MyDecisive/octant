@@ -7,7 +7,7 @@ package connectionmock
 import (
 	"context"
 
-	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
+	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/octant/internal/connection"
 	mock "github.com/stretchr/testify/mock"
 )

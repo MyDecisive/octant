@@ -127,7 +127,7 @@ func (ch *ConnectionHandler) GenerateManifests(
 		}
 
 		chunk := make([]byte, chunkSize)
-		_, err = buf.Read(chunk)
+		readBytes, err := buf.Read(chunk)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
@@ -135,8 +135,9 @@ func (ch *ConnectionHandler) GenerateManifests(
 			logger.Error("Failed to read chunks of zip", zap.Error(err))
 			return connect.NewError(connect.CodeInternal, errors.New("transferring zip"))
 		}
+
 		if err := stream.Send(&octantv1alpha.GenerateManifestsResponse{
-			Data:  chunk,
+			Data:  chunk[:readBytes],
 			Total: uint64(total), // nolint:gosec //total will never be negative
 			Type:  manifestContentZip,
 		}); err != nil {
