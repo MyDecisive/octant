@@ -129,6 +129,10 @@ func (am *ArgoCDManager) LoadConnection(
 	if err != nil {
 		return err
 	}
+	if len(raw) == 0 {
+		logger.Warn("connection manifests not found, nothing to load")
+		return nil
+	}
 	connections := lo.MapToSlice(raw, func(_ string, content []byte) string {
 		return string(content)
 	})
@@ -153,6 +157,10 @@ func (am *ArgoCDManager) LoadValidator(
 	raw, err := am.generator.Validators(input, manifestdata.JSON)
 	if err != nil {
 		return err
+	}
+	if len(raw) == 0 {
+		logger.Warn("connection manifests not found, nothing to load")
+		return nil
 	}
 	validators := lo.MapToSlice(raw, func(_ string, content []byte) string {
 		return string(content)
@@ -257,6 +265,7 @@ func (am *ArgoCDManager) getAppAsArgoCDApp(
 		if err = json.Unmarshal(raw, &argoApp); err != nil {
 			logger.Warn("ArgoCD app manifest contains manifest that is not a type Application, the manifest will be ignored",
 				zap.String("app", app.String()))
+			continue
 		}
 		apps = append(apps, argoApp)
 	}
