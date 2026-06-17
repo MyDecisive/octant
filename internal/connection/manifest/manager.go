@@ -74,6 +74,8 @@ func NewArgoCDManager(
 	}
 }
 
+// Unload removes all given apps from ArgoCD which then
+// in turn means ArgoCD will remove the resources from the cluster.
 func (am *ArgoCDManager) Unload(
 	ctx context.Context,
 	input manifestdata.ManagerInput,
@@ -96,6 +98,8 @@ func (am *ArgoCDManager) Unload(
 	return nil
 }
 
+// LoadCertManager push cert manager app to ArgoCD which will trigger
+// ArgoCD to install cert manager into the cluster.
 func (am *ArgoCDManager) LoadCertManager(
 	ctx context.Context,
 	input manifestdata.ManagerInput,
@@ -108,6 +112,8 @@ func (am *ArgoCDManager) LoadCertManager(
 	return am.loadApp(ctx, input.Logger, manifestdata.CERT, data, argoClientOpt)
 }
 
+// LoadMDAI push MDAI app to ArgoCD which will trigger
+// ArgoCD to install MDAI into the cluster.
 func (am *ArgoCDManager) LoadMDAI(
 	ctx context.Context,
 	input manifestdata.ManagerInput,
@@ -120,6 +126,9 @@ func (am *ArgoCDManager) LoadMDAI(
 	return am.loadApp(ctx, input.Logger, manifestdata.MDAI, data, argoClientOpt)
 }
 
+// LoadConnection push a dummy app to ArgoCD and then
+// start a manual sync with the connection manifests to
+// trigger ArgoCD to install connection related resources.
 func (am *ArgoCDManager) LoadConnection(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -149,6 +158,9 @@ func (am *ArgoCDManager) LoadConnection(
 		connections)
 }
 
+// LoadValidator push a dummy app to ArgoCD and then
+// start a manual sync with the validator manifests to
+// trigger ArgoCD to install validator related resources.
 func (am *ArgoCDManager) LoadValidator(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -178,6 +190,7 @@ func (am *ArgoCDManager) LoadValidator(
 		validators)
 }
 
+// load pushes the app to ArgoCD and then start a manual sync.
 func (am *ArgoCDManager) load(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -208,6 +221,8 @@ func (am *ArgoCDManager) load(
 	return nil
 }
 
+// loadApp retrieve the app manifest as ArgoCD App
+// and then pushes the app to ArgoCD.
 func (am *ArgoCDManager) loadApp(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -228,6 +243,8 @@ func (am *ArgoCDManager) loadApp(
 	return nil
 }
 
+// argoClientOpt retrieves the ArgoCD integration detail
+// and then creates an ArgoCD client options.
 func (am *ArgoCDManager) argoClientOpt(ctx context.Context, name string) (*apiclient.ClientOptions, error) {
 	argo, err := am.argo.GetIntegrationByName(ctx, name)
 	if err != nil {
@@ -236,6 +253,7 @@ func (am *ArgoCDManager) argoClientOpt(ctx context.Context, name string) (*apicl
 	return argocd.CreateClientOpts(am.config.Env, argo.APIUrl, argo.AccountToken), nil
 }
 
+// getAppName returns app's ArgoCD app name.
 func (*ArgoCDManager) getAppName(app manifestdata.App, connectionName string) string {
 	switch app {
 	case manifestdata.VALIDATOR:
@@ -249,6 +267,7 @@ func (*ArgoCDManager) getAppName(app manifestdata.App, connectionName string) st
 	}
 }
 
+// getAppAsArgoCDApp retrieve app manifest and then unmarshal into ArgoCD app.
 func (am *ArgoCDManager) getAppAsArgoCDApp(
 	logger *zap.Logger,
 	app manifestdata.App,
