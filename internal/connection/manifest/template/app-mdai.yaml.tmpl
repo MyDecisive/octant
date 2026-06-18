@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: mdai
-  namespace: argocd
+  namespace: {{ .ArgoCDNamespace }}
 spec:
   project: default
   sources:

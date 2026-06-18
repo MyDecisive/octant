@@ -45,6 +45,7 @@ type Install struct {
 	MdaiValidatorVersion             string `yaml:"mdaiValidatorVersion" env:"MDAI_VALIDATOR_VERSION" env-default:"0.1.3"`
 	CerManagerVersion                string `yaml:"certManagerVersion" env:"CERT_MANAGER_VERSION" env-default:"v1.19.1"`
 	CerManagerNamespace              string `yaml:"certManagerNamespace" env:"CERT_MANAGER_NAMESPACE" env-default:"cert-manager"` // nolint:lll
+	ArgoCDNamespace                  string `yaml:"argoCDNamespace" env:"ARGO_CD_NAMESPACE" env-default:"argocd"`
 }
 
 // Budget contains configuration specifically for budget applet.

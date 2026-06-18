@@ -21,6 +21,9 @@ image:
   repository: ghcr.io/mydecisive/octant
   # tag: latest
 
+argo-cd:
+  namespace: argocd
+
 cert-manager:
   version: v1.19.1
   namespace: cert-manager

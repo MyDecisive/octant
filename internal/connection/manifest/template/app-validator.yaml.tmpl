@@ -2,9 +2,9 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: {{ .Name }}-validation
-  namespace: argocd
+  namespace: {{ .ArgoCDNamespace }}
   finalizers:
-    - resources-finalizer.argocd.argoproj.io
+    - resources-finalizer.{{ .ArgoCDNamespace }}.argoproj.io
 spec:
   project: default
   source:

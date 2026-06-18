@@ -15,6 +15,8 @@ type AppTemplateData struct {
 	Version string
 	// For Cert, this value come from config.
 	Namespace string
+	// The argocd app namespace from config.
+	ArgoCDNamespace string
 }
 
 // ConnectionTemplateData will be passed to the renderer as the data input
