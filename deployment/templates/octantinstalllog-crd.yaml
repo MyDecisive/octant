@@ -1,0 +1,74 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: octantinstalllogs.octant.mydecisive.ai
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  labels:
+  {{- include "deployment.labels" . | nindent 4 }}
+spec:
+  group: octant.mydecisive.ai
+  names:
+    kind: OctantInstallLog
+    listKind: OctantInstallLogList
+    plural: octantinstalllogs
+    singular: octantinstalllog
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: OctantInstallLog is the Schema for the setup logs API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: OctantInstallLogSpec defines the data schema
+            properties:
+              events:
+                items:
+                  properties:
+                    action:
+                      type: string
+                    message:
+                      type: string
+                    namespace:
+                      type: string
+                    ref:
+                      type: string
+                    result:
+                      type: string
+                    timestamp:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - action
+                  - timestamp
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
