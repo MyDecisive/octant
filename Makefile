@@ -32,7 +32,13 @@ generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject
 
 .PHONY: helmify
 helmify: generate manifests
-	kustomize build config/default | helmify -crd-dir deployment
+	@tmp=$$(mktemp -d); \
+	cp -r config $$tmp/; \
+	cd $$tmp/; \
+	kustomize build config/default | helmify -crd-dir deployment; \
+	cd - ;\
+	cp -r $$tmp/deployment/templates deployment ;\
+	cp -r $$tmp/deployment/crds deployment;
 
 docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
 docker-login docker-build docker-push: GHCR_REPO ?= ghcr.io/mydecisive
