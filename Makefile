@@ -24,7 +24,7 @@ endif
 
 .PHONY: manifests
 manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	controller-gen rbac:roleName=octant-manager-role crd paths="./..." output:crd:artifacts:config=config/crd
+	controller-gen rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=config/crd
 
 .PHONY: generate
 generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
