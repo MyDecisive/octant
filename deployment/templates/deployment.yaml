@@ -55,7 +55,7 @@ spec:
           - name: MDAI_VALIDATOR_VERSION
             value: "{{ .Values.validator.version }}"
           - name: CERT_MANAGER_VERSION
-            value: "{{ .Values.cert-manager.version }}"
+            value: "{{ .Values.certManager.version }}"
           - name: CERT_MANAGER_NAMESPACE
-            value: "{{ .Values.cert-manager.namespace }}"
+            value: "{{ .Values.certManager.namespace }}"
 

@@ -10,10 +10,10 @@ import (
 type AppTemplateData struct {
 	Name string // connection name
 	// Not applicable for Validator and Connection.
-	// For Cert, this value come from config.
+	// For Cert-Manager, this value comes from config.
 	// For MDAI, this value provided by user.
 	Version string
-	// For Cert, this value come from config.
+	// For Cert-Manager, this value comes from config.
 	Namespace string
 }
 

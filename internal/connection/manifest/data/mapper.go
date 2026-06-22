@@ -61,8 +61,8 @@ func (dm *DataMapper) AppTemplateData(
 	switch app {
 	case CERT:
 		return AppTemplateData{
-			Version:   dm.config.Install.CerManagerVersion,
-			Namespace: dm.config.Install.CerManagerNamespace,
+			Version:   dm.config.Install.CertManagerVersion,
+			Namespace: dm.config.Install.CertManagerNamespace,
 		}
 	case MDAI:
 		return AppTemplateData{
@@ -89,16 +89,17 @@ func (dm *DataMapper) ConnectionTemplateData(
 	for _, destination := range input.Destinations {
 		switch destination.Type {
 		case DATADOG:
-			if !input.Exported {
-				data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
-				if err != nil {
-					return nil, fmt.Errorf("%w: %w", ErrIntegration, err)
-				}
-				if data == nil {
-					return nil, fmt.Errorf("%w: not found", ErrIntegration)
-				}
-				datadog = data
+			if input.Exported {
+			    continue
 			}
+			data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrIntegration, err)
+			}
+			if data == nil {
+				return nil, fmt.Errorf("%w: not found", ErrIntegration)
+			}
+			datadog = data
 		default:
 			return nil, fmt.Errorf("%w: destination %s", ErrUnknown, destination)
 		}

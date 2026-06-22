@@ -22,8 +22,8 @@ func TestDataMapper_AppTemplateData(t *testing.T) {
 
 	conf := &config.Configuration{
 		Install: config.Install{
-			CerManagerVersion:   faker.Word(),
-			CerManagerNamespace: faker.Word(),
+			CertManagerVersion:   faker.Word(),
+			CertManagerNamespace: faker.Word(),
 		},
 	}
 
@@ -34,8 +34,8 @@ func TestDataMapper_AppTemplateData(t *testing.T) {
 		{
 			CERT,
 			AppTemplateData{
-				Version:   conf.Install.CerManagerVersion,
-				Namespace: conf.Install.CerManagerNamespace,
+				Version:   conf.Install.CertManagerVersion,
+				Namespace: conf.Install.CertManagerNamespace,
 			},
 		},
 		{

@@ -98,7 +98,7 @@ func (am *ArgoCDManager) Unload(
 	return nil
 }
 
-// LoadCertManager push cert manager app to ArgoCD which will trigger
+// LoadCertManager pushes cert manager app to ArgoCD which will trigger
 // ArgoCD to install cert manager into the cluster.
 func (am *ArgoCDManager) LoadCertManager(
 	ctx context.Context,
@@ -112,7 +112,7 @@ func (am *ArgoCDManager) LoadCertManager(
 	return am.loadApp(ctx, input.Logger, manifestdata.CERT, data, argoClientOpt)
 }
 
-// LoadMDAI push MDAI app to ArgoCD which will trigger
+// LoadMDAI pushes MDAI app to ArgoCD which will trigger
 // ArgoCD to install MDAI into the cluster.
 func (am *ArgoCDManager) LoadMDAI(
 	ctx context.Context,
@@ -126,8 +126,8 @@ func (am *ArgoCDManager) LoadMDAI(
 	return am.loadApp(ctx, input.Logger, manifestdata.MDAI, data, argoClientOpt)
 }
 
-// LoadConnection push a dummy app to ArgoCD and then
-// start a manual sync with the connection manifests to
+// LoadConnection pushes a dummy app to ArgoCD and then
+// starts a manual sync with the connection manifests to
 // trigger ArgoCD to install connection related resources.
 func (am *ArgoCDManager) LoadConnection(
 	ctx context.Context,
@@ -158,8 +158,8 @@ func (am *ArgoCDManager) LoadConnection(
 		connections)
 }
 
-// LoadValidator push a dummy app to ArgoCD and then
-// start a manual sync with the validator manifests to
+// LoadValidator pushes a dummy app to ArgoCD and then
+// starts a manual sync with the validator manifests to
 // trigger ArgoCD to install validator related resources.
 func (am *ArgoCDManager) LoadValidator(
 	ctx context.Context,
@@ -171,7 +171,7 @@ func (am *ArgoCDManager) LoadValidator(
 		return err
 	}
 	if len(raw) == 0 {
-		logger.Warn("connection manifests not found, nothing to load")
+		logger.Warn("validator manifests not found, nothing to load")
 		return nil
 	}
 	validators := lo.MapToSlice(raw, func(_ string, content []byte) string {
@@ -190,7 +190,7 @@ func (am *ArgoCDManager) LoadValidator(
 		validators)
 }
 
-// load pushes the app to ArgoCD and then start a manual sync.
+// load pushes the app to ArgoCD and then starts a manual sync.
 func (am *ArgoCDManager) load(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -208,20 +208,20 @@ func (am *ArgoCDManager) load(
 		return errLoad
 	}
 
-	if err = am.argoClient.SyncApplication(
+	if syncErr := am.argoClient.SyncApplication(
 		ctx,
 		argocd.Input{
 			Logger:     logger,
 			ClientOpts: argoClientOpt,
 			AppName:    am.getAppName(appType, appData.Name),
 		},
-		manifests, false); err != nil {
-		return fmt.Errorf("%w: %w", ErrPushManifests, err)
+		manifests, false); syncErr != nil {
+		return fmt.Errorf("%w: %w", ErrPushManifests, syncErr)
 	}
 	return nil
 }
 
-// loadApp retrieve the app manifest as ArgoCD App
+// loadApp retrieves the app manifest as an ArgoCD App
 // and then pushes the app to ArgoCD.
 func (am *ArgoCDManager) loadApp(
 	ctx context.Context,
