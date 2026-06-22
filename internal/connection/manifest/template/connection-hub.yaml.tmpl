@@ -1,15 +1,13 @@
 apiVersion: hub.mydecisive.ai/v1
 kind: MdaiHub
 metadata:
-  name: {{ .AppName }}
+  name: {{ .Name }}
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
-  {{- if .IsArgoSideload }}
+    app: {{ .Name }}
+    app.kubernetes.io/instance: {{ .Name }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:hub.mydecisive.ai/v1:mdai/{{ .AppName }}
-  {{- end }}
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:hub.mydecisive.ai/MdaiHub:{{ .Namespace }}/{{ .Name }}"
 spec:
   variables:
     - key: logs_ratio_number
@@ -21,7 +19,7 @@ spec:
     - key: logs_persist_errors
       type: manual
       dataType: boolean
-      default: {{ .DefaultLogIncludeErr }}
+      default: {{ .DefaultLogPersistErr }}
       serializeAs:
         - name: "LOGS_PERSIST_ERRORS"
     - key: traces_ratio_number
@@ -33,7 +31,7 @@ spec:
     - key: traces_persist_errors
       type: manual
       dataType: boolean
-      default: {{ .DefaultTraceIncludeErr }}
+      default: {{ .DefaultTracePersistErr }}
       serializeAs:
         - name: "TRACES_PERSIST_ERRORS"
 

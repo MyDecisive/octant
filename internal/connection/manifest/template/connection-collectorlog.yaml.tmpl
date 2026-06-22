@@ -1,5 +1,5 @@
 {{- $replicas:=0}}
-{{- range .ConnectionData.TelemetryTypes }}
+{{- range .TelemetryTypes }}
   {{- if eq . "logs" }}
     {{- $replicas = 2}}
     {{- break }}
@@ -8,25 +8,21 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: {{ .AppName }}-log-sampling
+  name: {{ .Name }}-log-sampling
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}-log-sampling
-    mydecisive.ai/hub-name: {{ .AppName }}
-  {{- if or .IsArgoSideload (eq $replicas 0) }}
+    app: {{ .Name }}
+    app.kubernetes.io/instance: {{ .Name }}-log-sampling
+    mydecisive.ai/hub-name: {{ .Name }}
   annotations:
-    {{- if .IsArgoSideload }}
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-log-sampling
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:opentelemetry.io/OpenTelemetryCollector:{{ .Namespace }}/{{ .Name }}-log-sampling"
     argocd.argoproj.io/sync-options: Force=true,Replace=true
     argocd.argoproj.io/sync-wave: "1"
-    {{- end }}
     {{- if eq $replicas 0 }}
     # ArgoCD's bundled OpenTelemetryCollector health check reports 0/0 ready replicas as
     # Degraded; a deliberately scaled-to-zero collector must not drag down app health.
     argocd.argoproj.io/ignore-healthcheck: "true"
     {{- end }}
-  {{- end }}
 spec:
   managementState: managed
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
@@ -40,17 +36,17 @@ spec:
     - name: DD_API_KEY
       valueFrom:
         secretKeyRef:
-          name: {{ .AppName }}-integration-secret
+          name: {{ .Name }}-integration-secret
           key: api-key
     - name: DD_SITE
       valueFrom:
         secretKeyRef:
-          name: {{ .AppName }}-integration-secret
+          name: {{ .Name }}-integration-secret
           key: site-url
     {{- end }}
   envFrom:
   - configMapRef:
-      name: {{ .AppName }}-variables
+      name: {{ .Name }}-variables
   config:
     receivers:
       otlp:
@@ -98,7 +94,7 @@ spec:
           site: "${env:DD_SITE}"
       {{- end }}
       otlp/observer:
-        endpoint: {{ .AppName }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
+        endpoint: {{ .Name }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
         tls:
           insecure: true
     extensions:
@@ -131,8 +127,8 @@ spec:
           exporters: [ otlp/observer ]
       telemetry:
         resource:
-          mdai_connection: "{{ .AppName }}"
-          service.name: "{{ .AppName }}-log-sampling-collector"
+          mdai_connection: "{{ .Name }}"
+          service.name: "{{ .Name }}-log-sampling-collector"
         metrics:
           readers:
             - pull:

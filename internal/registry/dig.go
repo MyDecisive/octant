@@ -15,7 +15,8 @@ import (
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
-	"github.com/mydecisive/octant/internal/connection/compression"
+	"github.com/mydecisive/octant/internal/connection/manifest"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
@@ -29,7 +30,8 @@ import (
 )
 
 // Initialize adds all the dependencies to DI.
-func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we will have a lot if statements in here...
+// nolint: gocyclo,gocognit,cyclop,funlen // yes, we will have a lot if statements in here...
+func Initialize() (*dig.Container, error) {
 	container := dig.New(dig.DeferAcyclicVerification())
 	if err := container.Provide(config.Read); err != nil {
 		return nil, err
@@ -101,19 +103,43 @@ func Initialize() (*dig.Container, error) { // nolint: cyclop,funlen // yes, we 
 		dig.As(new(argocd.APIClient))); err != nil {
 		return nil, err
 	}
+
+	// Manifest
 	if err := container.Provide(
-		connection.NewConnectionManifestGenerator,
-		dig.As(new(connection.ManifestGenerator))); err != nil {
+		manifestdata.NewDataMapper,
+		dig.As(new(manifestdata.Mapper))); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(
-		compression.NewConnectionManifestCompressor,
-		dig.As(new(compression.ManifestCompressor))); err != nil {
+		manifest.NewEmbeddedTemplateProvider,
+		dig.As(new(manifest.TemplateProvider))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		manifest.NewTextTemplateRenderer,
+		dig.As(new(manifest.TemplateRenderer))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		manifest.NewManifestGenerator,
+		dig.As(new(manifest.Generator))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		manifest.NewArgoCDManager,
+		dig.As(new(manifest.Manager))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
+		manifest.NewZipCompressor,
+		dig.As(new(manifest.Compressor))); err != nil {
 		return nil, err
 	}
 
 	// Connection
-	if err := container.Provide(provideOctantConnection); err != nil {
+	if err := container.Provide(
+		connection.NewOctantConnection,
+		dig.As(new(connection.Connection[connection.OctantConnectionData]))); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(setting.NewSettingManagerBuilder, dig.As(new(setting.ManagerBuilder))); err != nil {
@@ -238,24 +264,4 @@ func provideSecretController( // nolint: ireturn
 		return nil, fmt.Errorf("failed to sync Secret controller cache: %w", err)
 	}
 	return controller, nil
-}
-
-func provideOctantConnection(
-	cmStore datacorekube.ConfigMapStore,
-	theConfig *config.Configuration,
-	connectionMetrics metrics.ConnectionStatus,
-	manifestGenerator connection.ManifestGenerator,
-	argocdIntegration integration.Integration[integration.ArgoCDIntegrationData],
-	datadogIntegration integration.Integration[integration.DataDogIntegrationData],
-	argoClient argocd.APIClient,
-) connection.Connection[connection.OctantConnectionData] { // nolint: ireturn
-	return connection.NewOctantConnection(
-		cmStore,
-		theConfig,
-		connection.WithConnectionMetrics(connectionMetrics),
-		connection.WithGenerator(manifestGenerator),
-		connection.WithArgoCDIntegration(argocdIntegration),
-		connection.WithArgoClient(argoClient),
-		connection.WithDatadogIntegration(datadogIntegration),
-	)
 }

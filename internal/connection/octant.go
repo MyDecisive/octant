@@ -11,11 +11,12 @@ import (
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
-	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/integration"
+	"github.com/mydecisive/octant/internal/connection/manifest"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,71 +38,24 @@ type OctantConnectionData struct {
 
 // OctantConnection encapsulates connection logic for the octant application.
 type OctantConnection struct {
-	configMapStore     kube.ConfigMapStore
-	argoIntegration    integration.Integration[integration.ArgoCDIntegrationData]
-	datadogIntegration integration.Integration[integration.DataDogIntegrationData]
-	connectionMetrics  metrics.ConnectionStatus
-	configuration      *config.Configuration
-	argoClient         argocd.APIClient
-	generator          ManifestGenerator
+	configMapStore    kube.ConfigMapStore
+	connectionMetrics metrics.ConnectionStatus
+	configuration     *config.Configuration
+	manifestManager   manifest.Manager
 }
-
-// OctantConnectionOption is a dependency option to provide to a new OctantConnection.
-type OctantConnectionOption func(*OctantConnection)
 
 // NewOctantConnection creates and returns a new OctantConnection.
 func NewOctantConnection(
-	configMapStore kube.ConfigMapStore, // required
-	configuration *config.Configuration, // required
-	options ...OctantConnectionOption,
+	configMapStore kube.ConfigMapStore,
+	configuration *config.Configuration,
+	connectionMetrics metrics.ConnectionStatus,
+	manifestManager manifest.Manager,
 ) *OctantConnection {
-	oc := &OctantConnection{
-		configMapStore: configMapStore,
-		configuration:  configuration,
-	}
-
-	for _, option := range options {
-		option(oc)
-	}
-	return oc
-}
-
-// WithArgoCDIntegration provides an argocd integration to the octant connection.
-func WithArgoCDIntegration(
-	theIntegration integration.Integration[integration.ArgoCDIntegrationData],
-) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.argoIntegration = theIntegration
-	}
-}
-
-// WithDatadogIntegration provides a datadog integration to the octant connection.
-func WithDatadogIntegration(
-	theIntegration integration.Integration[integration.DataDogIntegrationData],
-) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.datadogIntegration = theIntegration
-	}
-}
-
-// WithConnectionMetrics provides connection metrics to the octant connection.
-func WithConnectionMetrics(connectionMetrics metrics.ConnectionStatus) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.connectionMetrics = connectionMetrics
-	}
-}
-
-// WithArgoClient provides the argocd api client to the octant connection.
-func WithArgoClient(client argocd.APIClient) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.argoClient = client
-	}
-}
-
-// WithGenerator provides a manifest generator to the octant connection.
-func WithGenerator(generator ManifestGenerator) OctantConnectionOption {
-	return func(o *OctantConnection) {
-		o.generator = generator
+	return &OctantConnection{
+		configMapStore:    configMapStore,
+		configuration:     configuration,
+		connectionMetrics: connectionMetrics,
+		manifestManager:   manifestManager,
 	}
 }
 
@@ -182,8 +136,16 @@ func (oc *OctantConnection) DeleteConnection(ctx context.Context, input Connecti
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		if deleteErr := oc.deleteArgoApp(ctx, input.Logger, input.ConnectionName, connection); deleteErr != nil {
-			return deleteErr
+		if deleteErr := oc.manifestManager.Unload(
+			ctx,
+			manifestdata.ManagerInput{
+				Logger:                    input.Logger,
+				DeploymentIntegrationName: connection.Deployment.IntegrationName,
+				ConnectionName:            input.ConnectionName,
+			},
+			[]manifestdata.App{manifestdata.CONNECTION, manifestdata.VALIDATOR},
+		); deleteErr != nil {
+			return fmt.Errorf("remove app:%w", deleteErr)
 		}
 	}
 
@@ -229,9 +191,29 @@ func (oc *OctantConnection) SaveConnection(
 
 	if !input.NoDeploy &&
 		connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		err := oc.sideloadConnectionApp(ctx, input.Logger, input.ConnectionName, connection)
-		if err != nil {
-			return err
+		if len(connection.Destinations) > 1 {
+			return errors.New("multiple destination")
+		}
+		destination := lo.FilterMap(
+			connection.Destinations,
+			func(item OctantConnectionDestination, _ int) (manifestdata.Destination, bool) {
+				return manifestdata.Destination{
+					Type:            manifestdata.DATADOG, // TODO: Default to datadog cause we only allow datadog for now
+					IntegrationName: item.IntegrationName,
+				}, item.DestinationType == "datadog"
+			})
+		if len(destination) < 1 {
+			return errors.New("unrecognized destination")
+		}
+
+		if err := oc.manifestManager.LoadConnection(ctx, input.Logger, manifestdata.ConnectionInput{
+			ConnectionName:            input.ConnectionName,
+			DeploymentIntegrationName: connection.Deployment.IntegrationName,
+			Namespace:                 input.Namespace,
+			TelemetryTypes:            connection.TelemetryTypes,
+			Destinations:              destination,
+		}); err != nil {
+			return fmt.Errorf("install connection app:%w", err)
 		}
 	}
 
@@ -248,7 +230,16 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 	}
 
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		return oc.sideloadValidatorForConnection(ctx, input.Logger, input.ConnectionName, input.Namespace)
+		runID := time.Now().UTC().Format(metrics.ValidatorRunIDFormat)
+		if err := oc.manifestManager.LoadValidator(ctx, input.Logger, manifestdata.ValidatorInput{
+			ConnectionName:            input.ConnectionName,
+			DeploymentIntegrationName: connection.Deployment.IntegrationName,
+			Namespace:                 input.Namespace,
+			RunID:                     runID,
+		}); err != nil {
+			return "", fmt.Errorf("install validator app:%w", err)
+		}
+		return runID, nil
 	}
 
 	return "", nil
@@ -276,11 +267,17 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 
 	// TODO: This should be refactored to a more robust deployment-based task system
 	if connection.Deployment != nil && connection.Deployment.Type == ArgoSideloadDeploymentType {
-		templateData, err := oc.createTemplateData(ctx, input.ConnectionName, connection)
-		if err != nil {
-			return err
+		if deleteErr := oc.manifestManager.Unload(
+			ctx,
+			manifestdata.ManagerInput{
+				Logger:                    input.Logger,
+				DeploymentIntegrationName: connection.Deployment.IntegrationName,
+				ConnectionName:            input.ConnectionName,
+			},
+			[]manifestdata.App{manifestdata.VALIDATOR},
+		); deleteErr != nil {
+			return fmt.Errorf("remove validator app:%w", deleteErr)
 		}
-		return oc.deleteValidatorResource(ctx, input.Logger, input.ConnectionName, templateData)
 	}
 
 	return nil

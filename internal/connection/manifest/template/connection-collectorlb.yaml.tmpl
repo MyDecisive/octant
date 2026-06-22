@@ -1,17 +1,15 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: {{ .AppName }}-sampling-lb
+  name: {{ .Name }}-sampling-lb
   namespace: {{ .Namespace }}
   labels:
-    app: {{ .AppName }}
-    app.kubernetes.io/instance: {{ .AppName }}
+    app: {{ .Name }}
+    app.kubernetes.io/instance: {{ .Name }}
     hub.mydecisive.ai/role: connection-collector
-  {{- if .IsArgoSideload }}
   annotations:
-    argocd.argoproj.io/tracking-id: {{ .AppName }}:opentelemetry.io/OpenTelemetryCollector:mdai/{{ .AppName }}-sampling-lb
+    argocd.argoproj.io/tracking-id: "{{ .Name }}:opentelemetry.io/OpenTelemetryCollector:{{ .Namespace }}/{{ .Name }}-sampling-lb"
     argocd.argoproj.io/sync-wave: "1"
-  {{- end }}  
 spec:
   image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.148.0
   observability:
@@ -102,7 +100,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-trace-sampling-collector.{{ .Namespace }}.svc.cluster.local
+            hostname: {{ .Name }}-trace-sampling-collector.{{ .Namespace }}.svc.cluster.local
             port: "4317"
             interval: 10s
             timeout: 5s
@@ -123,7 +121,7 @@ spec:
               queue_size: 1000
         resolver:
           dns:
-            hostname: {{ .AppName }}-log-sampling-collector.{{ .Namespace }}.svc.cluster.local
+            hostname: {{ .Name }}-log-sampling-collector.{{ .Namespace }}.svc.cluster.local
             port: "4317"
             interval: 10s
             timeout: 5s
@@ -155,7 +153,7 @@ spec:
     service:
       extensions: [health_check, zpages]
       pipelines:
-        {{- range .ConnectionData.TelemetryTypes }}
+        {{- range .TelemetryTypes }}
           {{- if eq . "logs" }}
           logs:
             receivers: [datadog]
@@ -174,8 +172,8 @@ spec:
         {{- end }}
       telemetry:
         resource:
-          mdai_connection: "{{ .AppName }}"
-          service.name: "{{ .AppName }}-sampling-lb-collector"
+          mdai_connection: "{{ .Name }}"
+          service.name: "{{ .Name }}-sampling-lb-collector"
         metrics:
           readers:
             - pull:
