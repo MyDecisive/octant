@@ -40,20 +40,20 @@ func NewEmbeddedTemplateProvider() *EmbeddedTemplateProvider {
 }
 
 // GetApp returns content of the ArgoCD app template file correspond to the provided app template type.
-func (mtp *EmbeddedTemplateProvider) GetApp(app manifestdata.App) ([]byte, error) {
-	return mtp.format(app.String())
+func (etp *EmbeddedTemplateProvider) GetApp(app manifestdata.App) ([]byte, error) {
+	return etp.read(app.String())
 }
 
 // GetConnection returns content of the template file correspond to the provided connection template type.
-func (mtp *EmbeddedTemplateProvider) GetConnection(conn manifestdata.Connection) ([]byte, error) {
-	return mtp.format(conn.String())
+func (etp *EmbeddedTemplateProvider) GetConnection(conn manifestdata.Connection) ([]byte, error) {
+	return etp.read(conn.String())
 }
 
 // GetAllConnections returns content of the template files for all connection template types.
-func (mtp *EmbeddedTemplateProvider) GetAllConnections() (map[manifestdata.Connection][]byte, error) {
+func (etp *EmbeddedTemplateProvider) GetAllConnections() (map[manifestdata.Connection][]byte, error) {
 	result := make(map[manifestdata.Connection][]byte)
 	for _, conn := range manifestdata.ConnectionValues() {
-		content, err := mtp.GetConnection(conn)
+		content, err := etp.GetConnection(conn)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", conn.String(), err)
 		}
@@ -63,15 +63,15 @@ func (mtp *EmbeddedTemplateProvider) GetAllConnections() (map[manifestdata.Conne
 }
 
 // GetValidator returns content of the template file correspond to the provided validator template type.
-func (mtp *EmbeddedTemplateProvider) GetValidator(validator manifestdata.Validator) ([]byte, error) {
-	return mtp.format(validator.String())
+func (etp *EmbeddedTemplateProvider) GetValidator(validator manifestdata.Validator) ([]byte, error) {
+	return etp.read(validator.String())
 }
 
 // GetAllValidators returns content of the template files for all validator template types.
-func (mtp *EmbeddedTemplateProvider) GetAllValidators() (map[manifestdata.Validator][]byte, error) {
+func (etp *EmbeddedTemplateProvider) GetAllValidators() (map[manifestdata.Validator][]byte, error) {
 	result := make(map[manifestdata.Validator][]byte)
 	for _, val := range manifestdata.ValidatorValues() {
-		content, err := mtp.GetValidator(val)
+		content, err := etp.GetValidator(val)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", val.String(), err)
 		}
@@ -80,7 +80,8 @@ func (mtp *EmbeddedTemplateProvider) GetAllValidators() (map[manifestdata.Valida
 	return result, nil
 }
 
-func (*EmbeddedTemplateProvider) format(prefix string) ([]byte, error) {
-	name := fmt.Sprintf(templateFileFormatter, prefix)
-	return templates.ReadFile(name)
+// read returns the file content corresponds to the given name.
+func (*EmbeddedTemplateProvider) read(name string) ([]byte, error) {
+	file := fmt.Sprintf(templateFileFormatter, name)
+	return templates.ReadFile(file)
 }
