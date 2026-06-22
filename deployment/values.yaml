@@ -21,6 +21,10 @@ image:
   repository: ghcr.io/mydecisive/octant
   # tag: latest
 
+certManager:
+  version: v1.19.1
+  namespace: cert-manager
+
 validator:
   version: 0.1.3
 

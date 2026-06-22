@@ -8,11 +8,9 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
-	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/mydecisive/octant/internal/integration"
-	argocdmock "github.com/mydecisive/octant/internal/mock/argocd"
-	integrationmock "github.com/mydecisive/octant/internal/mock/integration"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	manifestmock "github.com/mydecisive/octant/internal/mock/manifest"
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -30,16 +28,8 @@ var (
 		telemetry.Logs,
 		telemetry.Traces,
 	}
-	defaultNamespace    = "default"
-	argoIntegrationData = &integration.ArgoCDIntegrationData{
-		APIUrl:       "http://argo.com",
-		AccountToken: "abc123",
-	}
-	ddIntegrationData = &integration.DataDogIntegrationData{
-		APIKey: "abc123",
-		DDUrl:  "http://dd.com",
-	}
-	testConfig = &config.Configuration{
+	defaultNamespace = "default"
+	testConfig       = &config.Configuration{
 		CurrentNamespace:   defaultNamespace,
 		ServiceAccountName: "coolServiceAccount",
 		Env:                config.Dev,
@@ -94,7 +84,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -113,7 +103,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "team-b",
 			Namespace:      defaultNamespace,
@@ -144,7 +134,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -163,7 +153,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -195,6 +185,12 @@ func TestSaveConnection(t *testing.T) {
 	t.Run("happy path - updated existing connection", func(t *testing.T) {
 		t.Parallel()
 
+		input := ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}
+
 		// set the Created timestamp to compare after the update
 		now := time.Now()
 		newConnection := validConnection
@@ -215,30 +211,6 @@ func TestSaveConnection(t *testing.T) {
 			},
 		}
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-		mockArgoIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(argoIntegrationData, nil).
-			Once()
-
-		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
-		mockDatadogIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(ddIntegrationData, nil).
-			Once()
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		mockArgoClient.EXPECT().
-			PushArgoApp(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(nil).
-			Once()
-		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			}), mock.Anything, false).
-			Return(nil).
-			Once()
-
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
 		mockCmStore.EXPECT().
 			GetConfigmapByNameAndNamespace(connectionsConfigmapName, testConfig.CurrentNamespace).
@@ -257,48 +229,24 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		generator := NewConnectionManifestGenerator(testConfig)
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithDatadogIntegration(mockDatadogIntegration),
-			WithArgoClient(mockArgoClient),
-			WithGenerator(generator),
-		)
-		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
-			ConnectionName: "argo-test",
-			Namespace:      defaultNamespace,
-			Logger:         zaptest.NewLogger(t),
-		}))
+		mockManager := manifestmock.NewMockManager(t)
+		mockManager.EXPECT().LoadConnection(mock.Anything, mock.Anything, mock.MatchedBy(func(in manifestdata.ConnectionInput) bool {
+			return !in.Exported && in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName &&
+				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
+		})).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, input))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-		mockArgoIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(argoIntegrationData, nil).
-			Once()
-
-		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
-		mockDatadogIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(ddIntegrationData, nil).
-			Once()
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		mockArgoClient.EXPECT().
-			PushArgoApp(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(nil).
-			Once()
-		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			}), mock.Anything, false).
-			Return(nil).
-			Once()
+		input := ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}
 
 		notFoundError := k8serrors.NewNotFound(schema.GroupResource{}, connectionsConfigmapName)
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
@@ -313,44 +261,23 @@ func TestSaveConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		generator := NewConnectionManifestGenerator(testConfig)
+		mockManager := manifestmock.NewMockManager(t)
+		mockManager.EXPECT().LoadConnection(mock.Anything, mock.Anything, mock.MatchedBy(func(in manifestdata.ConnectionInput) bool {
+			return !in.Exported && in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName &&
+				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
+		})).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithDatadogIntegration(mockDatadogIntegration),
-			WithArgoClient(mockArgoClient),
-			WithGenerator(generator),
-		)
-		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
-			ConnectionName: "argo-test",
-			Namespace:      defaultNamespace,
-			Logger:         zaptest.NewLogger(t),
-		}))
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, input))
 	})
 
 	t.Run("success skip & no deploy", func(t *testing.T) {
 		t.Parallel()
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-
-		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
+		mockManager := manifestmock.NewMockManager(t)
 
-		generator := NewConnectionManifestGenerator(testConfig)
-
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithDatadogIntegration(mockDatadogIntegration),
-			WithArgoClient(mockArgoClient),
-			WithGenerator(generator),
-		)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
 		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -406,7 +333,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-invalid",
 			Namespace:      defaultNamespace,
@@ -423,7 +350,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-invalid",
 			Namespace:      defaultNamespace,
@@ -453,7 +380,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -494,7 +421,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -505,19 +432,11 @@ func TestDeleteConnection(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-		mockArgoIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(argoIntegrationData, nil).
-			Once()
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		mockArgoClient.EXPECT().
-			DeleteArgoApp(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			})).
-			Return(nil).
-			Once()
+		input := ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}
 
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
 		mockCmStore.EXPECT().
@@ -531,17 +450,14 @@ func TestDeleteConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithArgoClient(mockArgoClient),
-		)
-		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
-			ConnectionName: "argo-test",
-			Namespace:      defaultNamespace,
-			Logger:         zaptest.NewLogger(t),
-		}))
+		mockManager := manifestmock.NewMockManager(t)
+		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifestdata.ManagerInput) bool {
+			return in.ConnectionName == input.ConnectionName &&
+				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
+		}), []manifestdata.App{manifestdata.CONNECTION, manifestdata.VALIDATOR}).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		require.NoError(t, octantConnection.DeleteConnection(t.Context(), input))
 	})
 }
 
@@ -592,7 +508,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -611,7 +527,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -642,7 +558,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, WithConnectionMetrics(mockConnectionStatus))
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, mockConnectionStatus, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -698,7 +614,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -717,7 +633,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -753,7 +669,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(theCM, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -766,25 +682,11 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 	t.Run("happy path - with sideload validator deployment", func(t *testing.T) {
 		t.Parallel()
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-		mockArgoIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(argoIntegrationData, nil).
-			Once()
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		mockArgoClient.EXPECT().
-			WaitForAppOperation(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			}), mock.Anything, mock.Anything).
-			Return(nil).
-			Once()
-		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			}), mock.Anything, false).
-			Return(nil).
-			Once()
+		input := ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}
 
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
 		mockCmStore.EXPECT().
@@ -792,18 +694,14 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithArgoClient(mockArgoClient),
-			WithGenerator(NewConnectionManifestGenerator(testConfig)),
-		)
-		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
-			ConnectionName: "argo-test",
-			Namespace:      defaultNamespace,
-			Logger:         zaptest.NewLogger(t),
-		})
+		mockManager := manifestmock.NewMockManager(t)
+		mockManager.EXPECT().LoadValidator(mock.Anything, mock.Anything, mock.MatchedBy(func(in manifestdata.ValidatorInput) bool {
+			return in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName &&
+				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
+		})).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), input)
 		require.NoError(t, getErr)
 		require.NotEmpty(t, runID) // non-empty validator runID returned
 	})
@@ -854,7 +752,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -872,7 +770,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -903,7 +801,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -939,7 +837,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(theCM, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -951,27 +849,11 @@ func TestDeleteConnectionValidator(t *testing.T) {
 	t.Run("happy path - with sideload validator deployment", func(t *testing.T) {
 		t.Parallel()
 
-		mockArgoIntegration := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
-		mockArgoIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(argoIntegrationData, nil).
-			Once()
-
-		mockDatadogIntegration := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
-		mockDatadogIntegration.EXPECT().
-			GetIntegrationByName(mock.Anything, "argo-test").
-			Return(ddIntegrationData, nil).
-			Once()
-
-		mockArgoClient := argocdmock.NewMockAPIClient(t)
-		mockArgoClient.EXPECT().
-			SyncApplication(mock.Anything, mock.MatchedBy(func(in argocd.Input) bool {
-				return in.AppName == "argo-test"
-			}), mock.Anything, true).
-			Return(nil).
-			Once()
-
-		generator := NewConnectionManifestGenerator(testConfig)
+		input := ConnectionCRUDInput{
+			ConnectionName: "argo-test",
+			Namespace:      defaultNamespace,
+			Logger:         zaptest.NewLogger(t),
+		}
 
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
 		mockCmStore.EXPECT().
@@ -979,20 +861,15 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(
-			mockCmStore,
-			testConfig,
-			WithGenerator(generator),
-			WithDatadogIntegration(mockDatadogIntegration),
-			WithArgoCDIntegration(mockArgoIntegration),
-			WithArgoClient(mockArgoClient),
-		)
+		mockManager := manifestmock.NewMockManager(t)
+		mockManager.EXPECT().Unload(mock.Anything, mock.MatchedBy(func(in manifestdata.ManagerInput) bool {
+			return in.ConnectionName == input.ConnectionName &&
+				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
+		}), []manifestdata.App{manifestdata.VALIDATOR}).Return(nil).Once()
 
-		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
-			ConnectionName: "argo-test",
-			Namespace:      defaultNamespace,
-			Logger:         zaptest.NewLogger(t),
-		})
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+
+		getErr := octantConnection.DeleteConnectionValidator(t.Context(), input)
 		require.NoError(t, getErr)
 	})
 }
@@ -1043,7 +920,7 @@ func TestGetConnections(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})
@@ -1060,7 +937,7 @@ func TestGetConnections(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})

@@ -13,3 +13,4 @@ ignore:
   - "internal/registry"
   - "internal/budget/data/db"
   - "internal/rpc/server.go"
+  - "**/*_enumer.go"

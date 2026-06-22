@@ -11,7 +11,8 @@ import (
 	"github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha/octantv1alphaconnect"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
-	"github.com/mydecisive/octant/internal/connection/compression"
+	"github.com/mydecisive/octant/internal/connection/manifest"
+	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -25,20 +26,23 @@ const (
 type ConnectionHandler struct {
 	octantv1alphaconnect.UnimplementedConnectionServiceHandler
 
-	config           *config.Configuration
-	octantConnection connection.Connection[connection.OctantConnectionData]
-	compressor       compression.ManifestCompressor
+	config             *config.Configuration
+	octantConnection   connection.Connection[connection.OctantConnectionData]
+	manifestGenerator  manifest.Generator
+	manifestCompressor manifest.Compressor
 }
 
 func NewConnectionHandler(
 	octantConfig *config.Configuration,
 	octantConnection connection.Connection[connection.OctantConnectionData],
-	compressor compression.ManifestCompressor,
+	manifestGenerator manifest.Generator,
+	manifestCompressor manifest.Compressor,
 ) *ConnectionHandler {
 	return &ConnectionHandler{
-		config:           octantConfig,
-		octantConnection: octantConnection,
-		compressor:       compressor,
+		config:             octantConfig,
+		octantConnection:   octantConnection,
+		manifestGenerator:  manifestGenerator,
+		manifestCompressor: manifestCompressor,
 	}
 }
 
@@ -88,13 +92,26 @@ func (ch *ConnectionHandler) GenerateManifests(
 	)
 
 	logger.Debug("received request")
-	buf, err := ch.compressor.CreateCompressed(ctx, connection.ManifestGeneratorInput{
-		Namespace:   connScope.GetNamespace(),
-		Connection:  connScope.GetConnectionName(),
-		Telemetries: request.Msg.GetTelemetryTypes(),
-		Format:      request.Msg.GetFormat(),
-		MdaiVersion: request.Msg.GetMdaiVersion(),
-	})
+
+	format := manifestdata.YAML
+	if request.Msg.GetFormat() == octantv1alpha.ManifestOutFormat_MANIFEST_OUT_FORMAT_JSON {
+		format = manifestdata.JSON
+	}
+
+	manifests, err := ch.manifestGenerator.All(ctx, manifestdata.AllInput{
+		ConnectionName: connScope.GetConnectionName(),
+		Namespace:      connScope.GetNamespace(),
+		TelemetryTypes: telemetry.ToMLTs(request.Msg.GetTelemetryTypes()),
+		MDAIVersion:    request.Msg.GetMdaiVersion(),
+		ValidatorRunID: "<YOUR_RUN_ID>",
+		Exported:       true,
+	}, format)
+	if err != nil {
+		logger.Error("Failed to generate manifests", zap.Error(err))
+		return connect.NewError(connect.CodeInternal, errors.New("generate manifests"))
+	}
+
+	buf, err := ch.manifestCompressor.Compress(ctx, manifests)
 	if err != nil {
 		logger.Error("Failed to generate manifest zip file", zap.Error(err))
 		return connect.NewError(connect.CodeInternal, errors.New("generate zip file"))

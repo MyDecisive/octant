@@ -3,21 +3,19 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
     repoURL: quay.io/jetstack/charts
     chart: cert-manager
-    targetRevision: v1.19.1
+    targetRevision: {{ .Version }}
     helm:
       parameters:
       - name: "crds.enabled"
         value: "true"
   destination:
     name: "in-cluster"
-    namespace: cert-manager
+    namespace: {{ .Namespace }}
   syncPolicy:
     automated:
       enabled: true
