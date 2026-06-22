@@ -17,10 +17,12 @@ var (
 )
 
 type Mapper interface {
-	// AppTemplateData generates GetAppTemplateData corresponds to the given app type.
-	// Note: mdaiVersion is only needed for MDAI app type,
-	// and connectionName is only needed for Connection and validator app type.
-	// Note: Cert app type does not need anything.
+	// AppTemplateData generates AppTemplateData for the given app type:
+	//  - For CERT, this will ignore all parameters and retrieve cert manager version and namespace from config
+	//  - For MDAI, this will populate version and namespace using the provided mdaiVersion and namespace
+	//  - For all other app types, this will populate name and namespace using the provided connection name and namespace
+	//
+	// Note: Base on the given app type, the AppTemplateData field(s) unused by the app type will be empty.
 	AppTemplateData(app App, mdaiVersion string, connectionName string, namespace string) AppTemplateData
 	// ConnectionTemplateData returns ConnectionTemplateData base on given input.
 	ConnectionTemplateData(ctx context.Context, input ConnectionInput) (*ConnectionTemplateData, error)
@@ -48,10 +50,12 @@ func NewDataMapper(
 	}
 }
 
-// AppTemplateData generates GetAppTemplateData corresponds to the given app type.
-// Note: mdaiVersion is only needed for MDAI app type,
-// and connectionName is only needed for Connection and validator app type.
-// Note: Cert app type does not need anything.
+// AppTemplateData generates AppTemplateData for the given app type:
+//   - For CERT, this will ignore all parameters and retrieve cert manager version and namespace from config
+//   - For MDAI, this will populate version and namespace using the provided mdaiVersion and namespace
+//   - For all other app types, this will populate name and namespace using the provided connection name and namespace
+//
+// Note: Base on the given app type, the AppTemplateData field(s) unused by the app type will be empty.
 func (dm *DataMapper) AppTemplateData(
 	app App,
 	mdaiVersion string,
@@ -90,7 +94,7 @@ func (dm *DataMapper) ConnectionTemplateData(
 		switch destination.Type {
 		case DATADOG:
 			if input.Exported {
-			    continue
+				continue
 			}
 			data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
 			if err != nil {

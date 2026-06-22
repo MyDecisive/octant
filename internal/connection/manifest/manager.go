@@ -250,6 +250,9 @@ func (am *ArgoCDManager) argoClientOpt(ctx context.Context, name string) (*apicl
 	if err != nil {
 		return nil, fmt.Errorf("%w:%w", manifestdata.ErrIntegration, err)
 	}
+	if argo == nil {
+		return nil, fmt.Errorf("%w:no argocd", manifestdata.ErrIntegration)
+	}
 	return argocd.CreateClientOpts(am.config.Env, argo.APIUrl, argo.AccountToken), nil
 }
 
