@@ -9,6 +9,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:rbac:groups=octant.mydecisive.ai,resources=octantinstalllogs,verbs=get;list;watch;create;update;patch;delete
 
 // OctantInstallLog is the Schema for the setup logs API
 type OctantInstallLog struct {
