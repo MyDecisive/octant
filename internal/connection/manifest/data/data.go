@@ -9,9 +9,9 @@ import (
 // for argocd app template.
 type AppTemplateData struct {
 	Name string // connection name
-	// Not applicable for Validator and Connection.
 	// The argocd app namespace from config.
 	ArgoCDNamespace string
+	// Not applicable for Validator and Connection.
 	// For Cert-Manager, this value comes from config.
 	// For MDAI, this value provided by user.
 	Version string
