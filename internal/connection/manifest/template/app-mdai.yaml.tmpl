@@ -2,8 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: mdai
-  namespace: {{ .ArgoCDNamespace }}
-  namespace: argocd
+  namespace: "{{ .ArgoCDNamespace }}"
   labels:
     app: mdai
 spec:

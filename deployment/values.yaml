@@ -21,7 +21,7 @@ image:
   repository: ghcr.io/mydecisive/octant
   # tag: latest
 
-argo-cd:
+argoCD:
   namespace: argocd
 
 certManager:
