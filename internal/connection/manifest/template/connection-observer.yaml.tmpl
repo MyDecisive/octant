@@ -1,11 +1,11 @@
 apiVersion: hub.mydecisive.ai/v1
 kind: MdaiObserver
 metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
+  name: "{{ .Name }}"
+  namespace: "{{ .Namespace }}"
   labels:
-    app: {{ .Name }}
-    app.kubernetes.io/instance: {{ .Name }}
+    app: "{{ .Name }}"
+    app.kubernetes.io/instance: "{{ .Name }}"
   annotations:
     argocd.argoproj.io/tracking-id: "{{ .Name }}:hub.mydecisive.ai/MdaiObserver:{{ .Namespace }}/{{ .Name }}"
 spec:

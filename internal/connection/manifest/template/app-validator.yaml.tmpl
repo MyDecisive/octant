@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app: {{ .Name }}-validation
 spec:
   project: default
   source:
@@ -15,7 +17,7 @@ spec:
       namePrefix: {{ .Name }}-validation-
   destination:
     name: in-cluster
-    namespace: {{ .Namespace }}
+    namespace: "{{ .Namespace }}"
   syncPolicy:
     automated:
       # required so that octant can manage manifests via sync
