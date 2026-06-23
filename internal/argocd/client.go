@@ -80,13 +80,17 @@ type APIClient interface {
 	) error
 }
 
-type Client struct{}
+type Client struct {
+	appConfig *config.Configuration
+}
 
 // Ensure Client implements APIClient.
 var _ APIClient = (*Client)(nil)
 
-func NewArgoCDClient() *Client {
-	return &Client{}
+func NewArgoCDClient(appConfig *config.Configuration) *Client {
+	return &Client{
+		appConfig: appConfig,
+	}
 }
 
 func CreateClientOpts(env config.Environment, clusterURL, authToken string) *apiclient.ClientOptions {
@@ -169,7 +173,7 @@ func (*Client) PushArgoApp(
 	return nil
 }
 
-func (*Client) DeleteArgoApp(
+func (c *Client) DeleteArgoApp(
 	ctx context.Context,
 	input Input,
 ) error {
@@ -190,7 +194,7 @@ func (*Client) DeleteArgoApp(
 	}()
 	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
 		Name:              lo.ToPtr(input.AppName),
-		AppNamespace:      lo.ToPtr("argocd"),
+		AppNamespace:      lo.ToPtr(c.appConfig.Install.ArgoCDNamespace),
 		Cascade:           lo.ToPtr(true),
 		PropagationPolicy: lo.ToPtr("foreground"),
 	}); err != nil {
