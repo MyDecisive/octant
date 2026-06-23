@@ -65,20 +65,20 @@ func (dm *DataMapper) AppTemplateData(
 	switch app {
 	case CERT:
 		return AppTemplateData{
-			Version:   dm.config.Install.CertManagerVersion,
-			Namespace: dm.config.Install.CertManagerNamespace,
+			Version:         dm.config.Install.CertManagerVersion,
+			Namespace:       dm.config.Install.CertManagerNamespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	case MDAI:
 		return AppTemplateData{
-			Version:   mdaiVersion,
-			Namespace: namespace,
+			Version:         mdaiVersion,
+			Namespace:       namespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	default:
 		return AppTemplateData{
-			Name:      connectionName,
-			Namespace: namespace,
+			Name:            connectionName,
+			Namespace:       namespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	}
