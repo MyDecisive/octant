@@ -3,12 +3,15 @@ kind: Application
 metadata:
   name: mdai
   namespace: {{ .ArgoCDNamespace }}
+  namespace: argocd
+  labels:
+    app: mdai
 spec:
   project: default
   sources:
   - repoURL: ghcr.io/mydecisive/charts
     chart: mdai-hub
-    targetRevision: {{ .Version }}
+    targetRevision: "{{ .Version }}"
     helm:
       valueFiles:
       - tracealyzer-values.yaml
@@ -36,7 +39,7 @@ spec:
               repository: otel/opentelemetry-collector-contrib
               tag: 0.148.0
             env:
-              WATCH_NAMESPACE: {{ .Namespace }}
+              WATCH_NAMESPACE: "{{ .Namespace }}"
         kubeprometheusstack:
           alertmanager:
               receivers:
@@ -49,7 +52,7 @@ spec:
             serverAddress: mdai-operator-xds-service.{{ .Namespace }}.svc.cluster.local
   destination:
     name: "in-cluster"
-    namespace: {{ .Namespace }}
+    namespace: "{{ .Namespace }}"
   syncPolicy:
     automated:
       enabled: true

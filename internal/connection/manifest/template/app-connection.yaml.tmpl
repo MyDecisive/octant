@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .ArgoCDNamespace }}
   finalizers:
     - resources-finalizer.{{ .ArgoCDNamespace }}.argoproj.io
+  labels:
+    app: "{{ .Name }}"
 spec:
   project: default
   source:
@@ -15,7 +17,7 @@ spec:
       namePrefix: {{ .Name }}-
   destination:
     name: in-cluster
-    namespace: {{ .Namespace }}
+    namespace: "{{ .Namespace }}"
   syncPolicy:
     automated:
       # required so that octant can manage manifests via sync

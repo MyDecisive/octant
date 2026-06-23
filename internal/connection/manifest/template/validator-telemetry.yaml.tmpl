@@ -2,7 +2,7 @@ apiVersion: hub.mydecisive.ai/v1
 kind: TelemetryValidation
 metadata:
   name: {{ .Name }}-telemetry-validation
-  namespace: {{ .Namespace }}
+  namespace: "{{ .Namespace }}"
   annotations:
     argocd.argoproj.io/tracking-id: "{{ .Name }}-validation:hub.mydecisive.ai/TelemetryValidation:{{ .Namespace }}/{{ .Name }}-telemetry-validation"
   labels:
@@ -11,6 +11,6 @@ metadata:
 spec:
   validator:
     image: ghcr.io/mydecisive/mdai-fidelity-validator:{{ .Version }}
-  runID: {{ .RunID }}
+  runID: "{{ .RunID }}"
   collectorRef:
     name: {{ .Name }}-sampling-lb
