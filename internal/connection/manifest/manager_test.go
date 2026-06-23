@@ -79,6 +79,18 @@ func TestArgoCDManager_Unload(t *testing.T) {
 		assert.ErrorIs(t, err, manifestdata.ErrIntegration)
 	})
 
+	t.Run("err no argo", func(t *testing.T) {
+		t.Parallel()
+
+		mockArgo := integrationmock.NewMockIntegration[integration.ArgoCDIntegrationData](t)
+		mockArgo.EXPECT().GetIntegrationByName(mock.Anything, input.DeploymentIntegrationName).Return(nil, nil).Once()
+		mockClient := argocdmock.NewMockAPIClient(t)
+
+		target := NewArgoCDManager(&conf, mockArgo, mockClient, nil)
+		err := target.Unload(t.Context(), input, app)
+		assert.ErrorContains(t, err, "no argocd")
+	})
+
 	t.Run("err delete", func(t *testing.T) {
 		t.Parallel()
 

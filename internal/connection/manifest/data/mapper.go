@@ -17,10 +17,12 @@ var (
 )
 
 type Mapper interface {
-	// AppTemplateData generates GetAppTemplateData corresponds to the given app type.
-	// Note: mdaiVersion is only needed for MDAI app type,
-	// and connectionName is only needed for Connection and validator app type.
-	// Note: Cert app type does not need anything.
+	// AppTemplateData generates AppTemplateData for the given app type:
+	//  - For CERT, this will ignore all parameters and retrieve cert manager version and namespace from config
+	//  - For MDAI, this will populate version and namespace using the provided mdaiVersion and namespace
+	//  - For all other app types, this will populate name and namespace using the provided connection name and namespace
+	//
+	// Note: Base on the given app type, the AppTemplateData field(s) unused by the app type will be empty.
 	AppTemplateData(app App, mdaiVersion string, connectionName string, namespace string) AppTemplateData
 	// ConnectionTemplateData returns ConnectionTemplateData base on given input.
 	ConnectionTemplateData(ctx context.Context, input ConnectionInput) (*ConnectionTemplateData, error)
@@ -48,10 +50,12 @@ func NewDataMapper(
 	}
 }
 
-// AppTemplateData generates GetAppTemplateData corresponds to the given app type.
-// Note: mdaiVersion is only needed for MDAI app type,
-// and connectionName is only needed for Connection and validator app type.
-// Note: Cert app type does not need anything.
+// AppTemplateData generates AppTemplateData for the given app type:
+//   - For CERT, this will ignore all parameters and retrieve cert manager version and namespace from config
+//   - For MDAI, this will populate version and namespace using the provided mdaiVersion and namespace
+//   - For all other app types, this will populate name and namespace using the provided connection name and namespace
+//
+// Note: Base on the given app type, the AppTemplateData field(s) unused by the app type will be empty.
 func (dm *DataMapper) AppTemplateData(
 	app App,
 	mdaiVersion string,
@@ -61,20 +65,20 @@ func (dm *DataMapper) AppTemplateData(
 	switch app {
 	case CERT:
 		return AppTemplateData{
-			Version:         dm.config.Install.CerManagerVersion,
-			Namespace:       dm.config.Install.CerManagerNamespace,
+			Version:   dm.config.Install.CertManagerVersion,
+			Namespace: dm.config.Install.CertManagerNamespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	case MDAI:
 		return AppTemplateData{
-			Version:         mdaiVersion,
-			Namespace:       namespace,
+			Version:   mdaiVersion,
+			Namespace: namespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	default:
 		return AppTemplateData{
-			Name:            connectionName,
-			Namespace:       namespace,
+			Name:      connectionName,
+			Namespace: namespace,
 			ArgoCDNamespace: dm.config.Install.ArgoCDNamespace,
 		}
 	}
@@ -92,16 +96,17 @@ func (dm *DataMapper) ConnectionTemplateData(
 	for _, destination := range input.Destinations {
 		switch destination.Type {
 		case DATADOG:
-			if !input.Exported {
-				data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
-				if err != nil {
-					return nil, fmt.Errorf("%w: %w", ErrIntegration, err)
-				}
-				if data == nil {
-					return nil, fmt.Errorf("%w: not found", ErrIntegration)
-				}
-				datadog = data
+			if input.Exported {
+				continue
 			}
+			data, err := dm.datadog.GetIntegrationByName(ctx, destination.IntegrationName)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrIntegration, err)
+			}
+			if data == nil {
+				return nil, fmt.Errorf("%w: not found", ErrIntegration)
+			}
+			datadog = data
 		default:
 			return nil, fmt.Errorf("%w: destination %s", ErrUnknown, destination)
 		}

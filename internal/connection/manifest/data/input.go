@@ -14,12 +14,12 @@ type ManagerInput struct {
 
 // AllInput is the input for `All` method of the generator.
 type AllInput struct {
-	ConnectionName  string
-	Namespace       string // MDAI namespace
-	TelemetryTypes  []telemetry.MLT
-	ValidatorRunID  string
-	MDAIVersion     string
-	Exported        bool
+	ConnectionName string
+	Namespace      string // MDAI namespace
+	TelemetryTypes []telemetry.MLT
+	ValidatorRunID string
+	MDAIVersion    string
+	Exported       bool
 }
 
 type Destination struct {
