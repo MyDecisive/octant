@@ -24,6 +24,7 @@ func TestDataMapper_AppTemplateData(t *testing.T) {
 		Install: config.Install{
 			CertManagerVersion:   faker.Word(),
 			CertManagerNamespace: faker.Word(),
+			ArgoCDNamespace:      faker.Word(),
 		},
 	}
 
@@ -34,29 +35,33 @@ func TestDataMapper_AppTemplateData(t *testing.T) {
 		{
 			CERT,
 			AppTemplateData{
-				Version:   conf.Install.CertManagerVersion,
-				Namespace: conf.Install.CertManagerNamespace,
+				Version:         conf.Install.CertManagerVersion,
+				Namespace:       conf.Install.CertManagerNamespace,
+				ArgoCDNamespace: conf.Install.ArgoCDNamespace,
 			},
 		},
 		{
 			MDAI,
 			AppTemplateData{
-				Version:   version,
-				Namespace: namespace,
+				Version:         version,
+				Namespace:       namespace,
+				ArgoCDNamespace: conf.Install.ArgoCDNamespace,
 			},
 		},
 		{
 			CONNECTION,
 			AppTemplateData{
-				Name:      conn,
-				Namespace: namespace,
+				Name:            conn,
+				Namespace:       namespace,
+				ArgoCDNamespace: conf.Install.ArgoCDNamespace,
 			},
 		},
 		{
 			VALIDATOR,
 			AppTemplateData{
-				Name:      conn,
-				Namespace: namespace,
+				Name:            conn,
+				Namespace:       namespace,
+				ArgoCDNamespace: conf.Install.ArgoCDNamespace,
 			},
 		},
 	}
