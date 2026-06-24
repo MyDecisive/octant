@@ -5,11 +5,20 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:rbac:groups=octant.mydecisive.ai,resources=octantinstalllogs,verbs=get;list;watch;create;update;patch;delete
+
+func GetOctantInstallLogGroupVersionResource() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "octant.mydecisive.ai",
+		Version:  "v1",
+		Resource: "octantinstalllogs",
+	}
+}
 
 // OctantInstallLog is the Schema for the setup logs API
 type OctantInstallLog struct {

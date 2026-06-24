@@ -2,6 +2,8 @@ package registry
 
 import (
 	"fmt"
+	"github.com/mydecisive/octant/internal/installlog"
+	"k8s.io/client-go/dynamic"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,6 +46,9 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(provideKubeClient); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(provideDynamicClient); err != nil {
+		return nil, err
+	}
 	if err := container.Provide(provideHTTPClient); err != nil {
 		return nil, err
 	}
@@ -57,6 +62,10 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 	if err := container.Provide(provideSecretController); err != nil {
+		return nil, err
+	}
+
+	if err := container.Provide(installlog.NewCustomResourceInstallLogStore, dig.As(new(installlog.InstallLogStore))); err != nil {
 		return nil, err
 	}
 
@@ -220,6 +229,10 @@ func initLogger(configuration *config.Configuration) error {
 
 func provideKubeClient() (kubernetes.Interface, error) { // nolint: ireturn
 	return datacorekube.NewK8sClient(zap.L())
+}
+
+func provideDynamicClient() (dynamic.Interface, error) { // nolint: ireturn
+	return datacorekube.NewK8sDynamicClient(zap.L())
 }
 
 func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient { // nolint: ireturn
