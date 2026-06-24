@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/argoproj/gitops-engine/pkg/sync/common"
 	"github.com/go-faker/faker/v4"
+	"github.com/mydecisive/octant/internal/config"
 	applicationmock "github.com/mydecisive/octant/internal/mock/application"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,6 +26,12 @@ import (
 
 func TestTestConnection(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	testCases := []struct {
 		description     string
@@ -106,7 +113,7 @@ func TestTestConnection(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient()
+			testClient := NewArgoCDClient(appConfig)
 			success, testErr := testClient.TestConnection(t.Context(), zaptest.NewLogger(t), clientOpts)
 			testCase.validateResult(success, testErr)
 		})
@@ -115,6 +122,12 @@ func TestTestConnection(t *testing.T) {
 
 func TestPushArgoApp(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	testCases := []struct {
 		description     string
@@ -180,7 +193,7 @@ func TestPushArgoApp(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient()
+			testClient := NewArgoCDClient(appConfig)
 			testErr := testClient.PushArgoApp(t.Context(), zaptest.NewLogger(t), clientOpts, testCase.testApp)
 			testCase.validateResult(testErr)
 		})
@@ -189,6 +202,12 @@ func TestPushArgoApp(t *testing.T) {
 
 func TestAppOperationState(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	connection := faker.Word()
 	interval := time.Duration(1)
@@ -231,7 +250,7 @@ func TestAppOperationState(t *testing.T) {
 			PlainText:  true, // needed for local testing
 		}
 
-		target := NewArgoCDClient()
+		target := NewArgoCDClient(appConfig)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
@@ -276,7 +295,7 @@ func TestAppOperationState(t *testing.T) {
 			PlainText:  true, // needed for local testing
 		}
 
-		target := NewArgoCDClient()
+		target := NewArgoCDClient(appConfig)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
@@ -297,7 +316,7 @@ func TestAppOperationState(t *testing.T) {
 	t.Run("err client", func(t *testing.T) {
 		t.Parallel()
 
-		target := NewArgoCDClient()
+		target := NewArgoCDClient(appConfig)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
@@ -320,6 +339,12 @@ func TestAppOperationState(t *testing.T) {
 
 func TestGetAppStatus(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	appTreeNoPods := &v1alpha1.ApplicationTree{
 		Nodes: []v1alpha1.ResourceNode{
@@ -518,7 +543,7 @@ func TestGetAppStatus(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient()
+			testClient := NewArgoCDClient(appConfig)
 			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), Input{
 				Logger:     zaptest.NewLogger(t),
 				ClientOpts: clientOpts,
@@ -581,6 +606,12 @@ func TestHealthStatusCodeToAppResourceHealth(t *testing.T) {
 
 func TestDeleteArgoApp(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	testCases := []struct {
 		description     string
@@ -652,7 +683,7 @@ func TestDeleteArgoApp(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient()
+			testClient := NewArgoCDClient(appConfig)
 			testErr := testClient.DeleteArgoApp(t.Context(), Input{
 				Logger:     zaptest.NewLogger(t),
 				ClientOpts: clientOpts,
@@ -665,6 +696,12 @@ func TestDeleteArgoApp(t *testing.T) {
 
 func TestSyncApplication(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	testCases := []struct {
 		description     string
@@ -740,7 +777,7 @@ func TestSyncApplication(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient()
+			testClient := NewArgoCDClient(appConfig)
 			testErr := testClient.SyncApplication(
 				t.Context(),
 				Input{
@@ -758,6 +795,12 @@ func TestSyncApplication(t *testing.T) {
 
 func TestWaitForAppOperation(t *testing.T) {
 	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
 
 	appName := faker.Word()
 	getMatcher := mock.MatchedBy(func(req *application.ApplicationQuery) bool {
@@ -789,7 +832,7 @@ func TestWaitForAppOperation(t *testing.T) {
 
 		clientOpts := &apiclient.ClientOptions{ServerAddr: lis.Addr().String(), Insecure: true, PlainText: true}
 
-		err = NewArgoCDClient().WaitForAppOperation(t.Context(), Input{
+		err = NewArgoCDClient(appConfig).WaitForAppOperation(t.Context(), Input{
 			Logger:     zaptest.NewLogger(t),
 			ClientOpts: clientOpts,
 			AppName:    appName,
@@ -812,7 +855,7 @@ func TestWaitForAppOperation(t *testing.T) {
 
 		clientOpts := &apiclient.ClientOptions{ServerAddr: lis.Addr().String(), Insecure: true, PlainText: true}
 
-		err = NewArgoCDClient().WaitForAppOperation(t.Context(), Input{
+		err = NewArgoCDClient(appConfig).WaitForAppOperation(t.Context(), Input{
 			Logger:     zaptest.NewLogger(t),
 			ClientOpts: clientOpts,
 			AppName:    appName,
