@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	argoclientset "github.com/argoproj/argo-cd/v3/pkg/client/clientset/versioned"
 	datacorekube "github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/argocd"
 	"github.com/mydecisive/octant/internal/budget"
@@ -27,6 +28,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Initialize adds all the dependencies to DI.
@@ -41,7 +44,13 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 
-	if err := container.Provide(provideKubeClient); err != nil {
+	if err := container.Provide(provideKubeConfig); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(kubernetes.NewForConfig, dig.As(new(kubernetes.Interface))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(argoclientset.NewForConfig); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(provideHTTPClient); err != nil {
@@ -218,8 +227,23 @@ func initLogger(configuration *config.Configuration) error {
 	return nil
 }
 
-func provideKubeClient() (kubernetes.Interface, error) { // nolint: ireturn
-	return datacorekube.NewK8sClient(zap.L())
+func provideKubeConfig() (*rest.Config, error) {
+	conf, inClusterErr := rest.InClusterConfig()
+	if inClusterErr != nil {
+		homeDir, homeDirErr := os.UserHomeDir()
+		if homeDirErr != nil {
+			zap.L().Error("Failed to load home directory for loading k8s config", zap.Error(homeDirErr))
+			return nil, homeDirErr
+		}
+
+		fileConfig, kubeConfigFromFileErr := clientcmd.BuildConfigFromFlags("", homeDir+"/.kube/config")
+		if kubeConfigFromFileErr != nil {
+			zap.L().Error("Failed to build k8s config", zap.Error(kubeConfigFromFileErr))
+			return nil, kubeConfigFromFileErr
+		}
+		conf = fileConfig
+	}
+	return conf, nil
 }
 
 func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient { // nolint: ireturn
