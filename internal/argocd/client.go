@@ -9,7 +9,9 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
+	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
+	argoclientset "github.com/argoproj/argo-cd/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/argoproj/gitops-engine/pkg/sync/common"
 	"github.com/mydecisive/octant/internal/config"
@@ -17,11 +19,19 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 const (
 	clientRetryMax = 3
+)
+
+var (
+	ErrWatch   = errors.New("watch")
+	ErrDeleted = errors.New("deleted")
+	ErrParsing = errors.New("parsing")
 )
 
 type Input struct {
@@ -33,6 +43,11 @@ type Input struct {
 type InstallResult struct {
 	Status octantv1alpha.InstallStatus
 	Err    error
+}
+
+type WatchResult struct {
+	Details *argoapp.Application
+	Err     error
 }
 
 type APIClient interface {
@@ -51,6 +66,12 @@ type APIClient interface {
 		ctx context.Context,
 		input Input,
 	) error
+	WatchApplication(
+		ctx context.Context,
+		input Input,
+		timeout time.Duration,
+		out chan WatchResult,
+	)
 	// AppOperationState continuously retrieves the app operation state until
 	// either the timeout is reached or the state is succeeded.
 	AppOperationState(
@@ -81,18 +102,22 @@ type APIClient interface {
 }
 
 type Client struct {
+	argokube  *argoclientset.Clientset
 	appConfig *config.Configuration
 }
 
 // Ensure Client implements APIClient.
 var _ APIClient = (*Client)(nil)
 
-func NewArgoCDClient(appConfig *config.Configuration) *Client {
+func NewArgoCDClient(appConfig *config.Configuration, argokube *argoclientset.Clientset) *Client {
 	return &Client{
 		appConfig: appConfig,
+		argokube:  argokube,
 	}
 }
 
+// CreateClientOpts create a new ArgoCD client option to be passed
+// to the ArgoCD client methods.
 func CreateClientOpts(env config.Environment, clusterURL, authToken string) *apiclient.ClientOptions {
 	return &apiclient.ClientOptions{
 		HttpRetryMax: clientRetryMax,
@@ -242,6 +267,56 @@ func (*Client) SyncApplication(
 		return err
 	}
 	return nil
+}
+
+func (c *Client) WatchApplication(
+	ctx context.Context,
+	input Input,
+	timeout time.Duration,
+	out chan WatchResult,
+) {
+	defer close(out) // Tell caller the operation is complete
+
+	// labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": input.AppName}}
+	// TODO: use argocd app namespace
+	watcher, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector:  "app = mdai",
+		TimeoutSeconds: lo.ToPtr(int64(timeout.Seconds())),
+	})
+	if err != nil {
+		out <- WatchResult{
+			Err: fmt.Errorf("%w:%w", ErrWatch, err),
+		}
+		return
+	}
+	defer watcher.Stop()
+
+	for event := range watcher.ResultChan() {
+		switch event.Type {
+		case watch.Modified, watch.Added:
+			app, ok := event.Object.(*v1alpha1.Application)
+			if !ok {
+				out <- WatchResult{
+					Err: ErrParsing,
+				}
+				continue
+			}
+			out <- WatchResult{
+				Details: app,
+			}
+		case watch.Deleted:
+			out <- WatchResult{
+				Err: ErrDeleted,
+			}
+		case watch.Error:
+			input.Logger.Error("Received errored event type", zap.Any("details", event.Object)) //nolint
+			out <- WatchResult{
+				Err: errors.New("unexpected"),
+			}
+		default:
+			input.Logger.Debug("Ignore event type", zap.String("type", string(event.Type)), zap.Any("details", event.Object)) //nolint
+		}
+	}
 }
 
 // pollAppOperation polls the app's operation state until done is satisfied or the timeout elapses.
