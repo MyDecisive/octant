@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v1 "github.com/mydecisive/octant/api/v1"
+	"github.com/mydecisive/octant/internal/installlog"
+	"go.uber.org/zap"
 
 	"github.com/mydecisive/mdai-data-core/kube"
 	"github.com/mydecisive/octant/internal/config"
@@ -18,8 +21,9 @@ type ArgoCDIntegrationData struct {
 }
 
 type ArgoCDIntegration struct {
-	secretStore   kube.SecretStore
-	configuration *config.Configuration
+	secretStore     kube.SecretStore
+	installLogStore installlog.InstallLogStore
+	configuration   *config.Configuration
 }
 
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
@@ -27,11 +31,13 @@ var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 // NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
 func NewArgoCDIntegration(
 	secretStore kube.SecretStore,
+	installLogStore installlog.InstallLogStore,
 	configuration *config.Configuration,
 ) *ArgoCDIntegration {
 	return &ArgoCDIntegration{
-		secretStore:   secretStore,
-		configuration: configuration,
+		secretStore:     secretStore,
+		installLogStore: installLogStore,
+		configuration:   configuration,
 	}
 }
 
@@ -97,7 +103,7 @@ func (aci *ArgoCDIntegration) SetIntegration(
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// Create the secret if it does not exist
-			return createIntegrationSecret(
+			createErr := createIntegrationSecret(
 				ctx,
 				aci.secretStore,
 				namespace,
@@ -106,6 +112,21 @@ func (aci *ArgoCDIntegration) SetIntegration(
 				kube.OctantIntegrationArgoType,
 				jsonData,
 			)
+			result := v1.FailureOctantInstallEventResult
+			if createErr != nil {
+				result = v1.SuccessOctantInstallEventResult
+			}
+			if writeLogEntryErr := aci.installLogStore.AddInstallLogEvent(ctx, &v1.OctantInstallEvent{
+				Action:    v1.CreateDeployIntegrationOctantInstallEventAction,
+				Timestamp: v1.CreateOctantIntallEventTimestamp(),
+				Result:    result,
+				Namespace: namespace,
+				Ref:       integrationName,
+				Subtype:   string(v1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+			}); writeLogEntryErr != nil {
+				zap.L().Error("INSTALL LOG ERROR: failed to write install log event", zap.Error(writeLogEntryErr), zap.String("actionType", string(v1.CreateDeployIntegrationOctantInstallEventAction)))
+			}
+			return createErr
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
