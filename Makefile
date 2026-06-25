@@ -1,4 +1,4 @@
-DOCKER_TAG ?= 0.1.53
+DOCKER_TAG ?= 0.1.77
 OCTANT_UI_TAG ?= latest
 CHART_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)

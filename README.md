@@ -56,7 +56,7 @@ NOTE: the docker build defaults to the `ghcr.io/mydecisive/octant-ui:latest` ima
 ```shell
 make docker-build
 # to override the octant-ui image with a locally built image
-OCTANT_UI_IMAGE=octant-ui:0.1.2 make docker-build
+OCTANT_UI_IMAGE=octant-ui:0.1.77 make docker-build
 ```
 
 Then, load the image to the kind cluster, package a helm release, and deploy it.
@@ -66,5 +66,5 @@ Then, load the image to the kind cluster, package a helm release, and deploy it.
 kind load docker-image local/octant-ui:latest --name mdai
 # helm package and deploy
 make helm-package
-helm upgrade octant ./octant-0.1.2.tgz --install
+helm upgrade octant ./octant-0.1.77.tgz --install
 ```

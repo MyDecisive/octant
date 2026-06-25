@@ -4,6 +4,6 @@ description: MyDecisive Octant helm chart
 
 type: application
 
-version: 0.1.2
+version: 0.1.77
 
-appVersion: "0.1.2"
+appVersion: "0.1.77"
