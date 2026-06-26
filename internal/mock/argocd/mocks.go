@@ -516,3 +516,61 @@ func (_c *MockAPIClient_WaitForAppOperation_Call) RunAndReturn(run func(ctx cont
 	_c.Call.Return(run)
 	return _c
 }
+
+// WatchApplication provides a mock function for the type MockAPIClient
+func (_mock *MockAPIClient) WatchApplication(ctx context.Context, input argocd.Input, timeout time.Duration, out chan argocd.WatchResult) {
+	_mock.Called(ctx, input, timeout, out)
+	return
+}
+
+// MockAPIClient_WatchApplication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WatchApplication'
+type MockAPIClient_WatchApplication_Call struct {
+	*mock.Call
+}
+
+// WatchApplication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input argocd.Input
+//   - timeout time.Duration
+//   - out chan argocd.WatchResult
+func (_e *MockAPIClient_Expecter) WatchApplication(ctx interface{}, input interface{}, timeout interface{}, out interface{}) *MockAPIClient_WatchApplication_Call {
+	return &MockAPIClient_WatchApplication_Call{Call: _e.mock.On("WatchApplication", ctx, input, timeout, out)}
+}
+
+func (_c *MockAPIClient_WatchApplication_Call) Run(run func(ctx context.Context, input argocd.Input, timeout time.Duration, out chan argocd.WatchResult)) *MockAPIClient_WatchApplication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 argocd.Input
+		if args[1] != nil {
+			arg1 = args[1].(argocd.Input)
+		}
+		var arg2 time.Duration
+		if args[2] != nil {
+			arg2 = args[2].(time.Duration)
+		}
+		var arg3 chan argocd.WatchResult
+		if args[3] != nil {
+			arg3 = args[3].(chan argocd.WatchResult)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAPIClient_WatchApplication_Call) Return() *MockAPIClient_WatchApplication_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockAPIClient_WatchApplication_Call) RunAndReturn(run func(ctx context.Context, input argocd.Input, timeout time.Duration, out chan argocd.WatchResult)) *MockAPIClient_WatchApplication_Call {
+	_c.Run(run)
+	return _c
+}
