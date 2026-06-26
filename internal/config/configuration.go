@@ -30,7 +30,7 @@ const (
 type Configuration struct {
 	Port               uint16      `yaml:"port" env:"OCTANT_PORT" env-default:"5678"`
 	Env                Environment `yaml:"env" env:"OCTANT_ENV" env-default:"dev"`
-	CurrentNamespace   string      `yaml:"currentNamespace" env:"POD_NAMESPACE"`
+	CurrentNamespace   string      `yaml:"currentNamespace" env:"POD_NAMESPACE" env-default:"octant"`
 	ServiceAccountName string      `yaml:"serviceAccountName" env:"OCTANT_SERVICE_ACCOUNT" env-default:"octant"`
 	// DefaultTimeout (in seconds) controls HTTP client timeout.
 	DefaultTimeout int     `yaml:"defaultTimeout" env:"OCTANT_DEFAULT_TIMEOUT" env-default:"5"`
