@@ -2,7 +2,7 @@
 [![codecov](https://codecov.io/gh/MyDecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/MyDecisive/octant)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/octant)](https://artifacthub.io/packages/search?repo=octant)
 
-<section style="display: inline-flex;">
+<section style="display: flex;">
   <div width="50%">
     <img alt="MyDecisive Logo" src="https://cdn.mydecisive.ai/media/2026/05/22/Octopus.png" width="25%"/>
   </div>
@@ -10,6 +10,8 @@
     XXX: VIDEO HERE
   </div>
 </section>
+
+
 # Welcome to Octant
 
 ## ***AI DevOps that optimizes your system before incidents occur.***
