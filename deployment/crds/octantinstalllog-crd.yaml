@@ -42,18 +42,33 @@ spec:
                 items:
                   properties:
                     action:
+                      description: Action is the type of step in progressing the Octant/MDAI
+                        system towards the installed state
                       type: string
                     message:
+                      description: Message is an optional message to help further
+                        diagnosis of failure/partial-success events
                       type: string
                     namespace:
+                      description: Namespace is the namespace this event took place
+                        in
                       type: string
                     ref:
+                      description: Ref is the integration/connection/other resource
+                        that this action targeted
                       type: string
                     result:
+                      description: Result is the success/partial-success/failure state
+                        of this event
+                      type: string
+                    subtype:
+                      description: Subtype is the specific underlying type of the
+                        integration/other (Argo for deploy integration, Datadog for
+                        destination)
                       type: string
                     timestamp:
-                      type: string
-                    type:
+                      description: Timestamp is the timestamp of when this state change
+                        was observed
                       type: string
                   required:
                   - action
