@@ -102,36 +102,46 @@ func (aci *ArgoCDIntegration) SetIntegration(
 	secret, err := aci.secretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			// Create the secret if it does not exist
-			createErr := createIntegrationSecret(
-				ctx,
-				aci.secretStore,
-				namespace,
-				integrationName,
-				argocdSecretName,
-				kube.OctantIntegrationArgoType,
-				jsonData,
-			)
-			result := v1.FailureOctantInstallEventResult
-			if createErr != nil {
-				result = v1.SuccessOctantInstallEventResult
-			}
-			if writeLogEntryErr := aci.installLogStore.AddInstallLogEvent(ctx, &v1.OctantInstallEvent{
-				Action:    v1.CreateDeployIntegrationOctantInstallEventAction,
-				Timestamp: v1.CreateOctantIntallEventTimestamp(),
-				Result:    result,
-				Namespace: namespace,
-				Ref:       integrationName,
-				Subtype:   string(v1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
-			}); writeLogEntryErr != nil {
-				zap.L().Error("INSTALL LOG ERROR: failed to write install log event", zap.Error(writeLogEntryErr), zap.String("actionType", string(v1.CreateDeployIntegrationOctantInstallEventAction)))
-			}
-			return createErr
+			return aci.createSecretWithIntegration(ctx, integrationName, namespace, jsonData)
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, aci.secretStore, namespace, integrationName, secret, jsonData)
+	updateErr := updateSecretWithIntegration(ctx, aci.secretStore, namespace, integrationName, secret, jsonData)
+	aci.writeInstallLogEntry(ctx, integrationName, namespace, updateErr)
+	return updateErr
+}
+
+func (aci *ArgoCDIntegration) createSecretWithIntegration(ctx context.Context, integrationName string, namespace string, jsonData []byte) error {
+	// Create the secret if it does not exist
+	createErr := createIntegrationSecret(
+		ctx,
+		aci.secretStore,
+		namespace,
+		integrationName,
+		argocdSecretName,
+		kube.OctantIntegrationArgoType,
+		jsonData,
+	)
+	aci.writeInstallLogEntry(ctx, integrationName, namespace, createErr)
+	return createErr
+}
+
+func (aci *ArgoCDIntegration) writeInstallLogEntry(ctx context.Context, integrationName string, namespace string, createErr error) {
+	result := v1.FailureOctantInstallEventResult
+	if createErr == nil {
+		result = v1.SuccessOctantInstallEventResult
+	}
+	if writeLogEntryErr := aci.installLogStore.AddInstallLogEvent(ctx, &v1.OctantInstallEvent{
+		Action:    v1.CreateDeployIntegrationOctantInstallEventAction,
+		Timestamp: v1.CreateOctantIntallEventTimestamp(),
+		Result:    result,
+		Namespace: namespace,
+		Ref:       integrationName,
+		Subtype:   string(v1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+	}); writeLogEntryErr != nil {
+		zap.L().Error("INSTALL LOG ERROR: failed to write install log event", zap.Error(writeLogEntryErr), zap.String("actionType", string(v1.CreateDeployIntegrationOctantInstallEventAction)))
+	}
 }
 
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.

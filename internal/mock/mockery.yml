@@ -59,7 +59,13 @@ packages:
   github.com/mydecisive/octant/internal/budget/filter:
     interfaces:
       SettingController:
+  github.com/mydecisive/octant/internal/installlog:
+    interfaces:
+      InstallLogStore:
   k8s.io/client-go/kubernetes:
+    interfaces:
+      Interface:
+  k8s.io/client-go/dynamic:
     interfaces:
       Interface:
   k8s.io/client-go/kubernetes/typed/apps/v1:

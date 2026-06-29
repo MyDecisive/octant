@@ -35,7 +35,6 @@ func NewCustomResourceInstallLogStore(configuration config.Configuration, dynami
 }
 
 func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (*v1.OctantInstallLogSpec, error) {
-	logger := zap.L()
 	installLogResource, err := crils.loadInstallLogResource(ctx)
 	if err != nil {
 		zap.Error(err)
@@ -44,6 +43,7 @@ func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (
 	return &installLogResource.Spec, nil
 }
 
+// TODO: Address behavior when number of events is high (> 1000)
 func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(ctx context.Context, entry *v1.OctantInstallEvent) error {
 	installLogResource, err := crils.loadInstallLogResource(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func (crils *CustomResourceInstallLogStore) loadInstallLogResource(ctx context.C
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 
-	rawInstallLog, err := crils.dynamicClient.Resource(v1.GetOctantInstallLogGroupVersionResource()).Get(ctx, installLogName, metav1.GetOptions{})
+	rawInstallLog, err := crils.dynamicClient.Resource(v1.GetOctantInstallLogGroupVersionResource()).Namespace(namespace).Get(ctx, installLogName, metav1.GetOptions{})
 	if err != nil {
 		logger.Error("Failed to get install log", zap.Error(err))
 		return nil, err

@@ -2,11 +2,13 @@ package integration
 
 import (
 	"encoding/json"
+	v1 "github.com/mydecisive/octant/api/v1"
 	"testing"
 
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
 	"github.com/mydecisive/octant/internal/config"
+	installlogmock "github.com/mydecisive/octant/internal/mock/installlog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -42,11 +44,13 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
 			Return(nil, notFoundError).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		argocdIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
@@ -69,11 +73,13 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
 			Return(existingSecret, nil).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		argocdIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
@@ -100,11 +106,13 @@ func TestArgoCD_GetIntegrations(t *testing.T) {
 			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
 			Return(existingSecret, nil).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		argocdIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		actual, getErr := argocdIntegration.GetIntegrations(t.Context())
@@ -139,11 +147,22 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 			})).
 			Return(nil).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *v1.OctantInstallEvent) bool {
+				return event.Action == v1.CreateDeployIntegrationOctantInstallEventAction &&
+					event.Namespace == defaultNamespace &&
+					event.Ref == "team-a" &&
+					event.Result == v1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
 		argocdIntegration := &ArgoCDIntegration{
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
-			secretStore: secretStore,
+			secretStore:     secretStore,
+			installLogStore: installLogStore,
 		}
 
 		err := argocdIntegration.SetIntegration(t.Context(), "team-a", newIntegration)
@@ -179,11 +198,22 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 			Return(nil).
 			Once()
 
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *v1.OctantInstallEvent) bool {
+				return event.Action == v1.CreateDeployIntegrationOctantInstallEventAction &&
+					event.Namespace == defaultNamespace &&
+					event.Ref == "team-b" &&
+					event.Result == v1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
 		datadogIntegration := &ArgoCDIntegration{
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
-			secretStore: secretStore,
+			secretStore:     secretStore,
+			installLogStore: installLogStore,
 		}
 
 		require.NoError(t, datadogIntegration.SetIntegration(t.Context(), "team-b", newIntegration))
@@ -210,11 +240,13 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
 			Return(nil, notFoundError).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		datadogIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		err := datadogIntegration.DeleteIntegration(t.Context(), "team-a")
@@ -235,11 +267,13 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			GetSecretByNameAndNamespace(argocdSecretName, defaultNamespace).
 			Return(existingSecret, nil).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		argocdIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		err := argocdIntegration.DeleteIntegration(t.Context(), "team-b")
@@ -270,12 +304,14 @@ func TestArgoCD_DeleteIntegration(t *testing.T) {
 			})).
 			Return(nil).
 			Once()
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
 
 		argocdIntegration := &ArgoCDIntegration{
 			secretStore: secretStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
+			installLogStore: installLogStore,
 		}
 
 		require.NoError(t, argocdIntegration.DeleteIntegration(t.Context(), "team-a"))
