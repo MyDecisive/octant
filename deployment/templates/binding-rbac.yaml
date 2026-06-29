@@ -6,7 +6,7 @@ metadata:
   {{- include "deployment.labels" . | nindent 4 }}
 roleRef:
   apiGroup: ""
-  kind: Role
+  kind: ClusterRole
   name: '{{ include "deployment.fullname" . }}-manager-role'
 subjects:
 - kind: ServiceAccount
