@@ -7,6 +7,6 @@ subjects:
   - kind: ServiceAccount
     name: octant
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: manager-role
   apiGroup: ""
