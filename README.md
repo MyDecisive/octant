@@ -2,69 +2,41 @@
 [![codecov](https://codecov.io/gh/MyDecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/MyDecisive/octant)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/octant)](https://artifacthub.io/packages/search?repo=octant)
 
-# Octant
+<section style="display: inline-flex;">
+  <div width="50%">
+    <img alt="MyDecisive Logo" src="https://cdn.mydecisive.ai/media/2026/05/22/Octopus.png" width="25%"/>
+  </div>
+  <div width="50%">
+    XXX: VIDEO HERE
+  </div>
+</section>
+# Welcome to Octant
 
-Octant is a telemetry control plane for operating and optimizing observability pipelines.
+## ***AI DevOps that optimizes your system before incidents occur.***
 
-## Documentation
+Octant is the management interface for our telemetry control plane that helps teams onboard, operate, and optimize observability pipelines without hand-assembling every component. Powered by [MyDecisive SmartHub](https://github.com/MyDecisive/mdai-hub), Octant creates the required SmartHub and OpenTelemetry collectors for you, then gives operators guided workflows for the capabilities that usually require deep knowledge of Kubernetes, OTel collectors, deployment tooling such as Argo CD, and vendor-specific telemetry setup such as Datadog.
 
-- [Introduction: What is Octant?](docs/intro.md)
-- [Usage guide](docs/usage.md)
-- [Installation guide](docs/installation.md)
-- [Development guide](docs/development.md).
+With Octant, teams can:
+
+1. Stand up the telemetry control plane and required collectors without manually wiring each component together.
+2. Define where telemetry is collected, which signals are enabled, and where that data should go.
+3. Generate deployment artifacts and manage deployment integrations from the same console used to configure the pipeline.
+4. Validate that data is flowing correctly before relying on the pipeline in production.
+5. Understand telemetry volume, cost, filtering, and service-level usage from the same place where controls are configured.
+6. Tune runtime behavior such as enabled signals, credentials, and sampling filters without rebuilding the full deployment.
+
+Octant also surfaces the Kubernetes resources, connection configuration, validation results, deployment artifacts, and usage data behind each capability so operators can understand what is happening and adjust it safely.
+
+
+
+Use these docs to get started:
+
+1. [Install the Octant sandbox](installation.md) to test-drive Octant locally.
+2. [Understand Octant workflows](usage.md) for the main product areas.
+3. [Manage connections and integrations](connections.md) for telemetry setup.
+4. [Review Clarity telemetry insights and filtering](telemetry.md) for usage, cost, and sampling controls.
+5. [Run Octant locally](development.md) when developing the API or embedded webapp.
+
+To learn more about MyDecisive, [see our docs](https://docs.mydecisive.ai/).
 
 When running the embedded webapp locally, open `http://localhost:5678/docs` to view the Swagger API documentation.
-
-## Building Octant
-
-### Pre-Requisites
-
-Octant communicates with a Kubernetes cluster to manage objects that it needs for various operations. If you are running
-Octant **_outside_** of a cluster, ensure that you have a valid Kubernetes config (`~/.kube/config`) set to your local cluster context.
-When run inside a cluster, it will have everything it needs due to the Role/RoleBinding octant sets up.
-
-```shell
-kubectl config current-context
-```
-
-### Building and running just the Octant API:
-
-Octant API runs on port `5678` by default, so the easiest way to integrate with it for local development is to set the `baseUrl` in the Octant TypeScript client to `localhost:5678`.
-
-```shell
-go build -trimpath -ldflags="-w -s" -o octant ./cmd/octant
-./octant
-```
-
-### Building the "full" webapp:
-
-This requires having the `octant-ui` repo also checked out.
-
-```shell
-# From the octant-ui repo base dir
-npm install
-npm run build
-cp -R dist /path/to/octant/web/
-# Then, from the octant repo base dir
-go build -trimpath -tags webapp -ldflags="-w -s" -o octant ./cmd/octant
-```
-
-### Building the docker image and deploying to the local cluster
-
-NOTE: the docker build defaults to the `ghcr.io/mydecisive/octant-ui:latest` image for `octant-ui`
-
-```shell
-make docker-build
-# to override the octant-ui image with a locally built image
-OCTANT_UI_IMAGE=octant-ui:0.1.2 make docker-build
-```
-
-Then, load the image to the kind cluster, package a helm release, and deploy it.
-
-```shell
-# replace `local/octant-ui` with whatever you named your image
-kind load docker-image local/octant-ui:latest --name mdai
-# helm package and deploy
-make helm-package
-helm upgrade octant ./octant-0.1.2.tgz --install
-```
