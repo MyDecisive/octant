@@ -31,11 +31,11 @@ Octant also surfaces the Kubernetes resources, connection configuration, validat
 
 Use these docs to get started:
 
-1. [Install the Octant sandbox](installation.md) to test-drive Octant locally.
-2. [Understand Octant workflows](usage.md) for the main product areas.
-3. [Manage connections and integrations](connections.md) for telemetry setup.
-4. [Review Clarity telemetry insights and filtering](telemetry.md) for usage, cost, and sampling controls.
-5. [Run Octant locally](development.md) when developing the API or embedded webapp.
+1. [Install the Octant sandbox](docs/installation.md) to test-drive Octant locally.
+2. [Understand Octant workflows](docs/usage.md) for the main product areas.
+3. [Manage connections and integrations](docs/connections.md) for telemetry setup.
+4. [Review Clarity telemetry insights and filtering](docs/telemetry.md) for usage, cost, and sampling controls.
+5. [Run Octant locally](docs/development.md) when developing the API or embedded webapp.
 
 To learn more about MyDecisive, [see our docs](https://docs.mydecisive.ai/).
 
