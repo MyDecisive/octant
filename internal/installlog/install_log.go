@@ -23,11 +23,11 @@ type InstallLogStore interface {
 }
 
 type CustomResourceInstallLogStore struct {
-	configuration config.Configuration
+	configuration *config.Configuration
 	dynamicClient dynamic.Interface
 }
 
-func NewCustomResourceInstallLogStore(configuration config.Configuration, dynamicClient dynamic.Interface) *CustomResourceInstallLogStore {
+func NewCustomResourceInstallLogStore(configuration *config.Configuration, dynamicClient dynamic.Interface) *CustomResourceInstallLogStore {
 	return &CustomResourceInstallLogStore{
 		configuration: configuration,
 		dynamicClient: dynamicClient,
