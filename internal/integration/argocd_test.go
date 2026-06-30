@@ -6,7 +6,7 @@ import (
 
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
-	"github.com/mydecisive/octant/api/v1"
+	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	installlogmock "github.com/mydecisive/octant/internal/mock/installlog"
 	"github.com/stretchr/testify/assert"
@@ -150,11 +150,11 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		installLogStore.EXPECT().AddInstallLogEvent(
 			mock.Anything,
-			mock.MatchedBy(func(event *v1.OctantInstallEvent) bool {
-				return event.Action == v1.CreateDeployIntegrationOctantInstallEventAction &&
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateDeployIntegrationOctantInstallEventAction &&
 					event.Namespace == defaultNamespace &&
 					event.Ref == "team-a" &&
-					event.Result == v1.SuccessOctantInstallEventResult
+					event.Result == octantv1.SuccessOctantInstallEventResult
 			}),
 		).Return(nil).Once()
 		argocdIntegration := &ArgoCDIntegration{
@@ -201,11 +201,11 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		installLogStore := installlogmock.NewMockInstallLogStore(t)
 		installLogStore.EXPECT().AddInstallLogEvent(
 			mock.Anything,
-			mock.MatchedBy(func(event *v1.OctantInstallEvent) bool {
-				return event.Action == v1.CreateDeployIntegrationOctantInstallEventAction &&
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateDeployIntegrationOctantInstallEventAction &&
 					event.Namespace == defaultNamespace &&
 					event.Ref == "team-b" &&
-					event.Result == v1.SuccessOctantInstallEventResult
+					event.Result == octantv1.SuccessOctantInstallEventResult
 			}),
 		).Return(nil).Once()
 		datadogIntegration := &ArgoCDIntegration{

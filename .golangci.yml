@@ -79,6 +79,9 @@ linters:
           disabled: true
         - name: enforce-switch-style
           disabled: true
+        - name: max-public-structs
+          disabled: true
+          path: api/v1/.*\.go
     tagliatelle:
       case:
         rules:
@@ -153,6 +156,9 @@ linters:
       - path: internal/config/*
         linters:
           - revive
+      - path: api/v1/*
+        linters:
+          - lll
 issues:
     max-issues-per-linter: 0
     max-same-issues: 0

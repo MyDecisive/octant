@@ -3,7 +3,7 @@ package installlog
 import (
 	"context"
 
-	v1 "github.com/mydecisive/octant/api/v1"
+	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,8 +20,8 @@ const (
 )
 
 type InstallLogStore interface {
-	GetInstallLog(ctx context.Context) (*v1.OctantInstallLogSpec, error)
-	AddInstallLogEvent(ctx context.Context, entry *v1.OctantInstallEvent) error
+	GetInstallLog(ctx context.Context) (*octantv1.OctantInstallLogSpec, error)
+	AddInstallLogEvent(ctx context.Context, entry *octantv1.OctantInstallEvent) error
 }
 
 type CustomResourceInstallLogStore struct {
@@ -29,14 +29,17 @@ type CustomResourceInstallLogStore struct {
 	dynamicClient dynamic.Interface
 }
 
-func NewCustomResourceInstallLogStore(configuration *config.Configuration, dynamicClient dynamic.Interface) *CustomResourceInstallLogStore {
+func NewCustomResourceInstallLogStore(
+	configuration *config.Configuration,
+	dynamicClient dynamic.Interface,
+) *CustomResourceInstallLogStore {
 	return &CustomResourceInstallLogStore{
 		configuration: configuration,
 		dynamicClient: dynamicClient,
 	}
 }
 
-func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (*v1.OctantInstallLogSpec, error) {
+func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (*octantv1.OctantInstallLogSpec, error) {
 	installLogResource, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
 		zap.Error(err)
@@ -45,8 +48,12 @@ func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (
 	return &installLogResource.Spec, nil
 }
 
-// TODO: Address behavior when number of events is high (> 1000).
-func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(ctx context.Context, entry *v1.OctantInstallEvent) error {
+func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(
+	ctx context.Context,
+	entry *octantv1.OctantInstallEvent,
+) error {
+	// TODO: Address behavior when number of events is high (> 1000).
+
 	_, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
 		zap.Error(err)
@@ -59,13 +66,15 @@ func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(ctx context.Conte
 	return nil
 }
 
-func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(ctx context.Context) (*v1.OctantInstallLog, error) {
+func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
+	ctx context.Context,
+) (*octantv1.OctantInstallLog, error) {
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 
-	var installLog *v1.OctantInstallLog
+	var installLog *octantv1.OctantInstallLog
 	rawInstallLog, err := crils.dynamicClient.Resource(
-		v1.GetOctantInstallLogGroupVersionResource(),
+		octantv1.GetOctantInstallLogGroupVersionResource(),
 	).Namespace(namespace).Get(
 		ctx,
 		installLogName,
@@ -79,7 +88,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(ctx c
 		); convertErr != nil {
 			logger.Error(
 				"WEIRD: failed to convert created install log back into typed object.",
-				zap.Error(err),
+				zap.Error(convertErr),
 				zap.String("namespace", namespace),
 			)
 			return nil, convertErr
@@ -103,20 +112,20 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(ctx c
 
 func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	ctx context.Context,
-) (*v1.OctantInstallLog, error) {
+) (*octantv1.OctantInstallLog, error) {
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
-	installLogResource := &v1.OctantInstallLog{
+	installLogResource := &octantv1.OctantInstallLog{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1.GetOctantInstallLogAPIVersion(),
-			Kind:       v1.GetOctantInstallLogKind(),
+			APIVersion: octantv1.GetOctantInstallLogAPIVersion(),
+			Kind:       octantv1.GetOctantInstallLogKind(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      installLogName,
 			Namespace: namespace,
 		},
-		Spec: v1.OctantInstallLogSpec{
-			Events: make([]v1.OctantInstallEvent, 0),
+		Spec: octantv1.OctantInstallLogSpec{
+			Events: make([]octantv1.OctantInstallEvent, 0),
 		},
 	}
 
@@ -131,7 +140,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		return nil, err
 	}
 	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
-		v1.GetOctantInstallLogGroupVersionResource(),
+		octantv1.GetOctantInstallLogGroupVersionResource(),
 	).Namespace(namespace).Create(
 		ctx,
 		&unstructured.Unstructured{Object: unstructuredRes},
@@ -141,7 +150,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		logger.Error("error occurred while creating OctantInstallLog custom resource", zap.Error(err))
 		return nil, err
 	}
-	var createdInstallLog v1.OctantInstallLog
+	var createdInstallLog octantv1.OctantInstallLog
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(
 		rawCreatedInstallLog.Object,
 		&createdInstallLog,
@@ -164,14 +173,14 @@ type patchPath string
 const endOfSpecEventsPath patchPath = "/spec/events/-"
 
 type eventPatchPayloadOperation struct {
-	Op    patchOp               `json:"op"`   // always add
-	Path  patchPath             `json:"path"` // always
-	Value v1.OctantInstallEvent `json:"value,omitempty"`
+	Op    patchOp                     `json:"op"`   // always add
+	Path  patchPath                   `json:"path"` // always
+	Value octantv1.OctantInstallEvent `json:"value"`
 }
 
 func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	ctx context.Context,
-	event *v1.OctantInstallEvent,
+	event *octantv1.OctantInstallEvent,
 ) error {
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
@@ -190,7 +199,7 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	}
 
 	if _, err := crils.dynamicClient.Resource(
-		v1.GetOctantInstallLogGroupVersionResource(),
+		octantv1.GetOctantInstallLogGroupVersionResource(),
 	).Namespace(namespace).Patch(
 		ctx,
 		installLogName,
