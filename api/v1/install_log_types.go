@@ -5,9 +5,10 @@ package v1
 
 import (
 	"fmt"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"time"
 )
 
 // +kubebuilder:object:root=true
@@ -46,15 +47,15 @@ func GetOctantInstallLogGroupVersionResource() schema.GroupVersionResource {
 	}
 }
 
-// OctantInstallLog is the Schema for the setup logs API
+// OctantInstallLog is the Schema for the setup logs API.
 type OctantInstallLog struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:",inline"` // nolint:revive
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec OctantInstallLogSpec `json:"spec,omitempty"`
 }
 
-// OctantInstallLogSpec defines the data schema
+// OctantInstallLogSpec defines the data schema.
 type OctantInstallLogSpec struct {
 	// +kubebuilder:validation:Optional
 	Events []OctantInstallEvent `json:"events"`
@@ -63,32 +64,32 @@ type OctantInstallLogSpec struct {
 type OctantInstallEventResultCode string
 
 const (
-	// SuccessOctantInstallEventResult indicates that this event was completely successful and the system is ready to progress to the next step of the install flow
+	// SuccessOctantInstallEventResult indicates that this event was completely successful and the system is ready to progress to the next step of the install flow.
 	SuccessOctantInstallEventResult OctantInstallEventResultCode = "SUCCESS"
-	// FailureOctantInstallEventResult indicates a complete failure of the attempted action, meaning that no state change was achieved, and a retry of the same action is viable
+	// FailureOctantInstallEventResult indicates a complete failure of the attempted action, meaning that no state change was achieved, and a retry of the same action is viable.
 	FailureOctantInstallEventResult OctantInstallEventResultCode = "FAILURE"
-	// PartialSuccessOctantInstallEventResult indicates that this event was only partially successful, tainting the destination system, indicating that the system is in a state that likely requires manual intervention to proceed with Octant's flow
+	// PartialSuccessOctantInstallEventResult indicates that this event was only partially successful, tainting the destination system, indicating that the system is in a state that likely requires manual intervention to proceed with Octant's flow.
 	PartialSuccessOctantInstallEventResult OctantInstallEventResultCode = "PARTIAL_SUCCESS"
 )
 
 type OctantInstallEventAction string
 
 const (
-	// CreateDeployIntegrationOctantInstallEventAction is the action of creating an integration within Octant that allows for modifying the destination cluster
+	// CreateDeployIntegrationOctantInstallEventAction is the action of creating an integration within Octant that allows for modifying the destination cluster.
 	CreateDeployIntegrationOctantInstallEventAction OctantInstallEventAction = "CREATE_DEPLOY_INTEGRATION"
-	// InstallMDAIHubOctantInstallEventAction is the action of installing the MDAI hub components
+	// InstallMDAIHubOctantInstallEventAction is the action of installing the MDAI hub components.
 	InstallMDAIHubOctantInstallEventAction OctantInstallEventAction = "INSTALL_MDAI_HUB"
-	// CreateDestinationIntegrationOctantInstallEventAction is the action of creating a telemetry destination integration that connections can consume
+	// CreateDestinationIntegrationOctantInstallEventAction is the action of creating a telemetry destination integration that connections can consume.
 	CreateDestinationIntegrationOctantInstallEventAction OctantInstallEventAction = "CREATE_DESTINATION_INTEGRATION"
-	// CreateConnectionOctantInstallEventAction is the action of creating a connection and all underlying infrastructure
+	// CreateConnectionOctantInstallEventAction is the action of creating a connection and all underlying infrastructure.
 	CreateConnectionOctantInstallEventAction OctantInstallEventAction = "CREATE_CONNECTION"
-	// NNFClientsConnectedVerifiedOctantInstallEventAction is the action of completing the envoy connected clients validation loop
+	// NNFClientsConnectedVerifiedOctantInstallEventAction is the action of completing the envoy connected clients validation loop.
 	NNFClientsConnectedVerifiedOctantInstallEventAction OctantInstallEventAction = "NNF_CLIENTS_CONNECTED_VERIFIED"
-	// IngressVerifiedOctantInstallEventAction is the action of completing the ingress validation loop (data has been received)
+	// IngressVerifiedOctantInstallEventAction is the action of completing the ingress validation loop (data has been received).
 	IngressVerifiedOctantInstallEventAction OctantInstallEventAction = "INGRESS_VERIFIED"
-	// EgressVerifiedOctantInstallEventAction is the action of completing the egress validation loop (data has been sent)
+	// EgressVerifiedOctantInstallEventAction is the action of completing the egress validation loop (data has been sent).
 	EgressVerifiedOctantInstallEventAction OctantInstallEventAction = "EGRESS_VERIFIED"
-	// ValidationPassedOctantInstallEventAction is the action of completing the policy or parity data validation loop (data is satisfactorily the same in/out)
+	// ValidationPassedOctantInstallEventAction is the action of completing the policy or parity data validation loop (data is satisfactorily the same in/out).
 	ValidationPassedOctantInstallEventAction OctantInstallEventAction = "VALIDATION_PASSED"
 )
 
@@ -122,9 +123,10 @@ type OctantInstallEvent struct {
 
 // +kubebuilder:object:root=true
 
-// OctantInstallLogList contains a list of OctantInstallLogs
+// OctantInstallLogList contains a list of OctantInstallLogs.
 type OctantInstallLogList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:",inline"` // nolint:revive
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []OctantInstallLog `json:"items"`
+
+	Items []OctantInstallLog `json:"items"`
 }

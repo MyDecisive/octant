@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	v1 "github.com/mydecisive/octant/api/v1"
-	"github.com/mydecisive/octant/internal/installlog"
-	"go.uber.org/zap"
 
 	"github.com/mydecisive/mdai-data-core/kube"
+	"github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/installlog"
+	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -140,7 +140,11 @@ func (aci *ArgoCDIntegration) writeInstallLogEntry(ctx context.Context, integrat
 		Ref:       integrationName,
 		Subtype:   string(v1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
 	}); writeLogEntryErr != nil {
-		zap.L().Error("INSTALL LOG ERROR: failed to write install log event", zap.Error(writeLogEntryErr), zap.String("actionType", string(v1.CreateDeployIntegrationOctantInstallEventAction)))
+		zap.L().Error(
+			"INSTALL LOG ERROR: failed to write install log event",
+			zap.Error(writeLogEntryErr),
+			zap.String("actionType", string(v1.CreateDeployIntegrationOctantInstallEventAction)),
+		)
 	}
 }
 

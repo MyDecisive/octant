@@ -2,6 +2,7 @@ package installlog
 
 import (
 	"context"
+
 	v1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (
 	return &installLogResource.Spec, nil
 }
 
-// TODO: Address behavior when number of events is high (> 1000)
+// TODO: Address behavior when number of events is high (> 1000).
 func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(ctx context.Context, entry *v1.OctantInstallEvent) error {
 	_, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
@@ -63,11 +64,24 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(ctx c
 	namespace := crils.configuration.CurrentNamespace
 
 	var installLog *v1.OctantInstallLog
-	rawInstallLog, err := crils.dynamicClient.Resource(v1.GetOctantInstallLogGroupVersionResource()).Namespace(namespace).Get(ctx, installLogName, metav1.GetOptions{})
+	rawInstallLog, err := crils.dynamicClient.Resource(
+		v1.GetOctantInstallLogGroupVersionResource(),
+	).Namespace(namespace).Get(
+		ctx,
+		installLogName,
+		metav1.GetOptions{},
+	)
 	// short-circuiting on no errors instead because it's more terse in this case
 	if err == nil {
-		if convertErr := runtime.DefaultUnstructuredConverter.FromUnstructured(rawInstallLog.Object, &installLog); convertErr != nil {
-			logger.Error("WEIRD: failed to convert created install log back into typed object.", zap.Error(err), zap.String("namespace", namespace))
+		if convertErr := runtime.DefaultUnstructuredConverter.FromUnstructured(
+			rawInstallLog.Object,
+			&installLog,
+		); convertErr != nil {
+			logger.Error(
+				"WEIRD: failed to convert created install log back into typed object.",
+				zap.Error(err),
+				zap.String("namespace", namespace),
+			)
 			return nil, convertErr
 		}
 		return installLog, nil
@@ -87,7 +101,9 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(ctx c
 	return installLog, nil
 }
 
-func (crils *CustomResourceInstallLogStore) createInstallLogResource(ctx context.Context) (*v1.OctantInstallLog, error) {
+func (crils *CustomResourceInstallLogStore) createInstallLogResource(
+	ctx context.Context,
+) (*v1.OctantInstallLog, error) {
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 	installLogResource := &v1.OctantInstallLog{
@@ -107,17 +123,34 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(ctx context
 	createOpts := metav1.CreateOptions{}
 	unstructuredRes, err := runtime.DefaultUnstructuredConverter.ToUnstructured(installLogResource)
 	if err != nil {
-		logger.Error("WEIRD: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client", zap.Error(err), zap.String("namespace", namespace))
+		logger.Error(
+			"WEIRD: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
+			zap.Error(err),
+			zap.String("namespace", namespace),
+		)
 		return nil, err
 	}
-	rawCreatedInstallLog, err := crils.dynamicClient.Resource(v1.GetOctantInstallLogGroupVersionResource()).Namespace(namespace).Create(ctx, &unstructured.Unstructured{Object: unstructuredRes}, createOpts)
+	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
+		v1.GetOctantInstallLogGroupVersionResource(),
+	).Namespace(namespace).Create(
+		ctx,
+		&unstructured.Unstructured{Object: unstructuredRes},
+		createOpts,
+	)
 	if err != nil {
 		logger.Error("error occurred while creating OctantInstallLog custom resource", zap.Error(err))
 		return nil, err
 	}
 	var createdInstallLog v1.OctantInstallLog
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(rawCreatedInstallLog.Object, &createdInstallLog); err != nil {
-		logger.Error("WEIRD: failed to convert created install log back into typed object.", zap.Error(err), zap.String("namespace", namespace))
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(
+		rawCreatedInstallLog.Object,
+		&createdInstallLog,
+	); err != nil {
+		logger.Error(
+			"WEIRD: failed to convert created install log back into typed object.",
+			zap.Error(err),
+			zap.String("namespace", namespace),
+		)
 	}
 	return &createdInstallLog, nil
 }
@@ -136,7 +169,10 @@ type eventPatchPayloadOperation struct {
 	Value v1.OctantInstallEvent `json:"value,omitempty"`
 }
 
-func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(ctx context.Context, event *v1.OctantInstallEvent) error {
+func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
+	ctx context.Context,
+	event *v1.OctantInstallEvent,
+) error {
 	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 
@@ -147,13 +183,21 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(ctx context.Co
 			Value: *event,
 		},
 	}
-	patchJson, err := json.Marshal(patchPayload)
+	patchJSON, err := json.Marshal(patchPayload)
 	if err != nil {
 		logger.Error("WEIRD: failed to marshal patch payload", zap.Error(err))
 		return err
 	}
 
-	if _, err := crils.dynamicClient.Resource(v1.GetOctantInstallLogGroupVersionResource()).Namespace(namespace).Patch(ctx, installLogName, types.JSONPatchType, patchJson, metav1.PatchOptions{}); err != nil {
+	if _, err := crils.dynamicClient.Resource(
+		v1.GetOctantInstallLogGroupVersionResource(),
+	).Namespace(namespace).Patch(
+		ctx,
+		installLogName,
+		types.JSONPatchType,
+		patchJSON,
+		metav1.PatchOptions{},
+	); err != nil {
 		logger.Error("error occurred while patching install log entry", zap.Error(err), zap.String("namespace", namespace))
 		return err
 	}

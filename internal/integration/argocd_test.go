@@ -2,11 +2,11 @@ package integration
 
 import (
 	"encoding/json"
-	v1 "github.com/mydecisive/octant/api/v1"
 	"testing"
 
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
+	"github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	installlogmock "github.com/mydecisive/octant/internal/mock/installlog"
 	"github.com/stretchr/testify/assert"

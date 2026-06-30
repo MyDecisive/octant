@@ -2,8 +2,6 @@ package registry
 
 import (
 	"fmt"
-	"github.com/mydecisive/octant/internal/installlog"
-	"k8s.io/client-go/dynamic"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +17,7 @@ import (
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/installlog"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
@@ -28,6 +27,7 @@ import (
 	"go.uber.org/dig"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -65,7 +65,9 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 
-	if err := container.Provide(installlog.NewCustomResourceInstallLogStore, dig.As(new(installlog.InstallLogStore))); err != nil {
+	if err := container.Provide(
+		installlog.NewCustomResourceInstallLogStore,
+		dig.As(new(installlog.InstallLogStore))); err != nil {
 		return nil, err
 	}
 
