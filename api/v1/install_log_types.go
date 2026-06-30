@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"time"
@@ -14,6 +15,10 @@ import (
 // +kubebuilder:rbac:groups=octant.mydecisive.ai,resources=octantinstalllogs,verbs=get;list;watch;create;update;patch;delete
 
 const (
+	octantInstallLogGroup             = "octant.mydecisive.ai"
+	octantInstallLogVersion           = "v1"
+	octantInstallLogPlural            = "octantinstalllogs"
+	octantInstallLogKind              = "OctantInstallLog"
 	octantInstallEventTimestampFormat = "2006-01-02_15-04-05.999999"
 )
 
@@ -25,11 +30,19 @@ func GetOctantInstallEventTimestamp(timestamp string) (time.Time, error) {
 	return time.Parse(octantInstallEventTimestampFormat, timestamp)
 }
 
+func GetOctantInstallLogKind() string {
+	return octantInstallLogKind
+}
+
+func GetOctantInstallLogAPIVersion() string {
+	return fmt.Sprintf("%s/%s", octantInstallLogGroup, octantInstallLogVersion)
+}
+
 func GetOctantInstallLogGroupVersionResource() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
-		Group:    "octant.mydecisive.ai",
-		Version:  "v1",
-		Resource: "octantinstalllogs",
+		Group:    octantInstallLogGroup,
+		Version:  octantInstallLogVersion,
+		Resource: octantInstallLogPlural,
 	}
 }
 
