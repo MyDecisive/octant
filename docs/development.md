@@ -1,6 +1,11 @@
 # Development
 
-This guide covers local development for the Octant API and embedded web application.
+Use this guide to build, run, configure, and test the Octant API and embedded web application locally. It reflects the Octant README build section and the Octant development guide.
+
+## Source Guides
+
+- [Octant README: Building Octant](https://github.com/MyDecisive/octant#building-octant)
+- [Octant development guide](https://github.com/MyDecisive/octant/blob/main/docs/development.md)
 
 ## Kubernetes Context
 
@@ -37,7 +42,7 @@ cp -R dist /path/to/octant/web/
 Then build Octant with the `webapp` tag:
 
 ```shell
-# From this repository.
+# From the octant repository.
 go build -trimpath -tags webapp -ldflags="-w -s" -o octant ./cmd/octant
 ./octant
 ```
@@ -48,7 +53,23 @@ The Makefile also provides a webapp build target:
 make build
 ```
 
-In a webapp build, the console UI is served from `/`, RPC calls are mounted under `/api`, generated API docs are served from `/docs`, and the OpenAPI document is served from `/swagger.yaml`. When Octant is running locally, open `http://localhost:5678/docs` to view the Swagger API documentation in your browser.
+In a webapp build, the console UI is served from `/`, RPC calls are mounted under `/api`, generated API docs are served from `/docs`, and the OpenAPI document is served from `/swagger.yaml`. When Octant is running locally, open `http://localhost:5678/docs` to view the Swagger API documentation.
+
+## Docker Image Build
+
+Use this when you need a local Octant container image. The Makefile defaults the Octant image to `ghcr.io/mydecisive/octant:${DOCKER_TAG}` and the embedded UI image to `ghcr.io/mydecisive/octant-ui:latest`.
+
+```shell
+make docker-build
+```
+
+To override the UI image used during the Docker build:
+
+```shell
+OCTANT_UI_IMAGE=octant-ui:0.1.2 make docker-build
+```
+
+Local cluster deployment examples vary by image tag and Kind cluster name, so this page stops at building the image. Use the target environment's normal image-load and Helm or Argo CD flow to deploy it.
 
 ## Tests
 
@@ -85,3 +106,8 @@ Common settings include:
 | SmartHub install timeout | `MDAI_INSTALL_TIMEOUT` | `90` seconds |
 | SmartHub install poll interval | `MDAI_INSTALL_POLLING_INTERVAL_MILLIS` | `3000` milliseconds |
 | Validator version | `MDAI_VALIDATOR_VERSION` | `0.1.3` |
+
+## Related Pages
+
+- [Setup and Operations](setup.md)
+- [Architecture](architecture.md)
