@@ -16,7 +16,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: OctantInstallLog is the Schema for the setup logs API
+        description: OctantInstallLog is the Schema for the setup logs API.
         properties:
           apiVersion:
             description: |-
@@ -36,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: OctantInstallLogSpec defines the data schema
+            description: OctantInstallLogSpec defines the data schema.
             properties:
               events:
                 items:
@@ -62,8 +62,8 @@ spec:
                         of this event
                       type: string
                     subtype:
-                      description: Subtype is the specific underlying type of the
-                        integration/other (Argo for deploy integration, Datadog for
+                      description: |-
+                        Subtype is the specific underlying type of the integration/other (Argo for deploy integration, Datadog for
                         destination)
                       type: string
                     timestamp:
