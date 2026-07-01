@@ -2,6 +2,7 @@ package installlog
 
 import (
 	"context"
+	"github.com/pkg/errors"
 
 	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
@@ -40,6 +41,7 @@ func NewCustomResourceInstallLogStore(
 }
 
 func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (*octantv1.OctantInstallLogSpec, error) {
+	logger := zap.L()
 	installLogResource, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
 		logger.Error("failed to get/create install log resource", zap.Error(err))
@@ -70,7 +72,6 @@ func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(
 func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 	ctx context.Context,
 ) (*octantv1.OctantInstallLog, error) {
-	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 
 	var installLog *octantv1.OctantInstallLog
@@ -87,23 +88,16 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 			rawInstallLog.Object,
 			&installLog,
 		); convertErr != nil {
-			logger.Error(
-				"WEIRD: failed to convert created install log back into typed object.",
-				zap.Error(convertErr),
-				zap.String("namespace", namespace),
-			)
-			return nil, convertErr
+			return nil, errors.Wrap(convertErr, "WEIRD: failed to convert created install log back into typed object.")
 		}
 		return installLog, nil
 	}
 
 	if !k8serrors.IsNotFound(err) {
-		logger.Error("Failed to get install log", zap.Error(err))
 		return nil, err
 	}
 	createdInstallLog, createErr := crils.createInstallLogResource(ctx)
 	if createErr != nil {
-		logger.Error("Failed to get create install log", zap.Error(createErr))
 		return nil, createErr
 	}
 	installLog = createdInstallLog
@@ -114,7 +108,6 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	ctx context.Context,
 ) (*octantv1.OctantInstallLog, error) {
-	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 	installLogResource := &octantv1.OctantInstallLog{
 		TypeMeta: metav1.TypeMeta{
@@ -133,12 +126,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	createOpts := metav1.CreateOptions{}
 	unstructuredRes, err := runtime.DefaultUnstructuredConverter.ToUnstructured(installLogResource)
 	if err != nil {
-		logger.Error(
-			"WEIRD: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
-			zap.Error(err),
-			zap.String("namespace", namespace),
-		)
-		return nil, err
+		return nil, errors.Wrap(err, "WEIRD: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client")
 	}
 	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
 		octantv1.GetOctantInstallLogGroupVersionResource(),
@@ -148,7 +136,6 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		createOpts,
 	)
 	if err != nil {
-		logger.Error("error occurred while creating OctantInstallLog custom resource", zap.Error(err))
 		return nil, err
 	}
 	var createdInstallLog octantv1.OctantInstallLog
@@ -156,11 +143,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		rawCreatedInstallLog.Object,
 		&createdInstallLog,
 	); err != nil {
-		logger.Error(
-			"WEIRD: failed to convert created install log back into typed object.",
-			zap.Error(err),
-			zap.String("namespace", namespace),
-		)
+		return nil, errors.Wrap(err, "WEIRD: failed to convert created install log back into typed object.")
 	}
 	return &createdInstallLog, nil
 }
@@ -183,7 +166,6 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	ctx context.Context,
 	event *octantv1.OctantInstallEvent,
 ) error {
-	logger := zap.L()
 	namespace := crils.configuration.CurrentNamespace
 
 	patchPayload := []eventPatchPayloadOperation{
@@ -195,8 +177,7 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	}
 	patchJSON, err := json.Marshal(patchPayload)
 	if err != nil {
-		logger.Error("WEIRD: failed to marshal patch payload", zap.Error(err))
-		return err
+		return errors.Wrap(err, "WEIRD: failed to marshal patch payload")
 	}
 
 	if _, err := crils.dynamicClient.Resource(
@@ -208,7 +189,6 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 		patchJSON,
 		metav1.PatchOptions{},
 	); err != nil {
-		logger.Error("error occurred while patching install log entry", zap.Error(err), zap.String("namespace", namespace))
 		return err
 	}
 
