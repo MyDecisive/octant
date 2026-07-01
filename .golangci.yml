@@ -81,7 +81,7 @@ linters:
           disabled: true
         - name: max-public-structs
           disabled: true
-          path: api/v1/.*\.go
+          exclude: [ "api/v1/.*" ]
     tagliatelle:
       case:
         rules:
