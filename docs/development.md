@@ -2,11 +2,6 @@
 
 Use this guide to build, run, configure, and test the Octant API and embedded web application locally. It reflects the Octant README build section and the Octant development guide.
 
-## Source Guides
-
-- [Octant README: Building Octant](https://github.com/MyDecisive/octant#building-octant)
-- [Octant development guide](https://github.com/MyDecisive/octant/blob/main/docs/development.md)
-
 ## Kubernetes Context
 
 Octant manages Kubernetes resources. When running outside a cluster, it expects a valid Kubernetes context in `~/.kube/config`.
@@ -66,8 +61,11 @@ make docker-build
 To override the UI image used during the Docker build:
 
 ```shell
-OCTANT_UI_IMAGE=octant-ui:0.1.2 make docker-build
+OCTANT_UI_IMAGE=octant-ui:0.x.x make docker-build
 ```
+
+See all [available versions](https://github.com/MyDecisive/octant-ui/tags) of `octant-ui`.
+
 
 Local cluster deployment examples vary by image tag and Kind cluster name, so this page stops at building the image. Use the target environment's normal image-load and Helm or Argo CD flow to deploy it.
 

@@ -21,6 +21,17 @@ Treat the install **Next Steps** screen as a docs entry point after an Octant in
 
 ## Prerequisites
 
+You'll need the following tools to run Octant
+
+1. [Docker](https://www.docker.com/products/docker-desktop/)
+1. [Kubernetes](https://kubernetes.io/releases/download/)
+1. [`kubectl` and `kind`](https://kubernetes.io/docs/tasks/tools/)
+1. [Helm](https://helm.sh/docs/intro/install/)
+1. [`just`](https://just.systems/man/en/installation.html)
+1. [Argo CD CLI](https://argo-cd.readthedocs.io/en/stable/getting_started/#2-download-argo-cd-cli)
+1. [`k9s`](https://k9scli.io/topics/install/) (optional)
+
+
 Confirm these basics before any install path:
 
 - A Kubernetes cluster is available.
@@ -44,7 +55,7 @@ Before installing Octant outside a development environment, also confirm permiss
 
 MyDecisive SmartHub powers Octant. SmartHub prerequisites come from the `mdai-hub` chart and currently include Kubernetes `1.24+`, Helm `3.9+`, and optional cert-manager behavior depending on chart values.
 
-If SmartHub is not already installed, use the approved SmartHub installation path before relying on Octant workflows that require SmartHub runtime services. For SmartHub-level installation and chart behavior, use `https://github.com/MyDecisive/mdai-hub` as the source of truth.
+If SmartHub is not already installed, use the approved SmartHub installation path before relying on Octant workflows that require SmartHub runtime services. For SmartHub-level installation and chart behavior, use `https://github.com/MyDecisive/mdai-hub/blob/main/docs/quickstart.md` as the source of truth.
 
 ## Argo CD Install Path
 

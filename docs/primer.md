@@ -14,8 +14,8 @@ From Octant you:
 
 - **Install & connect** — stand up the SmartHub and its collectors, then create connections that define your namespace, enabled signals, deployment method, and destination (e.g. Datadog), and save integrations like Argo CD.
 - **Tune signal with Clarity** — see real-time volume and cost, and adjust filtering and sampling per service, per resource, and per signal type: keep what matters, drop the noise, cut the bill.
-- **Validate** — confirm telemetry is actually flowing, complete, and correct (Data Fidelity Validation).
-- **Operate** — update runtime settings such as enabled signals, credentials, and sampling filters.
+- **Validate connection health** — confirm telemetry is actually flowing, complete, and correct (Data Fidelity Validation).
+- **Manage connection settings** — update runtime settings such as enabled signals, credentials, and sampling filters.
 
 These ship as **applets** — discrete modules you manage from Octant. Install, Connect, and Clarity are available today, with more on the roadmap.
 
@@ -25,7 +25,7 @@ Octant is the control plane; the **MyDecisive SmartHub** is the platform it cont
 
 Because it runs **on the wire, inside your own cluster**, the SmartHub controls your telemetry before it reaches (and bills against) your observability vendor: it cuts cost and volume in real time, redacts PII at the source for data sovereignty, validates telemetry fidelity, and can run closed-loop automation against your live stream. It does the actual work on your telemetry; Octant is how you set it up and operate it.
 
-> The SmartHub can also be driven directly (via `mdai-cli` or Kubernetes manifests) — Octant is the guided, visual path most teams will want. Its companion is the **[SmartHub primer](https://github.com/MyDecisive/mdai-hub)**.
+> The SmartHub can also be driven directly (via `mdai-cli` or Kubernetes manifests) — Octant is the guided, visual path most teams will want. Its companion is the **[SmartHub primer](https://github.com/MyDecisive/mdai-hub/blob/main/docs/primer.md)**.
 
 ## How Octant and the SmartHub work together
 
@@ -76,7 +76,7 @@ just octant-bootstrap
 just port-forward-octant        # then open http://localhost:5678/
 ```
 
-That bootstraps a local Octant against Argo CD and walks you into the SmartHub install and connection workflows. Full prerequisites are in the [Octant Quick Start](https://github.com/MyDecisive/octant) and the [installation guide](https://github.com/MyDecisive/octant/blob/main/docs/installation.md).
+That bootstraps a local Octant against Argo CD and walks you into the SmartHub install and connection workflows. Full prerequisite list and install instructions can be found in our [setup guide](https://github.com/MyDecisive/octant/blob/main/docs/setup.md).
 
 ## Dive deeper
 
