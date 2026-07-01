@@ -40,6 +40,11 @@ helmify: generate manifests
 	cp -r $$tmp/deployment/templates deployment ;\
 	cp -r $$tmp/deployment/crds deployment;
 
+.PHONY: mockery
+mockery:
+	cd ./internal/mock &&\
+	mockery --config ./mockery.yml
+
 docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
 docker-login docker-build docker-push: GHCR_REPO ?= ghcr.io/mydecisive
 docker-build docker-push: DOCKER_IMAGE ?= $(GHCR_REPO)/$(REPO_NAME):$(DOCKER_TAG)

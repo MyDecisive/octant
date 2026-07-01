@@ -65,9 +65,6 @@ packages:
   k8s.io/client-go/kubernetes:
     interfaces:
       Interface:
-  k8s.io/client-go/dynamic:
-    interfaces:
-      Interface:
   k8s.io/client-go/kubernetes/typed/apps/v1:
     config:
       dir: 'kubernetes/apps{{.SrcPackageName}}'

@@ -88,7 +88,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 			rawInstallLog.Object,
 			&installLog,
 		); convertErr != nil {
-			return nil, errors.Wrap(convertErr, "weird: failed to convert created install log back into typed object")
+			return nil, errors.Wrap(convertErr, "failed to convert created install log back into typed object")
 		}
 		return installLog, nil
 	}
@@ -128,7 +128,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	if err != nil {
 		return nil, errors.Wrap(
 			err,
-			"weird: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
+			"failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
 		)
 	}
 	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
@@ -146,7 +146,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		rawCreatedInstallLog.Object,
 		&createdInstallLog,
 	); err != nil {
-		return nil, errors.Wrap(err, "weird: failed to convert created install log back into typed object")
+		return nil, errors.Wrap(err, "failed to convert created install log back into typed object")
 	}
 	return &createdInstallLog, nil
 }
@@ -180,7 +180,7 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	}
 	patchJSON, err := json.Marshal(patchPayload)
 	if err != nil {
-		return errors.Wrap(err, "WEIRD: failed to marshal patch payload")
+		return errors.Wrap(err, "failed to marshal patch payload")
 	}
 
 	if _, err := crils.dynamicClient.Resource(
