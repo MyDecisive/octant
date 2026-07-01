@@ -90,9 +90,9 @@ const (
 	// CreateConnectionOctantInstallEventAction is the action of creating a connection and all underlying
 	// infrastructure.
 	CreateConnectionOctantInstallEventAction OctantInstallEventAction = "CREATE_CONNECTION"
-	// NNFClientsConnectedVerifiedOctantInstallEventAction is the action of completing the envoy connected clients
+	// VerifiedClientsConnectedOctantInstallEventAction is the action of completing the envoy connected clients
 	// validation loop.
-	NNFClientsConnectedVerifiedOctantInstallEventAction OctantInstallEventAction = "NNF_CLIENTS_CONNECTED_VERIFIED"
+	VerifiedClientsConnectedOctantInstallEventAction OctantInstallEventAction = "VERIFIED_CLIENTS_CONNECTED"
 	// IngressVerifiedOctantInstallEventAction is the action of completing the ingress validation loop (data has been
 	// received).
 	IngressVerifiedOctantInstallEventAction OctantInstallEventAction = "INGRESS_VERIFIED"
