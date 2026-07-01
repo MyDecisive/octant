@@ -36,60 +36,60 @@ spec:
         logs:
           log_record:
             - 'resource.attributes["observer_direction"] != "exported"'
-    - name: received_span_count:
+    - name: received_span_count
       telemetry_type: traces
       metrics_backend: greptimedb
       aggregation_temporality: delta
       labelResourceAttributes:
-        - key: span_name
-        - key: span_service
+        - span_name
+        - span_service
       countMetricName: received_span_count
       filter:
         error_mode: ignore
-          traces:
-            span:
-              - 'resource.attributes["observer_direction"] != "received"'
-    - name: received_span_root_count:
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "received"'
+    - name: received_span_root_count
       telemetry_type: traces
       metrics_backend: greptimedb
       aggregation_temporality: delta
       labelResourceAttributes:
-        - key: span_name
-        - key: span_service
+        - span_name
+        - span_service
       countMetricName: received_span_root_count
       filter:
         error_mode: ignore
-          traces:
-            span:
-              - 'resource.attributes["observer_direction"] != "received"'
-              - 'IsRootSpan()'
-    - name: sent_span_count:
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "received"'
+            - 'IsRootSpan()'
+    - name: sent_span_count
       telemetry_type: traces
       metrics_backend: greptimedb
       aggregation_temporality: delta
       labelResourceAttributes:
-        - key: span_name
-        - key: span_service
+        - span_name
+        - span_service
       countMetricName: sent_span_count
       filter:
         error_mode: ignore
-          traces:
-            span:
-              - 'resource.attributes["observer_direction"] != "exported"'
-    - name: sent_span_root_count:
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "exported"'
+    - name: sent_span_root_count
       telemetry_type: traces
       metrics_backend: greptimedb
       aggregation_temporality: delta
       labelResourceAttributes:
-        - key: span_name
-        - key: span_service
+        - span_name
+        - span_service
       countMetricName: sent_span_root_count
       filter:
         error_mode: ignore
-          traces:
-            span:
-              - 'IsRootSpan()'
-              - 'resource.attributes["observer_direction"] != "exported"'
+        traces:
+          span:
+            - 'IsRootSpan()'
+            - 'resource.attributes["observer_direction"] != "exported"'
 
   observerResource:
     image: public.ecr.aws/decisiveai/observer-collector:0.1.6
