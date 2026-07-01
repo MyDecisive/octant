@@ -101,7 +101,7 @@ Octant APIs use in-cluster Prometheus metrics to inform collector, hub, and conn
 
 Run Data Fidelity Validation after creating or changing a connection. Validation should check whether telemetry is flowing and whether ingress and egress payloads satisfy parity or policy expectations.
 
-For development troubleshooting, inspect validation metrics and validator logs from `octant-argo-example` guidance.
+For Datadog validation troubleshooting, inspect validation metrics, collector flow metrics, validator logs, and failed correlation IDs. See [Debug Connection Failures](how-to/connection-failures.md).
 
 ## Troubleshooting Missing Logs, Traces, or Services
 
@@ -115,4 +115,5 @@ For development troubleshooting, inspect validation metrics and validator logs f
 ## Related Pages
 
 - [Setup and Operations](setup.md)
+- [Debug Connection Failures](how-to/connection-failures.md)
 - [Telemetry Insights](telemetry.md)

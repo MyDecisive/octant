@@ -10,6 +10,7 @@ Octant helps you install SmartHub, connect telemetry sources, validate delivery,
 | Browse task-focused guides from Octant UI workflows. | [How-To Guides](how-to/index.md) |
 | Use the **Deploy to Production** tile on the install Next Steps screen. | [Deploy SmartHub to Production](how-to/production.md) |
 | Use the **Commit to Source Control (GitOps)** tile and downloaded manifest `.zip`. | [Commit SmartHub Configuration to Source Control](how-to/gitops.md) |
+| Debug failed Datadog connection validation or Data integrity checks. | [Debug Connection Failures](how-to/connection-failures.md) |
 | Configure Argo CD or Datadog, create a connection, reroute telemetry, or troubleshoot missing data. | [Connections and Integrations](connections.md) |
 | Review Clarity, Top Talkers, sampling, cost, volume, time ranges, or missing services. | [Telemetry Insights](telemetry.md) |
 | Understand how Octant and SmartHub fit together. | [Architecture](architecture.md) |
@@ -41,6 +42,7 @@ For detailed setup and operational definitions, use the task pages linked above.
 - [How-To Guides](how-to/index.md)
 - [Deploy SmartHub to Production](how-to/production.md)
 - [Commit SmartHub Configuration to Source Control](how-to/gitops.md)
+- [Debug Connection Failures](how-to/connection-failures.md)
 - [Connections and Integrations](connections.md)
 - [Telemetry Insights](telemetry.md)
 - [API Reference](api.md)

@@ -38,6 +38,7 @@ Before you begin, read the [Octant Primer](docs/primer.md).
 
 - [Deploy SmartHub to Production](docs/how-to/production.md)
 - [Commit SmartHub Configuration to Source Control](docs/how-to/gitops.md)
+- [Debug Connection Failures](docs/how-to/connection-failures.md)
 
 
 ## Info and Support

@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="520" viewBox="0 0 1180 520" role="img" aria-labelledby="title desc">
+  <title id="title">Octant connection validation C4 view</title>
+  <desc id="desc">Slim C4 diagram showing a user running validation in Octant, Datadog clients sending telemetry through SmartHub, SmartHub exporting to Datadog, and Data Fidelity validation returning policy pass/fail results.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .label { font: 600 15px Arial, sans-serif; fill: #0f172a; }
+      .meta { font: 12px Arial, sans-serif; fill: #475569; }
+      .rel { font: 12px Arial, sans-serif; fill: #334155; }
+      .person { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; }
+      .system { fill: #f8fafc; stroke: #334155; stroke-width: 2; }
+      .container { fill: #ecfdf5; stroke: #059669; stroke-width: 2; }
+      .external { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; }
+      .validator { fill: #fdf2f8; stroke: #db2777; stroke-width: 2; }
+      .line { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 7 6; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="1178" height="518" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="42" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Octant Connection Validation</text>
+  <text x="40" y="68" font-family="Arial, sans-serif" font-size="14" fill="#475569">Metric checks validate connection flow; Data integrity compares mirrored Datadog field values.</text>
+
+  <rect class="person" x="40" y="135" rx="8" ry="8" width="145" height="82"/>
+  <text class="label" x="112.5" y="168" text-anchor="middle">User</text>
+  <text class="meta" x="112.5" y="190" text-anchor="middle">Person</text>
+
+  <rect class="system" x="270" y="130" rx="8" ry="8" width="170" height="92"/>
+  <text class="label" x="355" y="163" text-anchor="middle">Octant validation</text>
+  <text class="label" x="355" y="183" text-anchor="middle">screen</text>
+  <text class="meta" x="355" y="205" text-anchor="middle">Software system</text>
+
+  <rect class="external" x="40" y="330" rx="8" ry="8" width="185" height="92"/>
+  <text class="label" x="132.5" y="363" text-anchor="middle">Datadog clients</text>
+  <text class="label" x="132.5" y="383" text-anchor="middle">/ agents</text>
+  <text class="meta" x="132.5" y="405" text-anchor="middle">External source</text>
+
+  <rect class="container" x="330" y="325" rx="8" ry="8" width="180" height="102"/>
+  <text class="label" x="420" y="356" text-anchor="middle">SmartHub Envoy</text>
+  <text class="label" x="420" y="376" text-anchor="middle">/ ingress</text>
+  <text class="meta" x="420" y="399" text-anchor="middle">Container</text>
+
+  <rect class="system" x="610" y="325" rx="8" ry="8" width="160" height="102"/>
+  <text class="label" x="690" y="367" text-anchor="middle">SmartHub</text>
+  <text class="meta" x="690" y="391" text-anchor="middle">Software system</text>
+
+  <rect class="external" x="885" y="325" rx="8" ry="8" width="190" height="102"/>
+  <text class="label" x="980" y="357" text-anchor="middle">Datadog ingest</text>
+  <text class="label" x="980" y="377" text-anchor="middle">API</text>
+  <text class="meta" x="980" y="400" text-anchor="middle">External system</text>
+
+  <rect class="validator" x="610" y="120" rx="8" ry="8" width="210" height="110"/>
+  <text class="label" x="715" y="153" text-anchor="middle">Data Fidelity</text>
+  <text class="label" x="715" y="173" text-anchor="middle">validator</text>
+  <text class="meta" x="715" y="197" text-anchor="middle">Required Datadog fields</text>
+
+  <path class="line" d="M185 176 L270 176"/>
+  <text class="rel" x="227" y="162" text-anchor="middle">runs and reviews</text>
+
+  <path class="line" d="M225 376 L330 376"/>
+  <text class="rel" x="277" y="362" text-anchor="middle">send logs / traces</text>
+
+  <path class="line" d="M510 376 L610 376"/>
+  <text class="rel" x="560" y="362" text-anchor="middle">forward telemetry</text>
+
+  <path class="line" d="M770 376 L885 376"/>
+  <text class="rel" x="828" y="362" text-anchor="middle">export telemetry</text>
+
+  <path class="line dash" d="M510 336 C555 250 585 195 610 175"/>
+  <text class="rel" x="555" y="255" text-anchor="middle">compare fields</text>
+  <text class="rel" x="555" y="271" text-anchor="middle">and values</text>
+
+  <path class="line dash" d="M610 158 C540 120 455 119 440 146"/>
+  <text class="rel" x="520" y="124" text-anchor="middle">policy pass/fail</text>
+  <text class="rel" x="520" y="140" text-anchor="middle">result</text>
+
+  <text x="40" y="485" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Generated from docs/diagrams/connection-validation-flow.dsl. Mermaid source is docs/diagrams/connection-validation-flow.mmd.</text>
+</svg>
