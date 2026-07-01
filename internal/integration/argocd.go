@@ -1,3 +1,4 @@
+//revive:disable:max_public_structs
 package integration
 
 import (
@@ -6,7 +7,10 @@ import (
 	"fmt"
 
 	"github.com/mydecisive/mdai-data-core/kube"
+	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/mydecisive/octant/internal/installlog"
+	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -18,8 +22,9 @@ type ArgoCDIntegrationData struct {
 }
 
 type ArgoCDIntegration struct {
-	secretStore   kube.SecretStore
-	configuration *config.Configuration
+	secretStore     kube.SecretStore
+	installLogStore installlog.InstallLogStore
+	configuration   *config.Configuration
 }
 
 var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
@@ -27,11 +32,13 @@ var _ Integration[ArgoCDIntegrationData] = (*ArgoCDIntegration)(nil)
 // NewArgoCDIntegration returns a new instance of ArgoCDIntegration.
 func NewArgoCDIntegration(
 	secretStore kube.SecretStore,
+	installLogStore installlog.InstallLogStore,
 	configuration *config.Configuration,
 ) *ArgoCDIntegration {
 	return &ArgoCDIntegration{
-		secretStore:   secretStore,
-		configuration: configuration,
+		secretStore:     secretStore,
+		installLogStore: installLogStore,
+		configuration:   configuration,
 	}
 }
 
@@ -96,21 +103,14 @@ func (aci *ArgoCDIntegration) SetIntegration(
 	secret, err := aci.secretStore.GetSecretByNameAndNamespace(argocdSecretName, aci.configuration.CurrentNamespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			// Create the secret if it does not exist
-			return createIntegrationSecret(
-				ctx,
-				aci.secretStore,
-				namespace,
-				integrationName,
-				argocdSecretName,
-				kube.OctantIntegrationArgoType,
-				jsonData,
-			)
+			return aci.createSecretWithIntegration(ctx, integrationName, namespace, jsonData)
 		}
 		return fmt.Errorf("failed to fetch secret %s: %w", argocdSecretName, err)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, aci.secretStore, namespace, integrationName, secret, jsonData)
+	updateErr := updateSecretWithIntegration(ctx, aci.secretStore, namespace, integrationName, secret, jsonData)
+	aci.writeInstallLogEntry(ctx, integrationName, namespace, updateErr)
+	return updateErr
 }
 
 // DeleteIntegration removes a named integration from the "mdai-argocd-integration" secret in the provided namespace.
@@ -134,4 +134,50 @@ func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, integration
 	delete(secret.Data, integrationName)
 
 	return aci.secretStore.UpdateSecret(ctx, namespace, secret)
+}
+
+func (aci *ArgoCDIntegration) createSecretWithIntegration(
+	ctx context.Context,
+	integrationName string,
+	namespace string,
+	jsonData []byte,
+) error {
+	// Create the secret if it does not exist
+	createErr := createIntegrationSecret(
+		ctx,
+		aci.secretStore,
+		namespace,
+		integrationName,
+		argocdSecretName,
+		kube.OctantIntegrationArgoType,
+		jsonData,
+	)
+	aci.writeInstallLogEntry(ctx, integrationName, namespace, createErr)
+	return createErr
+}
+
+func (aci *ArgoCDIntegration) writeInstallLogEntry(
+	ctx context.Context,
+	integrationName string,
+	namespace string,
+	createErr error,
+) {
+	result := octantv1.FailureOctantInstallEventResult
+	if createErr == nil {
+		result = octantv1.SuccessOctantInstallEventResult
+	}
+	if writeLogEntryErr := aci.installLogStore.AddInstallLogEvent(ctx, &octantv1.OctantInstallEvent{
+		Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+		Timestamp: octantv1.CreateOctantIntallEventTimestamp(),
+		Result:    result,
+		Namespace: namespace,
+		Ref:       integrationName,
+		Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+	}); writeLogEntryErr != nil {
+		zap.L().Error(
+			"INSTALL LOG ERROR: failed to write install log event",
+			zap.Error(writeLogEntryErr),
+			zap.String("actionType", string(octantv1.CreateDeployIntegrationOctantInstallEventAction)),
+		)
+	}
 }

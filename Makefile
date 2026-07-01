@@ -1,4 +1,4 @@
-DOCKER_TAG ?= 0.1.53
+DOCKER_TAG ?= 0.1.77
 OCTANT_UI_TAG ?= latest
 CHART_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 REPO_NAME := $(shell basename -s .git `git config --get remote.origin.url`)
@@ -17,7 +17,33 @@ install-tools:
 ifndef CI
 # Don't forget to update the golangci-lint version in CI
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+	@go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.21.0
+	@go install sigs.k8s.io/kustomize/kustomize/v5@v5.8.1
+	@go install github.com/arttor/helmify/cmd/helmify@v0.4.20
 endif
+
+.PHONY: manifests
+manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	controller-gen rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=config/crd
+
+.PHONY: generate
+generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	controller-gen object paths="./..."
+
+.PHONY: helmify
+helmify: generate manifests
+	@tmp=$$(mktemp -d); \
+	cp -r config $$tmp/; \
+	cd $$tmp/; \
+	kustomize build config/default | helmify -crd-dir deployment; \
+	cd - ;\
+	cp -r $$tmp/deployment/templates deployment ;\
+	cp -r $$tmp/deployment/crds deployment;
+
+.PHONY: mockery
+mockery:
+	cd ./internal/mock &&\
+	mockery --config ./mockery.yml
 
 docker-login docker-build docker-push: AWS_ECR_REPO ?= public.ecr.aws/decisiveai
 docker-login docker-build docker-push: GHCR_REPO ?= ghcr.io/mydecisive

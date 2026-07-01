@@ -1,4 +1,5 @@
 .idea/
+helmify
 web/dist
 .DS_Store
 vendor/
