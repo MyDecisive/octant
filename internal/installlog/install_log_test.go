@@ -1,6 +1,8 @@
 package installlog
 
 import (
+	"testing"
+
 	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"testing"
 )
 
 const (
@@ -38,6 +39,7 @@ func TestCustomResourceInstallLogStore_GetInstallLog(t *testing.T) {
 	t.Parallel()
 
 	t.Run("cr exists and is empty", func(t *testing.T) {
+		t.Parallel()
 		initialDatas := makeCRGivenEntries([]octantv1.OctantInstallEvent{})
 
 		initialDataRaw, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(initialDatas)
@@ -63,6 +65,7 @@ func TestCustomResourceInstallLogStore_GetInstallLog(t *testing.T) {
 	})
 
 	t.Run("cr exists and has entries", func(t *testing.T) {
+		t.Parallel()
 		makeEntries := func() []octantv1.OctantInstallEvent {
 			return []octantv1.OctantInstallEvent{
 				{
@@ -113,6 +116,7 @@ func TestCustomResourceInstallLogStore_GetInstallLog(t *testing.T) {
 	})
 
 	t.Run("cr doesn't exist", func(t *testing.T) {
+		t.Parallel()
 		dynamicMock := fake.NewSimpleDynamicClient(runtime.NewScheme())
 		testConfig := &config.Configuration{CurrentNamespace: testNamespace}
 
@@ -138,6 +142,7 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 	t.Parallel()
 
 	t.Run("cr exists and is empty", func(t *testing.T) {
+		t.Parallel()
 		makeEntries := func() []octantv1.OctantInstallEvent {
 			return []octantv1.OctantInstallEvent{
 				{
@@ -206,7 +211,9 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		require.NoError(t, json.Unmarshal(patchStr, &actualPatch))
 		assert.Equal(t, expectedPatch, actualPatch)
 	})
+
 	t.Run("cr exists and has entries", func(t *testing.T) {
+		t.Parallel()
 		initialDatas := makeCRGivenEntries([]octantv1.OctantInstallEvent{})
 
 		initialDataRaw, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(initialDatas)
@@ -250,7 +257,9 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		require.NoError(t, json.Unmarshal(patchStr, &actualPatch))
 		assert.Equal(t, expectedPatch, actualPatch)
 	})
+
 	t.Run("cr doesn't exist", func(t *testing.T) {
+		t.Parallel()
 		dynamicMock := fake.NewSimpleDynamicClient(runtime.NewScheme())
 		testConfig := &config.Configuration{CurrentNamespace: testNamespace}
 
