@@ -83,6 +83,10 @@ spec:
         endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
         tls:
           insecure: true
+      otlp/observer:
+        endpoint: {{ .Name }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
+        tls:
+          insecure: true
       loadbalancing/traces:
         routing_key: traceID
         protocol:
@@ -130,21 +134,6 @@ spec:
         metric_expiration: 180m
         resource_to_telemetry_conversion:
           enabled: true
-    connectors:
-      count/spans_by_facet:
-        spans:
-          received_span_count:
-            description: Received total span count by service (all spans).
-            attributes:
-              - key: span_name
-              - key: span_service
-          received_span_root_count:
-            description: Received root span count by service.
-            attributes:
-              - key: span_name
-              - key: span_service
-            conditions:
-              - 'IsRootSpan()'
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
@@ -163,11 +152,7 @@ spec:
           traces:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
-            exporters: [loadbalancing/traces, count/spans_by_facet, otlp_grpc/tracealyzer]
-          metrics:
-            receivers: [count/spans_by_facet]
-            processors: [deltatocumulative]
-            exporters: [prometheus]
+            exporters: [loadbalancing/traces, otlp/observer, otlp_grpc/tracealyzer]
           {{- end }}
         {{- end }}
       telemetry:
