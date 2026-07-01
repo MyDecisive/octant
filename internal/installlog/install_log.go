@@ -42,7 +42,7 @@ func NewCustomResourceInstallLogStore(
 func (crils *CustomResourceInstallLogStore) GetInstallLog(ctx context.Context) (*octantv1.OctantInstallLogSpec, error) {
 	installLogResource, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
-		zap.Error(err)
+		logger.Error("failed to get/create install log resource", zap.Error(err))
 		return nil, err
 	}
 	return &installLogResource.Spec, nil
@@ -53,14 +53,15 @@ func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(
 	entry *octantv1.OctantInstallEvent,
 ) error {
 	// TODO: Address behavior when number of events is high (> 1000).
+	logger := zap.L()
 
 	_, err := crils.loadOrCreateInstallLogResource(ctx)
 	if err != nil {
-		zap.Error(err)
+		logger.Error("failed to get/create install log resource", zap.Error(err))
 		return err
 	}
 	if err := crils.upsertInstallLogEntry(ctx, entry); err != nil {
-		zap.Error(err)
+		logger.Error("failed to upsert install log event", zap.Error(err))
 		return err
 	}
 	return nil
@@ -102,7 +103,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 	}
 	createdInstallLog, createErr := crils.createInstallLogResource(ctx)
 	if createErr != nil {
-		zap.Error(createErr)
+		logger.Error("Failed to get create install log", zap.Error(createErr))
 		return nil, createErr
 	}
 	installLog = createdInstallLog
