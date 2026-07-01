@@ -2,10 +2,10 @@ package installlog
 
 import (
 	"context"
-	"github.com/pkg/errors"
 
 	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +88,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 			rawInstallLog.Object,
 			&installLog,
 		); convertErr != nil {
-			return nil, errors.Wrap(convertErr, "WEIRD: failed to convert created install log back into typed object.")
+			return nil, errors.Wrap(convertErr, "weird: failed to convert created install log back into typed object")
 		}
 		return installLog, nil
 	}
@@ -126,7 +126,10 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	createOpts := metav1.CreateOptions{}
 	unstructuredRes, err := runtime.DefaultUnstructuredConverter.ToUnstructured(installLogResource)
 	if err != nil {
-		return nil, errors.Wrap(err, "WEIRD: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client")
+		return nil, errors.Wrap(
+			err,
+			"weird: failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
+		)
 	}
 	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
 		octantv1.GetOctantInstallLogGroupVersionResource(),
@@ -143,7 +146,7 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		rawCreatedInstallLog.Object,
 		&createdInstallLog,
 	); err != nil {
-		return nil, errors.Wrap(err, "WEIRD: failed to convert created install log back into typed object.")
+		return nil, errors.Wrap(err, "weird: failed to convert created install log back into typed object")
 	}
 	return &createdInstallLog, nil
 }
