@@ -60,6 +60,9 @@ spec:
             endpoint: 0.0.0.0:4318
     processors:
       deltatocumulative: {}
+      groupbyattrs:
+        keys:
+          - service
       resource/observer_receiver_tag:
         attributes:
           - key: observer_direction
@@ -131,7 +134,7 @@ spec:
                          resource/observer_exporter_tag,
                          batch
           ]
-          exporters: [ datadog, count/spans_by_facet ]
+          exporters: [ datadog ]
         traces/watch_receivers:
           receivers: [ otlp ]
           processors: [
@@ -140,10 +143,6 @@ spec:
             batch
           ]
           exporters: [ otlp/observer ]
-        metrics:
-          receivers: [count/spans_by_facet]
-          processors: [deltatocumulative]
-          exporters: [prometheus]
       telemetry:
         resource:
           mdai_connection: "{{ .Name }}"
