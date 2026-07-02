@@ -17,6 +17,7 @@ import (
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/gitops"
 	"github.com/mydecisive/octant/internal/installlog"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
@@ -110,6 +111,11 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 	if err := container.Provide(
+		integration.NewGitHubAppIntegration,
+		dig.As(new(integration.Integration[integration.GitHubAppIntegrationData]))); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(
 		argocd.NewArgoCDClient,
 		dig.As(new(argocd.APIClient))); err != nil {
 		return nil, err
@@ -146,6 +152,11 @@ func Initialize() (*dig.Container, error) {
 		dig.As(new(manifest.Compressor))); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(
+		gitops.NewGitHubManifestPublisher,
+		dig.As(new(gitops.Publisher), new(gitops.APIClient))); err != nil {
+		return nil, err
+	}
 
 	// Connection
 	if err := container.Provide(
@@ -159,6 +170,9 @@ func Initialize() (*dig.Container, error) {
 
 	// RPC Server
 	if err := container.Provide(rpchandler.NewArgoCDHandler); err != nil {
+		return nil, err
+	}
+	if err := container.Provide(rpchandler.NewGitOpsHandler); err != nil {
 		return nil, err
 	}
 	if err := container.Provide(rpchandler.NewInstallHandler); err != nil {
@@ -270,6 +284,7 @@ func provideSecretController( // nolint: ireturn
 	controller, err := datacorekube.NewSecretController([]string{
 		datacorekube.OctantIntegrationArgoType,
 		datacorekube.OctantIntegrationDatadogType,
+		datacorekube.OctantIntegrationGitHubApp,
 	}, theConfig.CurrentNamespace, k8sClient, zap.L())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Secret controller: %w", err)

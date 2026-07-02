@@ -10,17 +10,19 @@ require (
 	connectrpc.com/otelconnect v0.9.0
 	connectrpc.com/validate v0.6.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/MyDecisive/octant-contracts/go v0.8.3-alpha
+	github.com/MyDecisive/octant-contracts/go v0.8.3-alpha.0.20260917230154-fb17d5c17e94
 	github.com/argoproj/argo-cd/v3 v3.3.7
 	github.com/argoproj/gitops-engine v0.7.1-0.20250908182407-97ad5b59a627
+	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
 	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/go-faker/faker/v4 v4.7.0
 	github.com/go-jet/jet/v2 v2.14.1
 	github.com/go-openapi/runtime v0.29.2
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/google/go-github/v75 v75.0.0
 	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/mydecisive/mdai-data-core v0.4.5
+	github.com/mydecisive/mdai-data-core v0.4.6-0.20260917230502-dbdfba3e61ac
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/rs/cors v1.11.1
@@ -63,7 +65,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/logrusr/v4 v4.1.0 // indirect
-	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0 // indirect
 	github.com/casbin/casbin/v2 v2.135.0 // indirect
 	github.com/casbin/govaluate v1.10.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -123,7 +124,6 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github/v69 v69.2.0 // indirect
-	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect

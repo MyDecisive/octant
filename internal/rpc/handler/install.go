@@ -109,9 +109,10 @@ func (ih *InstallHandler) GetInstallStatus(
 
 	clientOpts := argocd.CreateClientOpts(ih.config.Env, argoIntegration.APIUrl, argoIntegration.AccountToken)
 	input := argocd.Input{
-		Logger:     logger,
-		ClientOpts: clientOpts,
-		AppName:    "mdai",
+		Logger:       logger,
+		ClientOpts:   clientOpts,
+		AppName:      "mdai",
+		AppNamespace: ih.config.Install.ArgoCDNamespace,
 	}
 	status, details, err := ih.argoClient.GetAppStatus(ctx, input)
 	if err != nil {

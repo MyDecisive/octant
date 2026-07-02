@@ -60,4 +60,3 @@ spec:
             value: "{{ .Values.certManager.namespace }}"
           - name: ARGO_CD_NAMESPACE
             value: "{{ .Values.argoCD.namespace }}"
-
