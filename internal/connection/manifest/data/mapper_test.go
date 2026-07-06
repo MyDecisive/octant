@@ -90,8 +90,8 @@ func TestDataMapper_ConnectionTemplateData(t *testing.T) {
 	}
 
 	datadog := integration.DataDogIntegrationData{
-		APIKey: faker.Word(),
-		DDUrl:  faker.Word(),
+		APIKey:   faker.Word(),
+		SiteHost: faker.Word(),
 	}
 
 	t.Run("success", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestDataMapper_ConnectionTemplateData(t *testing.T) {
 		assert.Equal(t, input.Namespace, actual.Namespace)
 		assert.Equal(t, input.TelemetryTypes, actual.TelemetryTypes)
 		assert.Equal(t, "<YOUR_API_KEY>", actual.DatadogIntegrationData.APIKey)
-		assert.Equal(t, "<YOUR_DD_URL>", actual.DatadogIntegrationData.DDUrl)
+		assert.Equal(t, "<YOUR_DD_SITE_HOST>", actual.DatadogIntegrationData.SiteHost)
 		assert.Equal(t, conf.CurrentNamespace, actual.CurrentNamespace)
 		assert.Equal(t, conf.ServiceAccountName, actual.ServiceAccount)
 		assert.Equal(t, "1", actual.DefaultLogRatio)
