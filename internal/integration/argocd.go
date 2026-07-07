@@ -171,12 +171,12 @@ func (aci *ArgoCDIntegration) writeInstallLogEntry(
 	}
 	if writeLogEntryErr := aci.installLogStore.AddInstallLogEvent(ctx, &octantv1.OctantInstallEvent{
 		Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
-		Timestamp: octantv1.CreateOctantIntallEventTimestamp(),
+		Timestamp: octantv1.CreateOctantInstallEventTimestamp(),
 		Result:    result,
 		Namespace: namespace,
 		Ref:       integrationName,
 		Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
-		Message: message,
+		Message:   message,
 	}); writeLogEntryErr != nil {
 		zap.L().Error(
 			"INSTALL LOG ERROR: failed to write install log event",
