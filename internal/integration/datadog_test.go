@@ -29,7 +29,7 @@ func TestGetIntegrations(t *testing.T) {
 		},
 	}
 
-	validInt := DataDogIntegrationData{APIKey: "12345", DDUrl: "https://example.com"}
+	validInt := DataDogIntegrationData{APIKey: "12345", SiteHost: "example.com"}
 	validIntBytes, err := json.Marshal(validInt)
 	require.NoError(t, err)
 
@@ -124,7 +124,7 @@ func TestGetIntegrationByName(t *testing.T) {
 		},
 	}
 
-	validInt := DataDogIntegrationData{APIKey: "12345", DDUrl: "https://example.com"}
+	validInt := DataDogIntegrationData{APIKey: "12345", SiteHost: "example.com"}
 	validIntBytes, err := json.Marshal(validInt)
 	require.NoError(t, err)
 
@@ -206,7 +206,7 @@ func TestGetIntegrationByName(t *testing.T) {
 func TestSetIntegration(t *testing.T) {
 	t.Parallel()
 
-	newIntegration := DataDogIntegrationData{APIKey: "new-key", DDUrl: "https://example.com"}
+	newIntegration := DataDogIntegrationData{APIKey: "new-key", SiteHost: "example.com"}
 
 	t.Run("creates secret when it does not exist", func(t *testing.T) {
 		t.Parallel()
