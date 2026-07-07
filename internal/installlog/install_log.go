@@ -57,11 +57,11 @@ func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(
 	// TODO: Address behavior when number of events is high (> 1000).
 	logger := zap.L()
 
-	_, err := crils.loadOrCreateInstallLogResource(ctx)
-	if err != nil {
+	if _, err := crils.loadOrCreateInstallLogResource(ctx); err != nil {
 		logger.Error("failed to get/create install log resource", zap.Error(err))
 		return err
 	}
+	
 	if err := crils.upsertInstallLogEntry(ctx, entry); err != nil {
 		logger.Error("failed to upsert install log event", zap.Error(err))
 		return err

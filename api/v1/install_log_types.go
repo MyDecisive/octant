@@ -23,7 +23,7 @@ const (
 	octantInstallEventTimestampFormat = "2006-01-02_15-04-05.999999"
 )
 
-func CreateOctantIntallEventTimestamp() string {
+func CreateOctantInstallEventTimestamp() string {
 	return time.Now().UTC().Format(octantInstallEventTimestampFormat)
 }
 
