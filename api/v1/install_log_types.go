@@ -4,7 +4,6 @@
 package v1
 
 import (
-	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +34,7 @@ func GetOctantInstallLogKind() string {
 }
 
 func GetOctantInstallLogAPIVersion() string {
-	return fmt.Sprintf("%s/%s", octantInstallLogGroup, octantInstallLogVersion)
+	return octantInstallLogGroup + "/" + octantInstallLogVersion
 }
 
 func GetOctantInstallLogGroupVersionResource() schema.GroupVersionResource {
