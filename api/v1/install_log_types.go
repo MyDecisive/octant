@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:rbac:groups=octant.mydecisive.ai,resources=octantinstalllogs,verbs=get;list;watch;create;update;patch;delete
 
@@ -46,6 +45,8 @@ func GetOctantInstallLogGroupVersionResource() schema.GroupVersionResource {
 		Resource: octantInstallLogPlural,
 	}
 }
+
+// +kubebuilder:object:root=true
 
 // OctantInstallLog is the Schema for the setup logs API.
 type OctantInstallLog struct {
