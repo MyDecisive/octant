@@ -151,7 +151,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		installLogStore.EXPECT().AddInstallLogEvent(
 			mock.Anything,
 			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
-				return event.Action == octantv1.CreateDeployIntegrationOctantInstallEventAction &&
+				return event.Action == octantv1.CreateDeployIntegration &&
 					event.Namespace == defaultNamespace &&
 					event.Ref == "team-a" &&
 					event.Result == octantv1.SuccessOctantInstallEventResult
@@ -202,7 +202,7 @@ func TestArgoCD_SetIntegration(t *testing.T) {
 		installLogStore.EXPECT().AddInstallLogEvent(
 			mock.Anything,
 			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
-				return event.Action == octantv1.CreateDeployIntegrationOctantInstallEventAction &&
+				return event.Action == octantv1.CreateDeployIntegration &&
 					event.Namespace == defaultNamespace &&
 					event.Ref == "team-b" &&
 					event.Result == octantv1.SuccessOctantInstallEventResult

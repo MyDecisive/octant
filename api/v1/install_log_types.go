@@ -80,35 +80,35 @@ const (
 type OctantInstallEventAction string
 
 const (
-	// CreateDeployIntegrationOctantInstallEventAction is the action of creating an integration within Octant that
+	// CreateDeployIntegration is the action of creating an integration within Octant that
 	// allows for modifying the destination cluster.
-	CreateDeployIntegrationOctantInstallEventAction OctantInstallEventAction = "CREATE_DEPLOY_INTEGRATION"
-	// InstallMDAIHubOctantInstallEventAction is the action of installing the MDAI hub components.
-	InstallMDAIHubOctantInstallEventAction OctantInstallEventAction = "INSTALL_MDAI_HUB"
-	// CreateDestinationIntegrationOctantInstallEventAction is the action of creating a telemetry destination
+	CreateDeployIntegration OctantInstallEventAction = "CREATE_DEPLOY_INTEGRATION"
+	// InstallMDAIHub is the action of installing the MDAI hub components.
+	InstallMDAIHub OctantInstallEventAction = "INSTALL_MDAI_HUB"
+	// CreateDestinationIntegration is the action of creating a telemetry destination
 	// integration that connections can consume.
-	CreateDestinationIntegrationOctantInstallEventAction OctantInstallEventAction = "CREATE_DESTINATION_INTEGRATION"
-	// CreateConnectionOctantInstallEventAction is the action of creating a connection and all underlying
+	CreateDestinationIntegration OctantInstallEventAction = "CREATE_DESTINATION_INTEGRATION"
+	// CreateConnection is the action of creating a connection and all underlying
 	// infrastructure.
-	CreateConnectionOctantInstallEventAction OctantInstallEventAction = "CREATE_CONNECTION"
-	// VerifiedClientsConnectedOctantInstallEventAction is the action of completing the envoy connected clients
+	CreateConnection OctantInstallEventAction = "CREATE_CONNECTION"
+	// VerifiedClientsConnected is the action of completing the envoy connected clients
 	// validation loop.
-	VerifiedClientsConnectedOctantInstallEventAction OctantInstallEventAction = "VERIFIED_CLIENTS_CONNECTED"
-	// IngressVerifiedOctantInstallEventAction is the action of completing the ingress validation loop (data has been
+	VerifiedClientsConnected OctantInstallEventAction = "VERIFIED_CLIENTS_CONNECTED"
+	// IngressVerified is the action of completing the ingress validation loop (data has been
 	// received).
-	IngressVerifiedOctantInstallEventAction OctantInstallEventAction = "INGRESS_VERIFIED"
-	// EgressVerifiedOctantInstallEventAction is the action of completing the egress validation loop (data has been
+	IngressVerified OctantInstallEventAction = "INGRESS_VERIFIED"
+	// EgressVerified is the action of completing the egress validation loop (data has been
 	// sent).
-	EgressVerifiedOctantInstallEventAction OctantInstallEventAction = "EGRESS_VERIFIED"
-	// ValidationPassedOctantInstallEventAction is the action of completing the policy or parity data validation loop
+	EgressVerified OctantInstallEventAction = "EGRESS_VERIFIED"
+	// ValidationPassed is the action of completing the policy or parity data validation loop
 	// (data is satisfactorily the same in/out).
-	ValidationPassedOctantInstallEventAction OctantInstallEventAction = "VALIDATION_PASSED"
+	ValidationPassed OctantInstallEventAction = "VALIDATION_PASSED"
 )
 
 type OctantInstallLogEventActionDeployIntegrationSubtype string
 
 const (
-	ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype OctantInstallLogEventActionDeployIntegrationSubtype = "ARGOCD" // nolint:lll
+	ArgoCDSubtype OctantInstallLogEventActionDeployIntegrationSubtype = "ARGOCD" // nolint:lll
 )
 
 type OctantInstallEvent struct {

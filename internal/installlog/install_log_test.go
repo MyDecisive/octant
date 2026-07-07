@@ -69,22 +69,22 @@ func TestCustomResourceInstallLogStore_GetInstallLog(t *testing.T) {
 		makeEntries := func() []octantv1.OctantInstallEvent {
 			return []octantv1.OctantInstallEvent{
 				{
-					Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+					Action:    octantv1.CreateDeployIntegration,
 					Result:    octantv1.FailureOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
-					Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+					Subtype:   string(octantv1.ArgoCDSubtype),
 					Message:   "argo said no",
 				},
 				{
-					Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+					Action:    octantv1.CreateDeployIntegration,
 					Result:    octantv1.SuccessOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
-					Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+					Subtype:   string(octantv1.ArgoCDSubtype),
 				},
 				{
-					Action:    octantv1.InstallMDAIHubOctantInstallEventAction,
+					Action:    octantv1.InstallMDAIHub,
 					Result:    octantv1.SuccessOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
@@ -146,22 +146,22 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		makeEntries := func() []octantv1.OctantInstallEvent {
 			return []octantv1.OctantInstallEvent{
 				{
-					Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+					Action:    octantv1.CreateDeployIntegration,
 					Result:    octantv1.FailureOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
-					Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+					Subtype:   string(octantv1.ArgoCDSubtype),
 					Message:   "argo said no",
 				},
 				{
-					Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+					Action:    octantv1.CreateDeployIntegration,
 					Result:    octantv1.SuccessOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
-					Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+					Subtype:   string(octantv1.ArgoCDSubtype),
 				},
 				{
-					Action:    octantv1.InstallMDAIHubOctantInstallEventAction,
+					Action:    octantv1.InstallMDAIHub,
 					Result:    octantv1.SuccessOctantInstallEventResult,
 					Namespace: testNamespace,
 					Ref:       "argofoo",
@@ -179,11 +179,11 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		logStore := NewCustomResourceInstallLogStore(testConfig, dynamicMock)
 
 		expectedEvent := octantv1.OctantInstallEvent{
-			Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+			Action:    octantv1.CreateDeployIntegration,
 			Result:    octantv1.FailureOctantInstallEventResult,
 			Namespace: testNamespace,
 			Ref:       "argofoo",
-			Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+			Subtype:   string(octantv1.ArgoCDSubtype),
 			Message:   "argo said no",
 		}
 
@@ -225,11 +225,11 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		logStore := NewCustomResourceInstallLogStore(testConfig, dynamicMock)
 
 		expectedEvent := octantv1.OctantInstallEvent{
-			Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+			Action:    octantv1.CreateDeployIntegration,
 			Result:    octantv1.FailureOctantInstallEventResult,
 			Namespace: testNamespace,
 			Ref:       "argofoo",
-			Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+			Subtype:   string(octantv1.ArgoCDSubtype),
 			Message:   "argo said no",
 		}
 
@@ -266,11 +266,11 @@ func TestCustomResourceInstallLogStore_AddInstallLogEvent(t *testing.T) {
 		logStore := NewCustomResourceInstallLogStore(testConfig, dynamicMock)
 
 		expectedEvent := octantv1.OctantInstallEvent{
-			Action:    octantv1.CreateDeployIntegrationOctantInstallEventAction,
+			Action:    octantv1.CreateDeployIntegration,
 			Result:    octantv1.FailureOctantInstallEventResult,
 			Namespace: testNamespace,
 			Ref:       "argofoo",
-			Subtype:   string(octantv1.ArgoCDOctantInstallLogEventActionDeployIntegrationSubtype),
+			Subtype:   string(octantv1.ArgoCDSubtype),
 			Message:   "argo said no",
 		}
 
