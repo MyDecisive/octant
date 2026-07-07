@@ -98,6 +98,9 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 	}
 	createdInstallLog, createErr := crils.createInstallLogResource(ctx)
 	if createErr != nil {
+		if k8serrors.IsAlreadyExists(createErr) {
+			return crils.loadInstallLogResource(ctx)
+		}
 		return nil, createErr
 	}
 	installLog = createdInstallLog
