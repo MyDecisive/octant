@@ -62,7 +62,7 @@ spec:
         traces:
           span:
             - 'resource.attributes["observer_direction"] != "received"'
-            - 'IsRootSpan()'
+            - 'IsRootSpan() != true'
     - name: sent_span_count
       telemetry_type: traces
       metrics_backend: greptimedb
@@ -88,7 +88,7 @@ spec:
         error_mode: ignore
         traces:
           span:
-            - 'IsRootSpan()'
+            - 'IsRootSpan() != true'
             - 'resource.attributes["observer_direction"] != "exported"'
 
   observerResource:

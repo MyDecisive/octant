@@ -83,10 +83,6 @@ spec:
         endpoint: mdai-tracealyzer.{{ .Namespace }}.svc.cluster.local:4317
         tls:
           insecure: true
-      otlp/observer:
-        endpoint: {{ .Name }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
-        tls:
-          insecure: true
       loadbalancing/traces:
         routing_key: traceID
         protocol:
@@ -152,7 +148,7 @@ spec:
           traces:
             receivers: [datadog]
             processors: [transform/add_dd_fields]
-            exporters: [loadbalancing/traces, otlp/observer, otlp_grpc/tracealyzer]
+            exporters: [loadbalancing/traces, otlp_grpc/tracealyzer]
           {{- end }}
         {{- end }}
       telemetry:

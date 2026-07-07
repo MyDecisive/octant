@@ -134,7 +134,7 @@ spec:
                          resource/observer_exporter_tag,
                          batch
           ]
-          exporters: [ datadog ]
+          exporters: [ otlp/observer, datadog ]
         traces/watch_receivers:
           receivers: [ otlp ]
           processors: [
