@@ -2,8 +2,9 @@
 [![codecov](https://codecov.io/gh/MyDecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/MyDecisive/octant)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/octant)](https://artifacthub.io/packages/search?repo=octant)
 
+<img src="https://cdn.mydecisive.ai/media/2026/05/22/Octopus.png" alt="MyDecisive Logo" width="220" />
 
-<table>
+<!-- <table>
   <tr>
     <td width="35%" align="left">
       <img src="https://cdn.mydecisive.ai/media/2026/05/22/Octopus.png" alt="MyDecisive Logo" width="110" />
@@ -16,7 +17,7 @@
       <strong>Watch the demo</strong>
     </td>
   </tr>
-</table>
+</table> -->
 
 # Welcome to Octant
 
