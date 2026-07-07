@@ -61,7 +61,7 @@ func (crils *CustomResourceInstallLogStore) AddInstallLogEvent(
 		logger.Error("failed to get/create install log resource", zap.Error(err))
 		return err
 	}
-	
+
 	if err := crils.upsertInstallLogEntry(ctx, entry); err != nil {
 		logger.Error("failed to upsert install log event", zap.Error(err))
 		return err
@@ -99,7 +99,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 	createdInstallLog, createErr := crils.createInstallLogResource(ctx)
 	if createErr != nil {
 		if k8serrors.IsAlreadyExists(createErr) {
-			return crils.loadInstallLogResource(ctx)
+			return crils.loadOrCreateInstallLogResource(ctx)
 		}
 		return nil, createErr
 	}
