@@ -2,10 +2,10 @@ package installlog
 
 import (
 	"context"
+	"fmt"
 
 	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +88,7 @@ func (crils *CustomResourceInstallLogStore) loadOrCreateInstallLogResource(
 			rawInstallLog.Object,
 			&installLog,
 		); convertErr != nil {
-			return nil, errors.Wrap(convertErr, "failed to convert created install log back into typed object")
+			return nil, fmt.Errorf("failed to convert created install log back into typed object: %w", convertErr)
 		}
 		return installLog, nil
 	}
@@ -126,10 +126,8 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 	createOpts := metav1.CreateOptions{}
 	unstructuredRes, err := runtime.DefaultUnstructuredConverter.ToUnstructured(installLogResource)
 	if err != nil {
-		return nil, errors.Wrap(
-			err,
-			"failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client",
-		)
+		return nil, fmt.Errorf(
+			"failed to convert OctantInstallLog instance to unstructured type for k8s dynamic client: %w", err)
 	}
 	rawCreatedInstallLog, err := crils.dynamicClient.Resource(
 		octantv1.GetOctantInstallLogGroupVersionResource(),
@@ -146,7 +144,8 @@ func (crils *CustomResourceInstallLogStore) createInstallLogResource(
 		rawCreatedInstallLog.Object,
 		&createdInstallLog,
 	); err != nil {
-		return nil, errors.Wrap(err, "failed to convert created install log back into typed object")
+		return nil, fmt.Errorf(
+			"failed to convert created install log back into typed object: %w", err)
 	}
 	return &createdInstallLog, nil
 }
@@ -180,7 +179,7 @@ func (crils *CustomResourceInstallLogStore) upsertInstallLogEntry(
 	}
 	patchJSON, err := json.Marshal(patchPayload)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal patch payload")
+		return fmt.Errorf("failed to marshal patch payload: %w", err)
 	}
 
 	if _, err := crils.dynamicClient.Resource(
