@@ -9,11 +9,11 @@ apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
   name: {{ .Name }}-log-sampling
-  namespace: {{ .Namespace }}
+  namespace: "{{ .Namespace }}"
   labels:
-    app: {{ .Name }}
+    app: "{{ .Name }}"
     app.kubernetes.io/instance: {{ .Name }}-log-sampling
-    mydecisive.ai/hub-name: {{ .Name }}
+    mydecisive.ai/hub-name: "{{ .Name }}"
   annotations:
     argocd.argoproj.io/tracking-id: "{{ .Name }}:opentelemetry.io/OpenTelemetryCollector:{{ .Namespace }}/{{ .Name }}-log-sampling"
     argocd.argoproj.io/sync-options: Force=true,Replace=true
@@ -90,7 +90,7 @@ spec:
       {{- if .DatadogIntegrationData }}
       datadog:
         api:
-          key: ${env:DD_API_KEY}
+          key: "${env:DD_API_KEY}"
           site: "${env:DD_SITE}"
       {{- end }}
       otlp/observer:

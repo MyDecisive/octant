@@ -43,6 +43,7 @@ type Install struct {
 	MdaiInstallTimeout               int    `yaml:"mdaiInstallTimeout" env:"MDAI_INSTALL_TIMEOUT" env-default:"90"`
 	MdaiInstallPollingIntervalMillis int    `yaml:"mdaiInstallPollingIntervalMillis" env:"MDAI_INSTALL_POLLING_INTERVAL_MILLIS" env-default:"3000"` // nolint:lll
 	MdaiValidatorVersion             string `yaml:"mdaiValidatorVersion" env:"MDAI_VALIDATOR_VERSION" env-default:"0.1.3"`
+	ArgoCDNamespace                  string `yaml:"argoCdNamespace" env:"ARGO_CD_NAMESPACE" env-default:"argocd"`
 	CertManagerVersion               string `yaml:"certManagerVersion" env:"CERT_MANAGER_VERSION" env-default:"v1.19.1"`
 	CertManagerNamespace             string `yaml:"certManagerNamespace" env:"CERT_MANAGER_NAMESPACE" env-default:"cert-manager"` // nolint:lll
 }

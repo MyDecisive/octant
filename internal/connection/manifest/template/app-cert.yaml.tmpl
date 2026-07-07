@@ -2,20 +2,20 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: cert-manager
-  namespace: argocd
+  namespace: "{{ .ArgoCDNamespace }}"
 spec:
   project: default
   source:
     repoURL: quay.io/jetstack/charts
     chart: cert-manager
-    targetRevision: {{ .Version }}
+    targetRevision: "{{ .Version }}"
     helm:
       parameters:
       - name: "crds.enabled"
         value: "true"
   destination:
     name: "in-cluster"
-    namespace: {{ .Namespace }}
+    namespace: "{{ .Namespace }}"
   syncPolicy:
     automated:
       enabled: true

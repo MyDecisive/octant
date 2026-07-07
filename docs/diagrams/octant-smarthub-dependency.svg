@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" role="img" aria-labelledby="title desc">
+  <title id="title">Octant Capability Dependencies on SmartHub</title>
+  <desc id="desc">Octant presents product workflows to users. Each workflow depends on a corresponding SmartHub platform capability such as chart installation, connection resources, collectors, validation, insight storage, or runtime state.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    </marker>
+    <filter id="shadow" x="-8%" y="-8%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .title { font: 700 32px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 15px Arial, sans-serif; fill: #475569; }
+      .boundary-title { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .boundary-note { font: 13px Arial, sans-serif; fill: #475569; }
+      .label { font: 700 16px Arial, sans-serif; fill: #ffffff; }
+      .small { font: 13px Arial, sans-serif; fill: #ffffff; }
+      .dark-label { font: 700 15px Arial, sans-serif; fill: #0f172a; }
+      .dark-small { font: 13px Arial, sans-serif; fill: #334155; }
+      .edge { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .edge-label { font: 12px Arial, sans-serif; fill: #334155; paint-order: stroke; stroke: #f8fafc; stroke-width: 4; }
+    </style>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f8fafc"/>
+  <text class="title" x="54" y="56">Octant Capability Dependencies on SmartHub</text>
+  <text class="subtitle" x="54" y="84">Octant is the customer-facing product layer. SmartHub is the platform layer that performs the telemetry work.</text>
+
+  <rect x="65" y="135" width="315" height="650" rx="18" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+  <text class="boundary-title" x="222.5" y="170" text-anchor="middle">Octant product workflows</text>
+  <text class="boundary-note" x="222.5" y="194" text-anchor="middle">What the user sees and operates.</text>
+
+  <rect x="1020" y="135" width="315" height="650" rx="18" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+  <text class="boundary-title" x="1177.5" y="170" text-anchor="middle">SmartHub platform capabilities</text>
+  <text class="boundary-note" x="1177.5" y="194" text-anchor="middle">What executes inside the cluster.</text>
+
+  <rect x="440" y="135" width="520" height="650" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6"/>
+  <text class="boundary-title" x="700" y="170" text-anchor="middle">Dependency contract</text>
+  <text class="boundary-note" x="700" y="194" text-anchor="middle">Every Octant workflow needs a matching SmartHub capability and compatible chart version.</text>
+
+  <rect x="105" y="250" width="235" height="82" rx="12" fill="#0b7285" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="222.5" y="280" text-anchor="middle">Install workflow</text>
+  <text class="small" x="222.5" y="308" text-anchor="middle">Guides SmartHub setup</text>
+  <text class="small" x="222.5" y="326" text-anchor="middle">from Octant.</text>
+
+  <rect x="105" y="365" width="235" height="82" rx="12" fill="#0b7285" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="222.5" y="395" text-anchor="middle">Connection workflow</text>
+  <text class="small" x="222.5" y="423" text-anchor="middle">Creates integrations,</text>
+  <text class="small" x="222.5" y="441" text-anchor="middle">destinations, and signals.</text>
+
+  <rect x="105" y="480" width="235" height="82" rx="12" fill="#0b7285" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="222.5" y="510" text-anchor="middle">Validation workflow</text>
+  <text class="small" x="222.5" y="538" text-anchor="middle">Checks received and</text>
+  <text class="small" x="222.5" y="556" text-anchor="middle">sent telemetry parity.</text>
+
+  <rect x="105" y="595" width="235" height="82" rx="12" fill="#0b7285" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="222.5" y="625" text-anchor="middle">Clarity workflow</text>
+  <text class="small" x="222.5" y="653" text-anchor="middle">Shows volume, cost,</text>
+  <text class="small" x="222.5" y="671" text-anchor="middle">timeframes, and filters.</text>
+
+  <rect x="1060" y="250" width="235" height="82" rx="12" fill="#2f9e44" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="1177.5" y="280" text-anchor="middle">SmartHub chart</text>
+  <text class="small" x="1177.5" y="308" text-anchor="middle">Kubernetes resources,</text>
+  <text class="small" x="1177.5" y="326" text-anchor="middle">operators, and releases.</text>
+
+  <rect x="1060" y="365" width="235" height="82" rx="12" fill="#2f9e44" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="1177.5" y="395" text-anchor="middle">Connection resources</text>
+  <text class="small" x="1177.5" y="423" text-anchor="middle">Collectors, routes,</text>
+  <text class="small" x="1177.5" y="441" text-anchor="middle">secrets, and destinations.</text>
+
+  <rect x="1060" y="480" width="235" height="82" rx="12" fill="#2f9e44" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="1177.5" y="510" text-anchor="middle">Data Fidelity Validation</text>
+  <text class="small" x="1177.5" y="538" text-anchor="middle">Validator jobs and</text>
+  <text class="small" x="1177.5" y="556" text-anchor="middle">health metrics.</text>
+
+  <rect x="1060" y="595" width="235" height="82" rx="12" fill="#2f9e44" stroke="#0f172a" stroke-width="1.3" filter="url(#shadow)"/>
+  <text class="label" x="1177.5" y="625" text-anchor="middle">Insight and runtime state</text>
+  <text class="small" x="1177.5" y="653" text-anchor="middle">Metrics, historical data,</text>
+  <text class="small" x="1177.5" y="671" text-anchor="middle">filters, and variables.</text>
+
+  <rect x="485" y="238" width="430" height="105" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text class="dark-label" x="508" y="268">Install SmartHub</text>
+  <text class="dark-small" x="508" y="293">Octant service: InstallService</text>
+  <text class="dark-small" x="508" y="313">Platform dependency: compatible mdai-hub chart and Kubernetes resources.</text>
+
+  <rect x="485" y="353" width="430" height="105" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text class="dark-label" x="508" y="383">Create and update connections</text>
+  <text class="dark-small" x="508" y="408">Octant service: ConnectionService and integration APIs</text>
+  <text class="dark-small" x="508" y="428">Platform dependency: connection CRs, collectors, routes, and destinations.</text>
+
+  <rect x="485" y="468" width="430" height="105" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text class="dark-label" x="508" y="498">Validate telemetry delivery</text>
+  <text class="dark-small" x="508" y="523">Octant service: connection status and validation APIs</text>
+  <text class="dark-small" x="508" y="543">Platform dependency: Data Fidelity Validation and stream health metrics.</text>
+
+  <rect x="485" y="583" width="430" height="105" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.3"/>
+  <text class="dark-label" x="508" y="613">Use Clarity and tune runtime settings</text>
+  <text class="dark-small" x="508" y="638">Octant services: Budget, Filter, Setting, and Timeframe APIs</text>
+  <text class="dark-small" x="508" y="658">Platform dependency: insight data, filters, variables, and runtime state.</text>
+
+  <path class="edge" d="M340,291 L475,291"/>
+  <text class="edge-label" x="410" y="280" text-anchor="middle">maps to</text>
+  <path class="edge" d="M915,291 L1050,291"/>
+  <text class="edge-label" x="982" y="280" text-anchor="middle">requires</text>
+
+  <path class="edge" d="M340,406 L475,406"/>
+  <text class="edge-label" x="410" y="395" text-anchor="middle">maps to</text>
+  <path class="edge" d="M915,406 L1050,406"/>
+  <text class="edge-label" x="982" y="395" text-anchor="middle">requires</text>
+
+  <path class="edge" d="M340,521 L475,521"/>
+  <text class="edge-label" x="410" y="510" text-anchor="middle">maps to</text>
+  <path class="edge" d="M915,521 L1050,521"/>
+  <text class="edge-label" x="982" y="510" text-anchor="middle">requires</text>
+
+  <path class="edge" d="M340,636 L475,636"/>
+  <text class="edge-label" x="410" y="625" text-anchor="middle">maps to</text>
+  <path class="edge" d="M915,636 L1050,636"/>
+  <text class="edge-label" x="982" y="625" text-anchor="middle">requires</text>
+
+  <rect x="65" y="815" width="1270" height="54" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text class="dark-label" x="90" y="847">Documentation rule</text>
+  <text class="dark-small" x="245" y="847">Document the user action in Octant docs. Link to SmartHub docs when the reader needs platform chart, collector, validation, or runtime-state details.</text>
+</svg>
