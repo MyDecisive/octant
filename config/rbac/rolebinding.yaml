@@ -9,4 +9,4 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: manager-role
-  apiGroup: ""
+  apiGroup: rbac.authorization.k8s.io
