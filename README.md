@@ -30,7 +30,7 @@ Before you begin, read the [Octant Primer](docs/primer.md).
 - [Octant Documentation](docs/index.md)
 - [Installation](docs/setup.md)
 - [How-To Guides](docs/how-to/index.md)
-- [API Reference](docs/api.md)
+- [API Reference](https://mydecisive.github.io/octant/)
 - [Connections and Integrations](docs/connections.md)
 - [Telemetry Insights and Clarity](docs/telemetry.md)
 - [Architecture](docs/architecture.md)

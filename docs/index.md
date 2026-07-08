@@ -14,7 +14,7 @@ Octant helps you install SmartHub, connect telemetry sources, validate delivery,
 | Configure Argo CD or Datadog, create a connection, reroute telemetry, or troubleshoot missing data. | [Connections and Integrations](connections.md) |
 | Review Clarity, Top Talkers, sampling, cost, volume, time ranges, or missing services. | [Telemetry Insights](telemetry.md) |
 | Understand how Octant and SmartHub fit together. | [Architecture](architecture.md) |
-| Look up Octant API services and operation paths. | [API Reference](api.md) |
+| Look up Octant API services and operation paths. | [API Reference](https://mydecisive.github.io/octant/) |
 | Build and run Octant locally. | [Development](development.md) |
 
 ## Key Terms
