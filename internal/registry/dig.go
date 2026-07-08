@@ -17,6 +17,7 @@ import (
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/installlog"
 	"github.com/mydecisive/octant/internal/integration"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/rpc"
@@ -26,6 +27,7 @@ import (
 	"go.uber.org/dig"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -44,6 +46,9 @@ func Initialize() (*dig.Container, error) {
 	if err := container.Provide(provideKubeClient); err != nil {
 		return nil, err
 	}
+	if err := container.Provide(provideDynamicClient); err != nil {
+		return nil, err
+	}
 	if err := container.Provide(provideHTTPClient); err != nil {
 		return nil, err
 	}
@@ -57,6 +62,12 @@ func Initialize() (*dig.Container, error) {
 		return nil, err
 	}
 	if err := container.Provide(provideSecretController); err != nil {
+		return nil, err
+	}
+
+	if err := container.Provide(
+		installlog.NewCustomResourceInstallLogStore,
+		dig.As(new(installlog.InstallLogStore))); err != nil {
 		return nil, err
 	}
 
@@ -220,6 +231,10 @@ func initLogger(configuration *config.Configuration) error {
 
 func provideKubeClient() (kubernetes.Interface, error) { // nolint: ireturn
 	return datacorekube.NewK8sClient(zap.L())
+}
+
+func provideDynamicClient() (dynamic.Interface, error) { // nolint: ireturn
+	return datacorekube.NewK8sDynamicClient(zap.L())
 }
 
 func provideHTTPClient(configuration *config.Configuration) wrapper.HTTPClient { // nolint: ireturn

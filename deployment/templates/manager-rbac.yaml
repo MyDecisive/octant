@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "deployment.fullname" . }}-manager-role
+  labels:
+  {{- include "deployment.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - octant.mydecisive.ai
+  resources:
+  - octantinstalllogs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
