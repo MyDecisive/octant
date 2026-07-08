@@ -9,7 +9,6 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	"github.com/argoproj/argo-cd/v3/pkg/apiclient/application"
-	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	argoapp "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	argoclientset "github.com/argoproj/argo-cd/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -279,10 +278,12 @@ func (c *Client) WatchApplication(
 
 	// labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": input.AppName}}
 	// TODO: use argocd app namespace
-	watcher, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).Watch(ctx, metav1.ListOptions{
-		LabelSelector:  "app = mdai",
-		TimeoutSeconds: lo.ToPtr(int64(timeout.Seconds())),
-	})
+	watcher, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).
+		Watch(ctx, metav1.ListOptions{
+			LabelSelector:       "app = mdai",
+			TimeoutSeconds:      lo.ToPtr(int64(timeout.Seconds())),
+			AllowWatchBookmarks: true,
+		})
 	if err != nil {
 		out <- WatchResult{
 			Err: fmt.Errorf("%w:%w", ErrWatch, err),
@@ -291,30 +292,36 @@ func (c *Client) WatchApplication(
 	}
 	defer watcher.Stop()
 
-	for event := range watcher.ResultChan() {
-		switch event.Type {
-		case watch.Modified, watch.Added:
-			app, ok := event.Object.(*v1alpha1.Application)
-			if !ok {
-				out <- WatchResult{
-					Err: ErrParsing,
+	for {
+		select {
+		case <-ctx.Done():
+			input.Logger.Debug("Context cancelled, end watch")
+			return
+		case event := <-watcher.ResultChan():
+			switch event.Type {
+			case watch.Modified, watch.Added:
+				app, ok := event.Object.(*argoapp.Application)
+				if !ok {
+					out <- WatchResult{
+						Err: ErrParsing,
+					}
+					continue
 				}
-				continue
+				out <- WatchResult{
+					Details: app,
+				}
+			case watch.Deleted:
+				out <- WatchResult{
+					Err: ErrDeleted,
+				}
+			case watch.Error:
+				input.Logger.Error("Received errored event type", zap.Any("details", event.Object)) //nolint
+				out <- WatchResult{
+					Err: errors.New("unexpected"),
+				}
+			default:
+				input.Logger.Debug("Ignore event type", zap.String("type", string(event.Type)), zap.Any("details", event.Object)) //nolint
 			}
-			out <- WatchResult{
-				Details: app,
-			}
-		case watch.Deleted:
-			out <- WatchResult{
-				Err: ErrDeleted,
-			}
-		case watch.Error:
-			input.Logger.Error("Received errored event type", zap.Any("details", event.Object)) //nolint
-			out <- WatchResult{
-				Err: errors.New("unexpected"),
-			}
-		default:
-			input.Logger.Debug("Ignore event type", zap.String("type", string(event.Type)), zap.Any("details", event.Object)) //nolint
 		}
 	}
 }
