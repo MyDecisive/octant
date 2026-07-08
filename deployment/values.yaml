@@ -29,7 +29,7 @@ certManager:
   namespace: cert-manager
 
 validator:
-  version: 0.1.3
+  version: 0.1.7
 
 services:
   name: octant
