@@ -19,7 +19,7 @@
 
 # Welcome to Octant
 
-<img src="https://cdn.mydecisive.ai/media/latest/1783606922852-octant-logo.png" alt="MyDecisive Logo" width="220" />
+<img src="https://cdn.mydecisive.ai/media/latest/1783606922852-octant-logo.png" alt="MyDecisive Logo" width="540" />
 
 
 ## ***AI DevOps that optimizes your system before incidents occur.***
