@@ -276,6 +276,19 @@ func (c *Client) WatchApplication(
 ) {
 	defer close(out) // Tell caller the operation is complete
 
+	_, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
+		ctx,
+		metav1.ListOptions{
+			LabelSelector: "app = mdai",
+		},
+	)
+	if err != nil {
+		out <- WatchResult{
+			Err: fmt.Errorf("%w:%w", ErrWatch, err),
+		}
+		return
+	}
+
 	// labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": input.AppName}}
 	// TODO: use argocd app namespace
 	watcher, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).
