@@ -6,6 +6,8 @@ Use this guide when you are presented with a failure while setting up a Datadog 
 3. No telemetry leaving SmartHub
 4. Data Fidelity Validation policy failure
 
+> **Before using the examples:** `test-dd` is an example connection name. Replace every occurrence of `test-dd` in links, PromQL queries, service names, and shell commands with the connection name you entered in the Octant experience. The examples will not target your connection until you make this change.
+
 ## How Validation Works
 
 Octant uses two kinds of evidence when it validates a connection:
@@ -44,7 +46,7 @@ If a signal was not selected when the connection was created, validation for tha
 
 ## Check Live Validation Metrics
 
-Open Prometheus for the target cluster and query the validation metrics. In a local environment with Prometheus port-forwarded to `localhost:9090`, the `octant-argo-example` testing guide provides a ready-made [validation metrics dashboard link](http://localhost:9090/graph?g0.expr=mdai_fidelity_attribute_checks_total&g0.tab=0&g0.display_mode=lines&g0.show_exemplars=0&g0.range_input=1h&g1.expr=mdai_fidelity_required_attribute_checks_total&g1.tab=1&g1.display_mode=lines&g1.show_exemplars=0&g1.range_input=1h&g2.expr=mdai_fidelity_signal_checks_total&g2.tab=1&g2.display_mode=lines&g2.show_exemplars=0&g2.range_input=1h&g3.expr=mdai_fidelity_required_signal_checks_total&g3.tab=1&g3.display_mode=lines&g3.show_exemplars=0&g3.range_input=1h&g4.expr=otelcol_receiver_accepted_log_records_total%7Bservice_name%3D%22test-dd-sampling-lb-collector%22%2C%20receiver%3D%22datadog%22%7D&g4.tab=1&g4.display_mode=lines&g4.show_exemplars=0&g4.range_input=1h&g5.expr=otelcol_receiver_accepted_spans_total%7Bservice_name%3D%22test-dd-sampling-lb-collector%22%2C%20receiver%3D%22datadog%22%7D&g5.tab=1&g5.display_mode=lines&g5.show_exemplars=0&g5.range_input=1h&g6.expr=otelcol_exporter_sent_log_records_total%7Bservice_name%3D%22test-dd-log-sampling-collector%22%2Cexporter%3D%22datadog%22%7D&g6.tab=1&g6.display_mode=lines&g6.show_exemplars=0&g6.range_input=1h&g7.expr=otelcol_exporter_sent_spans_total%7Bservice_name%3D%22test-dd-trace-sampling-collector%22%2Cexporter%3D%22datadog%22%7D&g7.tab=1&g7.display_mode=lines&g7.show_exemplars=0&g7.range_input=1h&g8.expr=envoy_server_total_connections&g8.tab=1&g8.display_mode=lines&g8.show_exemplars=0&g8.range_input=1h).
+Open Prometheus for the target cluster and query the validation metrics. In a local environment with Prometheus port-forwarded to `localhost:9090`, the `octant-argo-example` testing guide provides a ready-made [validation metrics dashboard link](http://localhost:9090/graph?g0.expr=mdai_fidelity_attribute_checks_total&g0.tab=0&g0.display_mode=lines&g0.show_exemplars=0&g0.range_input=1h&g1.expr=mdai_fidelity_required_attribute_checks_total&g1.tab=1&g1.display_mode=lines&g1.show_exemplars=0&g1.range_input=1h&g2.expr=mdai_fidelity_signal_checks_total&g2.tab=1&g2.display_mode=lines&g2.show_exemplars=0&g2.range_input=1h&g3.expr=mdai_fidelity_required_signal_checks_total&g3.tab=1&g3.display_mode=lines&g3.show_exemplars=0&g3.range_input=1h&g4.expr=otelcol_receiver_accepted_log_records_total%7Bservice_name%3D%22test-dd-sampling-lb-collector%22%2C%20receiver%3D%22datadog%22%7D&g4.tab=1&g4.display_mode=lines&g4.show_exemplars=0&g4.range_input=1h&g5.expr=otelcol_receiver_accepted_spans_total%7Bservice_name%3D%22test-dd-sampling-lb-collector%22%2C%20receiver%3D%22datadog%22%7D&g5.tab=1&g5.display_mode=lines&g5.show_exemplars=0&g5.range_input=1h&g6.expr=otelcol_exporter_sent_log_records_total%7Bservice_name%3D%22test-dd-log-sampling-collector%22%2Cexporter%3D%22datadog%22%7D&g6.tab=1&g6.display_mode=lines&g6.show_exemplars=0&g6.range_input=1h&g7.expr=otelcol_exporter_sent_spans_total%7Bservice_name%3D%22test-dd-trace-sampling-collector%22%2Cexporter%3D%22datadog%22%7D&g7.tab=1&g7.display_mode=lines&g7.show_exemplars=0&g7.range_input=1h&g8.expr=envoy_server_total_connections&g8.tab=1&g8.display_mode=lines&g8.show_exemplars=0&g8.range_input=1h). After opening the dashboard, edit each query that contains `test-dd` and substitute your Octant connection name before relying on its results.
 
 Use these queries as the starting point:
 
@@ -82,13 +84,13 @@ For Datadog traces leaving SmartHub, check the trace sampling collector:
 otelcol_exporter_sent_spans_total{service_name="test-dd-trace-sampling-collector", exporter="datadog"}
 ```
 
-Replace `test-dd` with the connection name Octant generated and adjust the metric family for the selected signal. If receiving data increases but sending data does not, inspect the sampling collector, exporter configuration, Datadog credentials, and collector logs. If neither increases, inspect the Datadog Agent routing and SmartHub ingress endpoint.
+In every query above, replace `test-dd` with the connection name you entered in Octant and adjust the metric family for the selected signal. If receiving data increases but sending data does not, inspect the sampling collector, exporter configuration, Datadog credentials, and collector logs. If neither increases, inspect the Datadog Agent routing and SmartHub ingress endpoint.
 
 ## Debug Data Integrity Failures
 
 Data integrity failures mean telemetry is moving far enough for the validator to compare mirrored input and output payloads, but one or more policies did not match the expected fields or signals.
 
-First, list failed validator correlation IDs. Replace `mdai` and `test-dd-telemetry-validation-fidelity-validator` with the namespace and validator service for the target connection.
+First, list failed validator correlation IDs. Replace `mdai` with the target namespace. Replace the `test-dd` portion of the validator service name with the connection name you entered in Octant.
 
 ```shell
 kubectl logs -n mdai svc/test-dd-telemetry-validation-fidelity-validator --since=20s \
@@ -101,6 +103,8 @@ kubectl logs -n mdai svc/test-dd-telemetry-validation-fidelity-validator --since
 If no IDs are returned, widen `--since` or rerun validation so the validator emits fresh result logs.
 
 Next, port-forward the validator service:
+
+Remember to replace the `test-dd` portion of the service name with your Octant connection name.
 
 ```shell
 kubectl -n mdai port-forward svc/test-dd-telemetry-validation-fidelity-validator 8080:8080

@@ -1,6 +1,10 @@
-# Setup and Operations
+# Octant Setup and Operations
 
 Use this guide to choose an Octant environment, install Octant, move configuration through review, validate the deployment, and roll back changes when needed.
+
+To skip ahead to installation, select your installation method
+1. [Argo CD Install](#argo-cd-install-path)
+2. [Helm Install](#direct-helm-install-path)
 
 ## Environment Choices
 
