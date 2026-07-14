@@ -276,7 +276,7 @@ func (c *Client) WatchApplication(
 ) {
 	defer close(out) // Tell caller the operation is complete
 
-	_, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
+	apps, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
 		ctx,
 		metav1.ListOptions{
 			LabelSelector: "app = mdai",
@@ -288,6 +288,12 @@ func (c *Client) WatchApplication(
 		}
 		return
 	}
+	resourceVer := apps.ResourceVersion
+	if len(apps.Items) > 0 {
+		out <- WatchResult{
+			Details: &apps.Items[0],
+		}
+	}
 
 	// labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{"app": input.AppName}}
 	// TODO: use argocd app namespace
@@ -295,6 +301,7 @@ func (c *Client) WatchApplication(
 		Watch(ctx, metav1.ListOptions{
 			LabelSelector:       "app = mdai",
 			TimeoutSeconds:      lo.ToPtr(int64(timeout.Seconds())),
+			ResourceVersion:     resourceVer,
 			AllowWatchBookmarks: true,
 		})
 	if err != nil {
