@@ -268,6 +268,24 @@ func (*Client) SyncApplication(
 	return nil
 }
 
+func (c *Client) GetApplication(ctx context.Context,
+	input Input,
+) (*argoapp.Application, error) {
+	apps, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
+		ctx,
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app = %s", input.AppName),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(apps.Items) > 0 {
+		return &apps.Items[0], nil
+	}
+	return nil, errors.New("not found")
+}
+
 func (c *Client) WatchApplication(
 	ctx context.Context,
 	input Input,
