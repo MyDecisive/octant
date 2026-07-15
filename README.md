@@ -7,13 +7,7 @@
 
 <img src="https://cdn.mydecisive.ai/media/latest/1783606922852-octant-logo.png" alt="MyDecisive Logo" width="540" />
 
-
-<a href="https://cdn.mydecisive.ai/media/latest/octant-demo.mp4" target="_blank">
-  <img src="https://cdn.mydecisive.ai/media/latest/1783965299508-octant-demo-thumbnail.png" alt="Watch the demo" width="540" />
-  <br />
-  <center><strong>Watch the demo</strong></center>
-</a>
-
+Learn more at about [Octant](https://www.mydecisive.ai/octant)
 
 ## ***AI DevOps that optimizes your system before incidents occur.***
 
