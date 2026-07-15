@@ -274,7 +274,7 @@ func (c *Client) GetApplication(ctx context.Context,
 	apps, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
 		ctx,
 		metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app = %s", input.AppName),
+			LabelSelector: "app = " + input.AppName,
 		},
 	)
 	if err != nil {
