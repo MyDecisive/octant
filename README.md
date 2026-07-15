@@ -15,8 +15,8 @@ Before you begin, read the [Octant Primer](docs/primer.md).
 
 ## Related Pages
 
-- [Octant Documentation](docs/index.md)
 - [Installation](docs/setup.md)
+- [Octant Documentation](docs/index.md)
 - [How-To Guides](docs/how-to/index.md)
 - [API Reference](https://mydecisive.github.io/octant/)
 - [Connections and Integrations](docs/connections.md)
