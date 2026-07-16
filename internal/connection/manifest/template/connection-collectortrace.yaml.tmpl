@@ -59,7 +59,6 @@ spec:
           http:
             endpoint: 0.0.0.0:4318
     processors:
-      deltatocumulative: {}
       groupbyattrs:
         keys:
           - service
@@ -110,11 +109,6 @@ spec:
           key: "${env:DD_API_KEY}"
           site: "${env:DD_SITE}"
       {{- end }}
-      prometheus:
-        endpoint: "0.0.0.0:8899"
-        metric_expiration: 180m
-        resource_to_telemetry_conversion:
-          enabled: true
       otlp/observer:
         endpoint: {{ .Name }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
         tls:
