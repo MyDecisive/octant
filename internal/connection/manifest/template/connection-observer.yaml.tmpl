@@ -10,7 +10,10 @@ metadata:
     argocd.argoproj.io/tracking-id: "{{ .Name }}:hub.mydecisive.ai/MdaiObserver:{{ .Namespace }}/{{ .Name }}"
 spec:
   observers:
-    - name: observer-in
+    - name: observer-logs-in
+      telemetry_type: logs
+      metrics_backend: prometheus
+      aggregation_temporality: cumulative
       labelResourceAttributes:
         - service
       countMetricName: items_received_by_service_total
@@ -20,7 +23,10 @@ spec:
         logs:
           log_record:
             - 'resource.attributes["observer_direction"] != "received"'
-    - name: observer-out
+    - name: observer-logs-out
+      telemetry_type: logs
+      metrics_backend: prometheus
+      aggregation_temporality: cumulative
       labelResourceAttributes:
         - service
       countMetricName: items_sent_by_service_total
@@ -30,9 +36,63 @@ spec:
         logs:
           log_record:
             - 'resource.attributes["observer_direction"] != "exported"'
+    - name: received_span_count
+      telemetry_type: traces
+      metrics_backend: greptimedb
+      aggregation_temporality: delta
+      labelResourceAttributes:
+        - span_name
+        - span_service
+      countMetricName: received_span_count
+      filter:
+        error_mode: ignore
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "received"'
+    - name: received_span_root_count
+      telemetry_type: traces
+      metrics_backend: greptimedb
+      aggregation_temporality: delta
+      labelResourceAttributes:
+        - span_name
+        - span_service
+      countMetricName: received_span_root_count
+      filter:
+        error_mode: ignore
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "received"'
+            - 'IsRootSpan() != true'
+    - name: sent_span_count
+      telemetry_type: traces
+      metrics_backend: greptimedb
+      aggregation_temporality: delta
+      labelResourceAttributes:
+        - span_name
+        - span_service
+      countMetricName: sent_span_count
+      filter:
+        error_mode: ignore
+        traces:
+          span:
+            - 'resource.attributes["observer_direction"] != "exported"'
+    - name: sent_span_root_count
+      telemetry_type: traces
+      metrics_backend: greptimedb
+      aggregation_temporality: delta
+      labelResourceAttributes:
+        - span_name
+        - span_service
+      countMetricName: sent_span_root_count
+      filter:
+        error_mode: ignore
+        traces:
+          span:
+            - 'IsRootSpan() != true'
+            - 'resource.attributes["observer_direction"] != "exported"'
 
   observerResource:
-    image: public.ecr.aws/decisiveai/observer-collector:0.1.6
+    image: public.ecr.aws/decisiveai/observer-collector:0.1.7
     replicas: 2
     resources:
       limits:

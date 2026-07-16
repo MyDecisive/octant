@@ -59,7 +59,19 @@ spec:
           http:
             endpoint: 0.0.0.0:4318
     processors:
-      deltatocumulative: {}
+      groupbyattrs:
+        keys:
+          - service
+      resource/observer_receiver_tag:
+        attributes:
+          - key: observer_direction
+            value: "received"
+            action: upsert
+      resource/observer_exporter_tag:
+        attributes:
+          - key: observer_direction
+            value: "exported"
+            action: upsert
       tail_sampling:
         decision_wait: 10s
         num_traces: 100000
@@ -97,26 +109,10 @@ spec:
           key: "${env:DD_API_KEY}"
           site: "${env:DD_SITE}"
       {{- end }}
-      prometheus:
-        endpoint: "0.0.0.0:8899"
-        metric_expiration: 180m
-        resource_to_telemetry_conversion:
-          enabled: true
-    connectors:
-      count/spans_by_facet:
-        spans:
-          sent_span_count:
-            description: Exported total span count by service (all spans).
-            attributes:
-              - key: span_name
-              - key: span_service
-          sent_span_root_count:
-            description: Exported root span count by service.
-            attributes:
-              - key: span_name
-              - key: span_service
-            conditions:
-              - 'IsRootSpan()'
+      otlp/observer:
+        endpoint: {{ .Name }}-mdai-observer-service.{{ .Namespace }}.svc.cluster.local:4317
+        tls:
+          insecure: true
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
@@ -125,14 +121,22 @@ spec:
     service:
       extensions: [health_check, zpages]
       pipelines:
-        traces:
+        traces/datadog_sampling:
           receivers: [otlp]
-          processors: [tail_sampling, batch]
-          exporters: [ datadog, count/spans_by_facet ]
-        metrics:
-          receivers: [count/spans_by_facet]
-          processors: [deltatocumulative]
-          exporters: [prometheus]
+          processors: [
+                         tail_sampling,
+                         resource/observer_exporter_tag,
+                         batch
+          ]
+          exporters: [ otlp/observer, datadog ]
+        traces/watch_receivers:
+          receivers: [ otlp ]
+          processors: [
+            resource/observer_receiver_tag,
+            groupbyattrs,
+            batch
+          ]
+          exporters: [ otlp/observer ]
       telemetry:
         resource:
           mdai_connection: "{{ .Name }}"
