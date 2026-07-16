@@ -297,7 +297,7 @@ func (c *Client) WatchApplication(
 	apps, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).List(
 		ctx,
 		metav1.ListOptions{
-			LabelSelector: "app = mdai",
+			LabelSelector: "app = " + input.AppName,
 		},
 	)
 	if err != nil {
