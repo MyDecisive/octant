@@ -317,7 +317,7 @@ func (c *Client) WatchApplication(
 	// TODO: use argocd app namespace
 	watcher, err := c.argokube.ArgoprojV1alpha1().Applications(c.appConfig.Install.ArgoCDNamespace).
 		Watch(ctx, metav1.ListOptions{
-			LabelSelector:       "app = mdai",
+			LabelSelector:       "app = " + input.AppName,
 			TimeoutSeconds:      lo.ToPtr(int64(timeout.Seconds())),
 			ResourceVersion:     resourceVer,
 			AllowWatchBookmarks: true,
