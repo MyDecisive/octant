@@ -132,7 +132,7 @@ func (aci *ArgoCDIntegration) DeleteIntegration(ctx context.Context, integration
 	}
 
 	delete(secret.Data, integrationName)
-
+	// TODO: write install log entry for delete
 	return aci.secretStore.UpdateSecret(ctx, namespace, secret)
 }
 

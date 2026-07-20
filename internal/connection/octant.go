@@ -217,6 +217,8 @@ func (oc *OctantConnection) SaveConnection(
 		}
 	}
 
+	// TODO: Add install log entry here
+
 	return nil
 }
 
