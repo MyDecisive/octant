@@ -193,7 +193,7 @@ func TestPushArgoApp(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient(appConfig)
+			testClient := NewArgoCDClient(appConfig, nil)
 			testErr := testClient.PushArgoApp(t.Context(), zaptest.NewLogger(t), clientOpts, testCase.testApp)
 			testCase.validateResult(testErr)
 		})
