@@ -113,7 +113,7 @@ func TestTestConnection(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient(appConfig)
+			testClient := NewArgoCDClient(appConfig, nil)
 			success, testErr := testClient.TestConnection(t.Context(), zaptest.NewLogger(t), clientOpts)
 			testCase.validateResult(success, testErr)
 		})
