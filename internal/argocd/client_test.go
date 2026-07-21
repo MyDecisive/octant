@@ -250,7 +250,7 @@ func TestAppOperationState(t *testing.T) {
 			PlainText:  true, // needed for local testing
 		}
 
-		target := NewArgoCDClient(appConfig)
+		target := NewArgoCDClient(appConfig, nil)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
@@ -295,7 +295,7 @@ func TestAppOperationState(t *testing.T) {
 			PlainText:  true, // needed for local testing
 		}
 
-		target := NewArgoCDClient(appConfig)
+		target := NewArgoCDClient(appConfig, nil)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
@@ -316,7 +316,7 @@ func TestAppOperationState(t *testing.T) {
 	t.Run("err client", func(t *testing.T) {
 		t.Parallel()
 
-		target := NewArgoCDClient(appConfig)
+		target := NewArgoCDClient(appConfig, nil)
 
 		actual := make(chan InstallResult)
 		go target.AppOperationState(t.Context(), Input{
