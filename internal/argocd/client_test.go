@@ -543,7 +543,7 @@ func TestGetAppStatus(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient(appConfig)
+			testClient := NewArgoCDClient(appConfig, nil)
 			installStatus, resourceDetails, testErr := testClient.GetAppStatus(t.Context(), Input{
 				Logger:     zaptest.NewLogger(t),
 				ClientOpts: clientOpts,
