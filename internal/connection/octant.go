@@ -244,6 +244,8 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 		return runID, nil
 	}
 
+	// TODO: Add install log entry here
+
 	return "", nil
 }
 
@@ -281,6 +283,8 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 			return fmt.Errorf("remove validator app:%w", deleteErr)
 		}
 	}
+
+	// TODO: Put install log entry here
 
 	return nil
 }
