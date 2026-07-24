@@ -683,7 +683,7 @@ func TestDeleteArgoApp(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient(appConfig)
+			testClient := NewArgoCDClient(appConfig, nil)
 			testErr := testClient.DeleteArgoApp(t.Context(), Input{
 				Logger:     zaptest.NewLogger(t),
 				ClientOpts: clientOpts,
