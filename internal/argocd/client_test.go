@@ -777,7 +777,7 @@ func TestSyncApplication(t *testing.T) {
 				PlainText:  true, // needed for local testing
 			}
 
-			testClient := NewArgoCDClient(appConfig)
+			testClient := NewArgoCDClient(appConfig, nil)
 			testErr := testClient.SyncApplication(
 				t.Context(),
 				Input{
