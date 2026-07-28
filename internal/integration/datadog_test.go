@@ -2,6 +2,8 @@ package integration
 
 import (
 	"encoding/json"
+	octantv1 "github.com/mydecisive/octant/api/v1"
+	installlogmock "github.com/mydecisive/octant/internal/mock/installlog"
 	"testing"
 
 	"github.com/mydecisive/mdai-data-core/kube"
@@ -259,8 +261,20 @@ func TestSetIntegration(t *testing.T) {
 			Return(nil).
 			Once()
 
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateDestinationIntegration &&
+					event.Namespace == defaultNamespace &&
+					event.Ref == "team-b" &&
+					event.Result == octantv1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
+
 		datadogIntegration := &DataDogIntegration{
-			secretStore: secretStore,
+			secretStore:     secretStore,
+			installLogStore: installLogStore,
 			configuration: &config.Configuration{
 				CurrentNamespace: defaultNamespace,
 			},
