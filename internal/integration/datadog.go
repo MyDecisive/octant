@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	octantv1 "github.com/mydecisive/octant/api/v1"
+	"github.com/mydecisive/octant/internal/installlog"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/mydecisive/mdai-data-core/kube"
@@ -29,18 +32,21 @@ func (d DataDogIntegrationData) IsKnownDatadogTLD() bool {
 }
 
 type DataDogIntegration struct {
-	secretStore   kube.SecretStore
-	configuration *config.Configuration
+	secretStore     kube.SecretStore
+	installLogStore installlog.InstallLogStore
+	configuration   *config.Configuration
 }
 
 // NewDataDogIntegration returns a new instance of DataDogIntegration.
 func NewDataDogIntegration(
 	secretStore kube.SecretStore,
+	installLogStore installlog.InstallLogStore,
 	configuration *config.Configuration,
 ) *DataDogIntegration {
 	return &DataDogIntegration{
-		secretStore:   secretStore,
-		configuration: configuration,
+		secretStore:     secretStore,
+		installLogStore: installLogStore,
+		configuration:   configuration,
 	}
 }
 
@@ -125,7 +131,11 @@ func (ddi *DataDogIntegration) SetIntegration(
 		)
 	}
 	// Update the secret if it already exists
-	return updateSecretWithIntegration(ctx, ddi.secretStore, namespace, integrationName, secret, jsonData)
+	writeErr := updateSecretWithIntegration(ctx, ddi.secretStore, namespace, integrationName, secret, jsonData)
+
+	ddi.writeInstallLogEntry(ctx, integrationName, namespace, writeErr)
+
+	return writeErr
 }
 
 // DeleteIntegration removes a named integration from the "octant-integration" secret in the provided namespace.
@@ -149,4 +159,34 @@ func (ddi *DataDogIntegration) DeleteIntegration(ctx context.Context, integratio
 	delete(secret.Data, integrationName)
 
 	return ddi.secretStore.UpdateSecret(ctx, namespace, secret)
+}
+
+func (ddi *DataDogIntegration) writeInstallLogEntry(
+	ctx context.Context,
+	integrationName string,
+	namespace string,
+	createErr error,
+) {
+	result := octantv1.FailureOctantInstallEventResult
+	message := ""
+	if createErr == nil {
+		result = octantv1.SuccessOctantInstallEventResult
+	} else {
+		message = createErr.Error()
+	}
+	if writeLogEntryErr := ddi.installLogStore.AddInstallLogEvent(ctx, &octantv1.OctantInstallEvent{
+		Action:    octantv1.CreateDestinationIntegration,
+		Timestamp: octantv1.CreateOctantInstallEventTimestamp(),
+		Result:    result,
+		Namespace: namespace,
+		Ref:       integrationName,
+		Subtype:   string(octantv1.ArgoCDSubtype),
+		Message:   message,
+	}); writeLogEntryErr != nil {
+		zap.L().Error(
+			"INSTALL LOG ERROR: failed to write install log event",
+			zap.Error(writeLogEntryErr),
+			zap.String("actionType", string(octantv1.CreateDeployIntegration)),
+		)
+	}
 }
