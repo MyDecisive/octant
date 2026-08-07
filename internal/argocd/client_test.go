@@ -855,7 +855,7 @@ func TestWaitForAppOperation(t *testing.T) {
 
 		clientOpts := &apiclient.ClientOptions{ServerAddr: lis.Addr().String(), Insecure: true, PlainText: true}
 
-		err = NewArgoCDClient(appConfig).WaitForAppOperation(t.Context(), Input{
+		err = NewArgoCDClient(appConfig, nil).WaitForAppOperation(t.Context(), Input{
 			Logger:     zaptest.NewLogger(t),
 			ClientOpts: clientOpts,
 			AppName:    appName,
