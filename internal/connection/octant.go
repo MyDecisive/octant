@@ -22,6 +22,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+const DatadogIntegrationType = "datadog"
+
 type OctantConnectionDestination struct {
 	DestinationType string `json:"type"`
 	IntegrationName string `json:"integrationName"`
@@ -200,7 +202,7 @@ func (oc *OctantConnection) SaveConnection(
 				return manifestdata.Destination{
 					Type:            manifestdata.DATADOG, // TODO: Default to datadog cause we only allow datadog for now
 					IntegrationName: item.IntegrationName,
-				}, item.DestinationType == "datadog"
+				}, item.DestinationType == DatadogIntegrationType
 			})
 		if len(destination) < 1 {
 			return errors.New("unrecognized destination")

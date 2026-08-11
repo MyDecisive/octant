@@ -365,7 +365,7 @@ func TestGetAppStatus(t *testing.T) {
 		Nodes: []v1alpha1.ResourceNode{
 			{
 				ResourceRef: v1alpha1.ResourceRef{
-					Kind: "Pod",
+					Kind: podKind,
 					Name: "coolPod",
 				},
 				Health: &v1alpha1.HealthStatus{
@@ -375,7 +375,7 @@ func TestGetAppStatus(t *testing.T) {
 			},
 			{
 				ResourceRef: v1alpha1.ResourceRef{
-					Kind: "Pod",
+					Kind: podKind,
 					Name: "otherCoolPod",
 				},
 				Health: &v1alpha1.HealthStatus{

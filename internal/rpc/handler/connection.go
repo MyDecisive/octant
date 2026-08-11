@@ -383,7 +383,7 @@ func extractDestinationsFromRequest(
 	for _, d := range request.Msg.GetConnectionData().GetDestinations() {
 		destType := "unknown"
 		if d.GetType() == octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG {
-			destType = "datadog"
+			destType = connection.DatadogIntegrationType
 		}
 		destinations = append(destinations, connection.OctantConnectionDestination{
 			DestinationType: destType,
@@ -455,7 +455,7 @@ func convertDestinationsToProtoDestionations(
 	for _, d := range destinations {
 		var destType octantv1alpha.IntegrationType
 		switch d.DestinationType {
-		case "datadog":
+		case connection.DatadogIntegrationType:
 			destType = octantv1alpha.IntegrationType_INTEGRATION_TYPE_DATADOG
 		default:
 			destType = 0 // Default/unspecified
