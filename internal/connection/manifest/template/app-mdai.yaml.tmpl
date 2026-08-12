@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mdai
+  name: "mdai"
   namespace: "{{ .ArgoCDNamespace }}"
   labels:
-    app: mdai
+    app: "mdai"
 spec:
   project: default
   sources:
