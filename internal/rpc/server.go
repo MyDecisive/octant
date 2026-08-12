@@ -18,6 +18,7 @@ import (
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"k8s.io/client-go/kubernetes"
 )
 
 const maxAge = 7200 // 2 hours in seconds
@@ -25,6 +26,7 @@ const maxAge = 7200 // 2 hours in seconds
 // Server that will serve internal RPC endpoint handlers.
 type Server struct {
 	configuration *config.Configuration
+	k8sClient     kubernetes.Interface
 
 	argocdHandler          *rpchandler.ArgoCDHandler
 	installHandler         *rpchandler.InstallHandler
@@ -39,6 +41,7 @@ type Server struct {
 // NewServer create a new Server.
 func NewServer( //nolint:revive // yes, there are a lot of args...
 	configuration *config.Configuration,
+	k8sClient kubernetes.Interface,
 	argocdHandler *rpchandler.ArgoCDHandler,
 	installHandler *rpchandler.InstallHandler,
 	datadogHandler *rpchandler.DatadogHandler,
@@ -50,6 +53,7 @@ func NewServer( //nolint:revive // yes, there are a lot of args...
 ) *Server {
 	return &Server{
 		configuration:          configuration,
+		k8sClient:              k8sClient,
 		argocdHandler:          argocdHandler,
 		installHandler:         installHandler,
 		datadogHandler:         datadogHandler,
@@ -111,7 +115,8 @@ func (Server) getServices() []string {
 }
 
 // getInterceptors returns list of interceptors to be applied to all services as an option.
-func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
+func (s Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
+	authInterceptor := NewTokenReviewInterceptor(s.k8sClient)
 	validateInterceptor := validate.NewInterceptor()
 	// https://connectrpc.com/docs/go/observability#reducing-metrics-and-tracing-cardinality
 	otelInterceptor, err := otelconnect.NewInterceptor(
@@ -121,7 +126,7 @@ func (Server) getInterceptors() (connect.Option, error) { // nolint: ireturn
 		return nil, fmt.Errorf("create otelconnect interceptor: %w", err)
 	}
 
-	return connect.WithInterceptors(validateInterceptor, otelInterceptor), nil
+	return connect.WithInterceptors(authInterceptor, validateInterceptor, otelInterceptor), nil
 }
 
 // withCORS adds CORS support to a Connect HTTP handler.

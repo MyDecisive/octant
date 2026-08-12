@@ -7,6 +7,17 @@ serviceAccount:
     - "mdai-datadog-integration"
     - "mdai-argocd-integration"
 
+auth:
+  # ServiceAccount that RPC callers mint tokens for (e.g. `kubectl create token`)
+  # to authenticate to the octant API. Distinct from serviceAccount.name, which
+  # is the identity octant itself runs as.
+  clientServiceAccountName: "octant-client"
+  # Subjects allowed to mint tokens for the client ServiceAccount above.
+  tokenIssuerSubjects:
+    - kind: Group
+      name: octant-users
+      apiGroup: rbac.authorization.k8s.io
+
 deployment:
   name: octant
   replicas: 1
