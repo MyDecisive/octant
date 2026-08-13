@@ -70,7 +70,7 @@ func (dh *DatadogHandler) GetDatadogIntegrationByName(
 	}
 	return connect.NewResponse[octantv1alpha.GetDatadogIntegrationByNameResponse](
 		&octantv1alpha.GetDatadogIntegrationByNameResponse{
-			Url: integrationData.DDUrl,
+			Url: integrationData.SiteHost,
 		},
 	), nil
 }
@@ -87,8 +87,8 @@ func (dh *DatadogHandler) SaveDatadogIntegration(
 		ctx,
 		request.Msg.GetName(),
 		integration.DataDogIntegrationData{
-			APIKey: request.Msg.GetApiKey(),
-			DDUrl:  request.Msg.GetUrl(),
+			APIKey:   request.Msg.GetApiKey(),
+			SiteHost: request.Msg.GetSiteHost(),
 		}); err != nil {
 		logger.Error("Failed to save integration", zap.Error(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.New("save integration"))

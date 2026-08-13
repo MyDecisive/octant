@@ -42,7 +42,7 @@ func TestSettingManager_SetDatadogURL(t *testing.T) {
 		actualManager, ok := actual.(*SettingManager)
 		require.True(t, ok)
 
-		assert.Equal(t, expected, actualManager.datadog.DDUrl)
+		assert.Equal(t, expected, actualManager.datadog.SiteHost)
 		assert.True(t, actualManager.shouldUpdateDatadog)
 		assert.False(t, actualManager.shouldUpdateConnection)
 	})
@@ -51,12 +51,12 @@ func TestSettingManager_SetDatadogURL(t *testing.T) {
 		t.Parallel()
 
 		target := newTestManager(t, nil, nil, nil)
-		expected := target.datadog.DDUrl
-		actual := target.SetDatadogURL(target.datadog.DDUrl)
+		expected := target.datadog.SiteHost
+		actual := target.SetDatadogURL(target.datadog.SiteHost)
 		actualManager, ok := actual.(*SettingManager)
 		require.True(t, ok)
 
-		assert.Equal(t, expected, actualManager.datadog.DDUrl)
+		assert.Equal(t, expected, actualManager.datadog.SiteHost)
 		assert.False(t, actualManager.shouldUpdateDatadog)
 		assert.False(t, actualManager.shouldUpdateConnection)
 	})
@@ -65,12 +65,12 @@ func TestSettingManager_SetDatadogURL(t *testing.T) {
 		t.Parallel()
 
 		target := newTestManager(t, nil, nil, nil)
-		expected := target.datadog.DDUrl
+		expected := target.datadog.SiteHost
 		actual := target.SetDatadogURL("")
 		actualManager, ok := actual.(*SettingManager)
 		require.True(t, ok)
 
-		assert.Equal(t, expected, actualManager.datadog.DDUrl)
+		assert.Equal(t, expected, actualManager.datadog.SiteHost)
 		assert.False(t, actualManager.shouldUpdateDatadog)
 		assert.False(t, actualManager.shouldUpdateConnection)
 	})
@@ -443,8 +443,8 @@ func newTestManager(
 			},
 		},
 		datadog: &integration.DataDogIntegrationData{
-			DDUrl:  faker.URL(),
-			APIKey: faker.Word(),
+			SiteHost: faker.URL(),
+			APIKey:   faker.Word(),
 		},
 		argo: &integration.ArgoCDIntegrationData{
 			APIUrl:       faker.URL(),

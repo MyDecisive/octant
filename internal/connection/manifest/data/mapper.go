@@ -90,8 +90,8 @@ func (dm *DataMapper) ConnectionTemplateData(
 	input ConnectionInput,
 ) (*ConnectionTemplateData, error) {
 	datadog := &integration.DataDogIntegrationData{ // nolint:gosec // no, these are not secrets lol
-		APIKey: "<YOUR_API_KEY>",
-		DDUrl:  "<YOUR_DD_URL>",
+		APIKey:   "<YOUR_API_KEY>",
+		SiteHost: "<YOUR_DD_SITE_HOST>",
 	}
 	for _, destination := range input.Destinations {
 		switch destination.Type {

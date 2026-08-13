@@ -102,8 +102,8 @@ func TestDatadogHandler_GetDatadogIntegrationByName(t *testing.T) {
 	t.Parallel()
 
 	ddIntegrationData := &integration.DataDogIntegrationData{
-		DDUrl:  "https://datadog.com",
-		APIKey: "abc123",
+		SiteHost: "datadog.com",
+		APIKey:   "abc123",
 	}
 
 	t.Run("success", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestDatadogHandler_GetDatadogIntegrationByName(t *testing.T) {
 			Name: "coolIntegration",
 		}))
 		require.NoError(t, err)
-		assert.Equal(t, "https://datadog.com", actual.Msg.GetUrl())
+		assert.Equal(t, "datadog.com", actual.Msg.GetUrl())
 	})
 
 	t.Run("err", func(t *testing.T) {

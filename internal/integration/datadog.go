@@ -14,14 +14,14 @@ import (
 const datadogSecretName = "mdai-datadog-integration" // nolint: gosec
 
 type DataDogIntegrationData struct {
-	APIKey string `json:"apiKey"`
-	DDUrl  string `json:"url"`
+	APIKey   string `json:"apiKey"`
+	SiteHost string `json:"siteHost"`
 }
 
 func (d DataDogIntegrationData) IsKnownDatadogTLD() bool {
 	knownDatadogSites := []string{"datadoghq.com", "datadoghq.eu", "ddog-gov.com"}
 	for _, site := range knownDatadogSites {
-		if strings.Contains(d.DDUrl, site) {
+		if strings.Contains(d.SiteHost, site) {
 			return true
 		}
 	}

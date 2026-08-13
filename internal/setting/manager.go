@@ -81,9 +81,9 @@ func (sm *SettingManager) ID() string {
 // the datadog integration with.
 // This method will mark the datadog integration as need to be updated.
 func (sm *SettingManager) SetDatadogURL(url string) Manager { //nolint:ireturn
-	if url != "" && url != sm.datadog.DDUrl {
+	if url != "" && url != sm.datadog.SiteHost {
 		sm.logger = sm.logger.With(zap.String("newDatadogURL", url))
-		sm.datadog.DDUrl = url
+		sm.datadog.SiteHost = url
 		sm.shouldUpdateDatadog = true
 	}
 	return sm

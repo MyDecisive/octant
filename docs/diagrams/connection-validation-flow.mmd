@@ -1,0 +1,15 @@
+flowchart LR
+  user["User"]
+  octant["Octant validation screen"]
+  source["Datadog clients / agents"]
+  envoy["SmartHub Envoy / ingress"]
+  smarthub["SmartHub"]
+  vendor["Datadog ingest API"]
+  fidelity["Data Fidelity validator"]
+
+  user -->|"run and review connection test"| octant
+  source -->|"send logs / traces"| envoy
+  envoy -->|"forward telemetry"| smarthub
+  smarthub -->|"export telemetry"| vendor
+  envoy -->|"compare required Datadog fields and values"| fidelity
+  fidelity -->|"policy pass/fail result"| octant

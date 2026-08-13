@@ -1,0 +1,10 @@
+apiVersion: octant.mydecisive.ai/v1
+kind: OctantInstallLog
+metadata:
+  name: octant-install-log
+  namespace: octant
+spec:
+  events:
+    - action: "install-mdai-hub"
+      result: "SUCCESS"
+      timestamp: "2026-06-01T15:00:00Z"

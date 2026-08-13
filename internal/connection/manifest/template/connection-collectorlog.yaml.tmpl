@@ -42,7 +42,7 @@ spec:
       valueFrom:
         secretKeyRef:
           name: {{ .Name }}-integration-secret
-          key: site-url
+          key: site-host
     {{- end }}
   envFrom:
   - configMapRef:
