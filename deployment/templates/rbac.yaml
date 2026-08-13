@@ -57,3 +57,49 @@ roleRef:
   kind: Role
   name: {{ .Values.serviceAccount.name }}-configmap-informer
   apiGroup: ""
+---
+# ServiceAccount that RPC callers mint bearer tokens for (via `kubectl create
+# token`) to authenticate to the octant API. octant itself never uses this
+# identity directly - it only validates tokens minted against it.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.auth.clientServiceAccountName }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.auth.clientServiceAccountName }}-token-issuer
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "serviceaccounts/token" ]
+    resourceNames: [ "{{ .Values.auth.clientServiceAccountName }}" ]
+    verbs: [ "create" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.auth.clientServiceAccountName }}-token-issuer-binding
+  namespace: {{ .Release.Namespace }}
+subjects: {{ toYaml .Values.auth.tokenIssuerSubjects | nindent 2 }}
+roleRef:
+  kind: Role
+  name: {{ .Values.auth.clientServiceAccountName }}-token-issuer
+  apiGroup: rbac.authorization.k8s.io
+---
+# Lets octant's own ServiceAccount call the TokenReview API to authenticate
+# bearer tokens presented by RPC callers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.serviceAccount.name }}-auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+  apiGroup: rbac.authorization.k8s.io
