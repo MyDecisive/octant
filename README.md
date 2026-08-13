@@ -1,15 +1,15 @@
 [![Chores](https://github.com/mydecisive/octant/actions/workflows/chores.yml/badge.svg)](https://github.com/mydecisive/octant/actions/workflows/chores.yml)
-[![codecov](https://codecov.io/gh/MyDecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/MyDecisive/octant)
+[![codecov](https://codecov.io/gh/mydecisive/octant/graph/badge.svg?token=UPHRBSXOON)](https://codecov.io/gh/mydecisive/octant)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/octant)](https://artifacthub.io/packages/search?repo=octant)
 
 
 # Welcome to Octant
 
-<img src="https://cdn.mydecisive.ai/media/latest/1783606922852-octant-logo.png" alt="MyDecisive Logo" width="540" />
+<img src="https://cdn.mydecisive.ai/media/latest/1783606922852-octant-logo.png" alt="Octant logo" width="540" />
 
-Learn more at about [Octant](https://www.mydecisive.ai/octant)
+Learn more about [Octant](https://www.mydecisive.ai/octant)
 
-## ***AI DevOps that optimizes your system before incidents occur.***
+## AI DevOps that optimizes your system before incidents occur.
 
 Before you begin, read the [Octant Primer](docs/primer.md).
 
