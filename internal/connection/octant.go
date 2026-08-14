@@ -11,9 +11,11 @@ import (
 
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
+	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/installlog"
 	"github.com/mydecisive/octant/internal/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/samber/lo"
@@ -42,6 +44,7 @@ type OctantConnection struct {
 	connectionMetrics metrics.ConnectionStatus
 	configuration     *config.Configuration
 	manifestManager   manifest.Manager
+	installLogStore   installlog.InstallLogStore
 }
 
 // NewOctantConnection creates and returns a new OctantConnection.
@@ -50,12 +53,14 @@ func NewOctantConnection(
 	configuration *config.Configuration,
 	connectionMetrics metrics.ConnectionStatus,
 	manifestManager manifest.Manager,
+	installLogStore installlog.InstallLogStore,
 ) *OctantConnection {
 	return &OctantConnection{
 		configMapStore:    configMapStore,
 		configuration:     configuration,
 		connectionMetrics: connectionMetrics,
 		manifestManager:   manifestManager,
+		installLogStore:   installLogStore,
 	}
 }
 
@@ -217,7 +222,7 @@ func (oc *OctantConnection) SaveConnection(
 		}
 	}
 
-	// TODO: Add install log entry here
+	oc.writeInstallLogEntry(ctx, input.ConnectionName, input.Namespace, octantv1.CreateConnection, nil)
 
 	return nil
 }
@@ -244,7 +249,7 @@ func (oc *OctantConnection) PutConnectionValidatorRun(ctx context.Context, input
 		return runID, nil
 	}
 
-	// TODO: Add install log entry here
+	oc.writeInstallLogEntry(ctx, input.ConnectionName, input.Namespace, octantv1.CreateValidatorRun, nil)
 
 	return "", nil
 }
@@ -284,9 +289,38 @@ func (oc *OctantConnection) DeleteConnectionValidator(ctx context.Context, input
 		}
 	}
 
-	// TODO: Put install log entry here
-
 	return nil
+}
+
+func (oc *OctantConnection) writeInstallLogEntry(
+	ctx context.Context,
+	connectionName string,
+	namespace string,
+	action octantv1.OctantInstallEventAction,
+	createErr error,
+) {
+	result := octantv1.FailureOctantInstallEventResult
+	message := ""
+	if createErr == nil {
+		result = octantv1.SuccessOctantInstallEventResult
+	} else {
+		message = createErr.Error()
+	}
+	if writeLogEntryErr := oc.installLogStore.AddInstallLogEvent(ctx, &octantv1.OctantInstallEvent{
+		Action:    action,
+		Timestamp: octantv1.CreateOctantInstallEventTimestamp(),
+		Result:    result,
+		Namespace: namespace,
+		Ref:       connectionName,
+		Subtype:   string(octantv1.ArgoCDSubtype),
+		Message:   message,
+	}); writeLogEntryErr != nil {
+		zap.L().Error(
+			"INSTALL LOG ERROR: failed to write install log event",
+			zap.Error(writeLogEntryErr),
+			zap.String("actionType", string(action)),
+		)
+	}
 }
 
 // createOrUpdate creates a connection if it doesn't already exist;

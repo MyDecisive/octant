@@ -8,9 +8,11 @@ import (
 	octantv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/octant/v1alpha"
 	"github.com/mydecisive/mdai-data-core/kube"
 	kubemock "github.com/mydecisive/mdai-data-core/mock/kube"
+	octantv1 "github.com/mydecisive/octant/api/v1"
 	"github.com/mydecisive/octant/internal/config"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
 	manifestmock "github.com/mydecisive/octant/internal/mock/manifest"
+	installlogmock "github.com/mydecisive/octant/internal/mock/installlog"
 	metricsmock "github.com/mydecisive/octant/internal/mock/metrics"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"github.com/stretchr/testify/assert"
@@ -84,7 +86,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -103,7 +105,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "team-b",
 			Namespace:      defaultNamespace,
@@ -134,7 +136,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -153,7 +155,7 @@ func TestGetConnectionByName(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connectionData, getErr := octantConnection.GetConnectionByName(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -235,7 +237,18 @@ func TestSaveConnection(t *testing.T) {
 				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
 		})).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateConnection &&
+					event.Namespace == input.Namespace &&
+					event.Ref == input.ConnectionName &&
+					event.Result == octantv1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, installLogStore)
 		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, input))
 	})
 
@@ -267,7 +280,18 @@ func TestSaveConnection(t *testing.T) {
 				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
 		})).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateConnection &&
+					event.Namespace == input.Namespace &&
+					event.Ref == input.ConnectionName &&
+					event.Result == octantv1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, installLogStore)
 		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, input))
 	})
 
@@ -277,7 +301,18 @@ func TestSaveConnection(t *testing.T) {
 		mockCmStore := kubemock.NewMockConfigMapStore(t)
 		mockManager := manifestmock.NewMockManager(t)
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateConnection &&
+					event.Namespace == defaultNamespace &&
+					event.Ref == "argo-test" &&
+					event.Result == octantv1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, installLogStore)
 		require.NoError(t, octantConnection.SaveConnection(t.Context(), validConnection, ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -333,7 +368,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-invalid",
 			Namespace:      defaultNamespace,
@@ -350,7 +385,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-invalid",
 			Namespace:      defaultNamespace,
@@ -380,7 +415,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		require.ErrorContains(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -421,7 +456,7 @@ func TestDeleteConnection(t *testing.T) {
 			Return(nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -456,7 +491,7 @@ func TestDeleteConnection(t *testing.T) {
 				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
 		}), []manifestdata.App{manifestdata.CONNECTION, manifestdata.VALIDATOR}).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, nil)
 		require.NoError(t, octantConnection.DeleteConnection(t.Context(), input))
 	})
 }
@@ -508,7 +543,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -527,7 +562,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -558,7 +593,7 @@ func TestGetConnectionStatus(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, mockConnectionStatus, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, mockConnectionStatus, nil, nil)
 		status, getErr := octantConnection.GetConnectionStatus(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -614,7 +649,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -633,7 +668,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -669,7 +704,18 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 			Return(theCM, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		installLogStore := installlogmock.NewMockInstallLogStore(t)
+		installLogStore.EXPECT().AddInstallLogEvent(
+			mock.Anything,
+			mock.MatchedBy(func(event *octantv1.OctantInstallEvent) bool {
+				return event.Action == octantv1.CreateValidatorRun &&
+					event.Namespace == defaultNamespace &&
+					event.Ref == "argo-test" &&
+					event.Result == octantv1.SuccessOctantInstallEventResult
+			}),
+		).Return(nil).Once()
+
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, installLogStore)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -700,7 +746,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 				in.ConnectionName == input.ConnectionName && in.Namespace == input.Namespace
 		})).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, nil)
 		runID, getErr := octantConnection.PutConnectionValidatorRun(t.Context(), input)
 		require.NoError(t, getErr)
 		require.NotEmpty(t, runID) // non-empty validator runID returned
@@ -752,7 +798,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -770,7 +816,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test-yolo",
 			Namespace:      defaultNamespace,
@@ -801,7 +847,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(badConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -837,7 +883,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 			Return(theCM, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), ConnectionCRUDInput{
 			ConnectionName: "argo-test",
 			Namespace:      defaultNamespace,
@@ -867,7 +913,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 				in.DeploymentIntegrationName == validConnection.Deployment.IntegrationName
 		}), []manifestdata.App{manifestdata.VALIDATOR}).Return(nil).Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, mockManager, nil)
 
 		getErr := octantConnection.DeleteConnectionValidator(t.Context(), input)
 		require.NoError(t, getErr)
@@ -920,7 +966,7 @@ func TestGetConnections(t *testing.T) {
 			Return(nil, notFoundError).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})
@@ -937,7 +983,7 @@ func TestGetConnections(t *testing.T) {
 			Return(theConfigmap, nil).
 			Once()
 
-		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil)
+		octantConnection := NewOctantConnection(mockCmStore, testConfig, nil, nil, nil)
 		connections, getErr := octantConnection.GetConnections(t.Context(), ConnectionCRUDInput{
 			Logger: zaptest.NewLogger(t),
 		})

@@ -90,6 +90,9 @@ const (
 	// CreateConnection is the action of creating a connection and all underlying
 	// infrastructure.
 	CreateConnection OctantInstallEventAction = "CREATE_CONNECTION"
+	// CreateValidatorRun is the action of creating a telemetry fidelity validator run
+	// for a connection.
+	CreateValidatorRun OctantInstallEventAction = "CREATE_VALIDATOR_RUN"
 	// VerifiedClientsConnected is the action of completing the envoy connected clients
 	// validation loop.
 	VerifiedClientsConnected OctantInstallEventAction = "VERIFIED_CLIENTS_CONNECTED"
