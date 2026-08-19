@@ -235,6 +235,66 @@ func TestDataMapper_ConnectionTemplateData(t *testing.T) {
 		assert.Nil(t, actual)
 		require.ErrorIs(t, err, ErrUnknown)
 	})
+
+	t.Run("success multiple datadog destinations", func(t *testing.T) {
+		t.Parallel()
+
+		dd1 := integration.DataDogIntegrationData{
+			APIKey:   faker.Word(),
+			SiteHost: faker.Word(),
+		}
+		dd2 := integration.DataDogIntegrationData{
+			APIKey:   faker.Word(),
+			SiteHost: faker.Word(),
+		}
+
+		input := ConnectionInput{
+			ConnectionName:            faker.Word(),
+			DeploymentIntegrationName: faker.Word(),
+			Namespace:                 faker.Word(),
+			TelemetryTypes:            []telemetry.MLT{telemetry.Logs},
+			Destinations: []Destination{
+				{Type: DATADOG, IntegrationName: faker.Word()},
+				{Type: DATADOG, IntegrationName: faker.Word()},
+			},
+		}
+
+		mockDatadog := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadog.EXPECT().GetIntegrationByName(mock.Anything, input.Destinations[0].IntegrationName).Return(&dd1, nil).Once()
+		mockDatadog.EXPECT().GetIntegrationByName(mock.Anything, input.Destinations[1].IntegrationName).Return(&dd2, nil).Once()
+
+		target := NewDataMapper(conf, mockDatadog)
+
+		actual, err := target.ConnectionTemplateData(t.Context(), input)
+		require.NoError(t, err)
+
+		// the last datadog destination wins via reassignment
+		assert.Equal(t, &dd2, actual.DatadogIntegrationData)
+	})
+
+	t.Run("err unknown destination after datadog", func(t *testing.T) {
+		t.Parallel()
+
+		input := ConnectionInput{
+			ConnectionName:            faker.Word(),
+			DeploymentIntegrationName: faker.Word(),
+			Namespace:                 faker.Word(),
+			TelemetryTypes:            []telemetry.MLT{telemetry.Logs},
+			Destinations: []Destination{
+				{Type: DATADOG, IntegrationName: faker.Word()},
+				{Type: DestinationType(-1), IntegrationName: faker.Word()},
+			},
+		}
+
+		mockDatadog := integrationmock.NewMockIntegration[integration.DataDogIntegrationData](t)
+		mockDatadog.EXPECT().GetIntegrationByName(mock.Anything, input.Destinations[0].IntegrationName).Return(&datadog, nil).Once()
+
+		target := NewDataMapper(conf, mockDatadog)
+
+		actual, err := target.ConnectionTemplateData(t.Context(), input)
+		assert.Nil(t, actual)
+		require.ErrorIs(t, err, ErrUnknown)
+	})
 }
 
 func TestDataMapper_ValidatorTemplateData(t *testing.T) {
