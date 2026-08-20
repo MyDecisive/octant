@@ -43,7 +43,7 @@ func TestGetConnectionByName(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -52,7 +52,7 @@ func TestGetConnectionByName(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -168,7 +168,7 @@ func TestSaveConnection(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -177,7 +177,7 @@ func TestSaveConnection(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -292,7 +292,7 @@ func TestDeleteConnection(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -301,7 +301,7 @@ func TestDeleteConnection(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -465,7 +465,7 @@ func TestGetConnectionStatus(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -474,7 +474,7 @@ func TestGetConnectionStatus(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -573,7 +573,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -582,7 +582,7 @@ func TestPutConnectionValidatorRun(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -711,7 +711,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -720,7 +720,7 @@ func TestDeleteConnectionValidator(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},
@@ -878,7 +878,7 @@ func TestGetConnections(t *testing.T) {
 	t.Parallel()
 
 	validConnection := OctantConnectionData{
-		SourceType:     "datadog",
+		SourceType:     DatadogIntegrationType,
 		TelemetryTypes: telemetryTypes,
 		Deployment: &Deployment{
 			Type:            ArgoSideloadDeploymentType,
@@ -887,7 +887,7 @@ func TestGetConnections(t *testing.T) {
 		MdaiNamespace: defaultNamespace,
 		Destinations: []OctantConnectionDestination{
 			{
-				DestinationType: "datadog",
+				DestinationType: DatadogIntegrationType,
 				IntegrationName: "argo-test",
 			},
 		},

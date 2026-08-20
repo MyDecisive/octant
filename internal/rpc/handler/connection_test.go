@@ -257,7 +257,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 				IntegrationName: "cool-integration",
 			},
 			Destinations: []connection.OctantConnectionDestination{
-				{DestinationType: "datadog", IntegrationName: "cool-integration"},
+				{DestinationType: connection.DatadogIntegrationType, IntegrationName: "cool-integration"},
 			},
 			MdaiNamespace: "mdai",
 		}

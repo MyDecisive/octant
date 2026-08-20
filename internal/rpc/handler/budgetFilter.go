@@ -3,6 +3,7 @@ package rpchandler
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"connectrpc.com/connect"
 	budgetv1alpha "github.com/MyDecisive/octant-contracts/go/pkg/budget/v1alpha"
@@ -10,7 +11,6 @@ import (
 	budgetfilter "github.com/mydecisive/octant/internal/budget/filter"
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/telemetry"
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
@@ -168,5 +168,5 @@ func (bfh *BudgetFilterHandler) isAllowed(
 		mltType = telemetry.Traces
 	}
 
-	return lo.Contains(con.TelemetryTypes, mltType), nil
+	return slices.Contains(con.TelemetryTypes, mltType), nil
 }

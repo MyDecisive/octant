@@ -1,6 +1,8 @@
 module github.com/mydecisive/octant
 
-go 1.25.9
+go 1.26.6
+
+godebug default=go1.26
 
 require (
 	connectrpc.com/connect v1.19.1

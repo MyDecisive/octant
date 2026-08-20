@@ -22,6 +22,7 @@ import (
 
 const (
 	clientRetryMax = 3
+	podKind        = "Pod"
 )
 
 type Input struct {
@@ -127,7 +128,7 @@ func (*Client) TestConnection(
 
 	// to validate the account token, we'll query for a list of applications, which requires a valid account token.
 	_, err = applicationClient.List(ctx, &application.ApplicationQuery{
-		Name: lo.ToPtr("mdai"),
+		Name: new("mdai"),
 	})
 	if err != nil {
 		if rpcStatus, isRPCError := status.FromError(err); isRPCError && rpcStatus.Code() == codes.Unauthenticated {
@@ -165,7 +166,7 @@ func (*Client) PushArgoApp(
 
 	if _, err = applicationClient.Create(ctx, &application.ApplicationCreateRequest{
 		Application: &argoApp,
-		Upsert:      lo.ToPtr(true),
+		Upsert:      new(true),
 	}); err != nil {
 		logger.Error("creating argo app", zap.Error(err))
 		return err
@@ -193,10 +194,10 @@ func (c *Client) DeleteArgoApp(
 		}
 	}()
 	if _, err = applicationClient.Delete(ctx, &application.ApplicationDeleteRequest{
-		Name:              lo.ToPtr(input.AppName),
-		AppNamespace:      lo.ToPtr(c.appConfig.Install.ArgoCDNamespace),
-		Cascade:           lo.ToPtr(true),
-		PropagationPolicy: lo.ToPtr("foreground"),
+		Name:              new(input.AppName),
+		AppNamespace:      new(c.appConfig.Install.ArgoCDNamespace),
+		Cascade:           new(true),
+		PropagationPolicy: new("foreground"),
 	}); err != nil {
 		input.Logger.Error("deleting argo app", zap.Error(err))
 		return err
@@ -227,10 +228,10 @@ func (*Client) SyncApplication(
 	}()
 
 	if _, err = applicationClient.Sync(ctx, &application.ApplicationSyncRequest{
-		Name:     lo.ToPtr(input.AppName),
-		Revision: lo.ToPtr("HEAD"),
-		Prune:    lo.ToPtr(prune),
-		DryRun:   lo.ToPtr(false),
+		Name:     new(input.AppName),
+		Revision: new("HEAD"),
+		Prune:    new(prune),
+		DryRun:   new(false),
 		Strategy: &argoapp.SyncStrategy{
 			Apply: &argoapp.SyncStrategyApply{
 				Force: true,
@@ -340,7 +341,7 @@ func (*Client) GetAppStatus(
 	error,
 ) {
 	input.Logger = input.Logger.With(zap.String("appName", input.AppName))
-	name := lo.ToPtr(input.AppName)
+	name := new(input.AppName)
 	argoClient, err := apiclient.NewClient(input.ClientOpts)
 	if err != nil {
 		input.Logger.Error("creating argo api client", zap.Error(err))
@@ -389,7 +390,7 @@ func (*Client) GetAppStatus(
 	}
 
 	pods := lo.Filter(tree.Nodes, func(item argoapp.ResourceNode, index int) bool {
-		return item.Kind == "Pod"
+		return item.Kind == podKind
 	})
 	if len(pods) == 0 {
 		input.Logger.Debug("no pods found (yet)")
