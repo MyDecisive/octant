@@ -103,13 +103,6 @@ func CreateClientOpts(env config.Environment, clusterURL, authToken string) *api
 	}
 }
 
-func (c *Client) appNamespace(input Input) string {
-	if input.AppNamespace != "" {
-		return input.AppNamespace
-	}
-	return c.appConfig.Install.ArgoCDNamespace
-}
-
 // TestConnection checks the provided clientOpts are valid argo cd API credentials.
 func (*Client) TestConnection(
 	ctx context.Context,
@@ -253,49 +246,6 @@ func (c *Client) SyncApplication(
 	return nil
 }
 
-// pollAppOperation polls the app's operation state until done is satisfied or the timeout elapses.
-// onState, when non-nil, observes the state on each poll for callers that stream progress.
-func (c *Client) pollAppOperation(
-	ctx context.Context,
-	input Input,
-	interval, timeout time.Duration,
-	onState func(*argoapp.OperationState),
-	done func(*argoapp.OperationState) bool,
-) error {
-	argoClient, err := apiclient.NewClient(input.ClientOpts)
-	if err != nil {
-		input.Logger.Error("creating argo api client", zap.Error(err))
-		return err
-	}
-	closer, applicationClient, err := argoClient.NewApplicationClient()
-	if err != nil {
-		input.Logger.Error("creating argo application client", zap.Error(err))
-		return err
-	}
-	defer func() {
-		if err = closer.Close(); err != nil {
-			input.Logger.Warn("closing argo api client", zap.Error(err))
-		}
-	}()
-
-	return wait.PollUntilContextTimeout(ctx, interval, timeout, true,
-		func(ctx context.Context) (bool, error) {
-			argoApp, getErr := applicationClient.Get(ctx, &application.ApplicationQuery{
-				Name:         lo.ToPtr(input.AppName),
-				AppNamespace: lo.ToPtr(c.appNamespace(input)),
-			})
-			if getErr != nil {
-				input.Logger.Error("getting argo application", zap.Error(getErr))
-				return false, getErr
-			}
-			opState := argoApp.Status.OperationState
-			if onState != nil {
-				onState(opState)
-			}
-			return done(opState), nil
-		})
-}
-
 func (c *Client) AppOperationState(
 	ctx context.Context,
 	input Input,
@@ -419,6 +369,56 @@ func (c *Client) GetAppStatus(
 	}
 
 	return healthStatusCodeToAppResourceHealth(appHealth), resourceDetails, nil
+}
+
+func (c *Client) appNamespace(input Input) string {
+	if input.AppNamespace != "" {
+		return input.AppNamespace
+	}
+	return c.appConfig.Install.ArgoCDNamespace
+}
+
+// pollAppOperation polls the app's operation state until done is satisfied or the timeout elapses.
+// onState, when non-nil, observes the state on each poll for callers that stream progress.
+func (c *Client) pollAppOperation(
+	ctx context.Context,
+	input Input,
+	interval, timeout time.Duration,
+	onState func(*argoapp.OperationState),
+	done func(*argoapp.OperationState) bool,
+) error {
+	argoClient, err := apiclient.NewClient(input.ClientOpts)
+	if err != nil {
+		input.Logger.Error("creating argo api client", zap.Error(err))
+		return err
+	}
+	closer, applicationClient, err := argoClient.NewApplicationClient()
+	if err != nil {
+		input.Logger.Error("creating argo application client", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err = closer.Close(); err != nil {
+			input.Logger.Warn("closing argo api client", zap.Error(err))
+		}
+	}()
+
+	return wait.PollUntilContextTimeout(ctx, interval, timeout, true,
+		func(ctx context.Context) (bool, error) {
+			argoApp, getErr := applicationClient.Get(ctx, &application.ApplicationQuery{
+				Name:         lo.ToPtr(input.AppName),
+				AppNamespace: lo.ToPtr(c.appNamespace(input)),
+			})
+			if getErr != nil {
+				input.Logger.Error("getting argo application", zap.Error(getErr))
+				return false, getErr
+			}
+			opState := argoApp.Status.OperationState
+			if onState != nil {
+				onState(opState)
+			}
+			return done(opState), nil
+		})
 }
 
 func healthStatusCodeToAppResourceHealth(healthStatus health.HealthStatusCode) octantv1alpha.InstallStatus {
