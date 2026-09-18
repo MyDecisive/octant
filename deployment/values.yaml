@@ -6,6 +6,7 @@ serviceAccount:
   integrationSecretNames:
     - "mdai-datadog-integration"
     - "mdai-argocd-integration"
+    - "mdai-github-app-integration"
 
 deployment:
   name: octant

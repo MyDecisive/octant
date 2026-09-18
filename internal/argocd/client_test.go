@@ -222,7 +222,8 @@ func TestAppOperationState(t *testing.T) {
 		s := grpc.NewServer()
 		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-			return req.GetName() == connection
+			return req.GetName() == connection &&
+				req.GetAppNamespace() == "argocd"
 		})).Return(&v1alpha1.Application{
 			Status: v1alpha1.ApplicationStatus{
 				OperationState: &v1alpha1.OperationState{
@@ -231,7 +232,8 @@ func TestAppOperationState(t *testing.T) {
 			},
 		}, nil).Once()
 		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-			return req.GetName() == connection
+			return req.GetName() == connection &&
+				req.GetAppNamespace() == "argocd"
 		})).Return(&v1alpha1.Application{
 			Status: v1alpha1.ApplicationStatus{
 				OperationState: &v1alpha1.OperationState{
@@ -282,7 +284,8 @@ func TestAppOperationState(t *testing.T) {
 		s := grpc.NewServer()
 		mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 		mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-			return req.GetName() == connection
+			return req.GetName() == connection &&
+				req.GetAppNamespace() == "argocd"
 		})).Return(nil, assert.AnError).Once()
 		application.RegisterApplicationServiceServer(s, mockAppServer)
 
@@ -424,7 +427,8 @@ func TestGetAppStatus(t *testing.T) {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-					return req.GetName() == "mdai"
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(nil, assert.AnError).Once()
 				return mockAppServer
 			},
@@ -440,7 +444,8 @@ func TestGetAppStatus(t *testing.T) {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-					return req.GetName() == "mdai"
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(healthyApp, nil).Once()
 				return mockAppServer
 			},
@@ -456,10 +461,12 @@ func TestGetAppStatus(t *testing.T) {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-					return req.GetName() == "mdai"
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
-					return req.GetApplicationName() == "mdai"
+					return req.GetApplicationName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(nil, assert.AnError).Once()
 				return mockAppServer
 			},
@@ -475,10 +482,12 @@ func TestGetAppStatus(t *testing.T) {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-					return req.GetName() == "mdai"
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
-					return req.GetApplicationName() == "mdai"
+					return req.GetApplicationName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(appTreeNoPods, nil).Once()
 				return mockAppServer
 			},
@@ -494,10 +503,12 @@ func TestGetAppStatus(t *testing.T) {
 				t.Helper()
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Get(mock.Anything, mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-					return req.GetName() == "mdai"
+					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(unhealthyApp, nil).Once()
 				mockAppServer.EXPECT().ResourceTree(mock.Anything, mock.MatchedBy(func(req *application.ResourcesQuery) bool {
-					return req.GetApplicationName() == "mdai"
+					return req.GetApplicationName() == "mdai" &&
+						req.GetAppNamespace() == "argocd"
 				})).Return(appTreeWithPods, nil).Once()
 				return mockAppServer
 			},
@@ -716,6 +727,7 @@ func TestSyncApplication(t *testing.T) {
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Sync(mock.Anything, mock.MatchedBy(func(req *application.ApplicationSyncRequest) bool {
 					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd" &&
 						req.GetRevision() == "HEAD" &&
 						!req.GetPrune() &&
 						!req.GetDryRun() &&
@@ -735,6 +747,7 @@ func TestSyncApplication(t *testing.T) {
 				mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
 				mockAppServer.EXPECT().Sync(mock.Anything, mock.MatchedBy(func(req *application.ApplicationSyncRequest) bool {
 					return req.GetName() == "mdai" &&
+						req.GetAppNamespace() == "argocd" &&
 						req.GetRevision() == "HEAD" &&
 						!req.GetPrune() &&
 						!req.GetDryRun() &&
@@ -804,7 +817,8 @@ func TestWaitForAppOperation(t *testing.T) {
 
 	appName := faker.Word()
 	getMatcher := mock.MatchedBy(func(req *application.ApplicationQuery) bool {
-		return req.GetName() == appName
+		return req.GetName() == appName &&
+			req.GetAppNamespace() == "argocd"
 	})
 	runningApp := &v1alpha1.Application{
 		Status: v1alpha1.ApplicationStatus{
@@ -863,4 +877,42 @@ func TestWaitForAppOperation(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorContains(t, err, "operation to complete")
 	})
+}
+
+func TestAppNamespaceOverride(t *testing.T) {
+	t.Parallel()
+
+	appConfig := &config.Configuration{
+		Install: config.Install{
+			ArgoCDNamespace: "argocd",
+		},
+	}
+
+	lis, err := nettest.NewLocalListener("tcp")
+	require.NoError(t, err)
+
+	s := grpc.NewServer()
+	mockAppServer := applicationmock.NewMockApplicationServiceServer(t)
+	mockAppServer.EXPECT().Sync(mock.Anything, mock.MatchedBy(func(req *application.ApplicationSyncRequest) bool {
+		return req.GetName() == "mdai" &&
+			req.GetAppNamespace() == "custom-argo"
+	})).Return(&v1alpha1.Application{}, nil).Once()
+
+	application.RegisterApplicationServiceServer(s, mockAppServer)
+	go s.Serve(lis) // nolint: errcheck
+	t.Cleanup(s.Stop)
+
+	clientOpts := &apiclient.ClientOptions{
+		ServerAddr: lis.Addr().String(),
+		Insecure:   true,
+		PlainText:  true,
+	}
+
+	err = NewArgoCDClient(appConfig).SyncApplication(t.Context(), Input{
+		Logger:       zaptest.NewLogger(t),
+		ClientOpts:   clientOpts,
+		AppName:      "mdai",
+		AppNamespace: "custom-argo",
+	}, []string{"manifest"}, false)
+	require.NoError(t, err)
 }

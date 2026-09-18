@@ -2,6 +2,8 @@ package rpchandler
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"net/http/httptest"
 	"testing"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/mydecisive/octant/internal/config"
 	"github.com/mydecisive/octant/internal/connection"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/gitops"
 	connectionmock "github.com/mydecisive/octant/internal/mock/connection"
 	manifestmock "github.com/mydecisive/octant/internal/mock/manifest"
 	"github.com/mydecisive/octant/internal/telemetry"
@@ -20,6 +23,26 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+type fakeManifestPublisher struct {
+	input gitops.PublishInput
+	err   error
+}
+
+func (p *fakeManifestPublisher) PublishManifests(
+	_ context.Context,
+	input gitops.PublishInput,
+) (*gitops.PublishResult, error) {
+	p.input = input
+	if p.err != nil {
+		return nil, p.err
+	}
+	return &gitops.PublishResult{
+		Branch:    "main",
+		CommitSHA: "abc123",
+		Files:     len(input.Manifests),
+	}, nil
+}
 
 func TestConnectionHandler_GenerateManifests(t *testing.T) {
 	t.Parallel()
@@ -56,7 +79,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := manifestmock.NewMockCompressor(t)
 		mockCompressor.EXPECT().Compress(mock.Anything, manifests).Return(bytes.NewBuffer(expected), nil)
 
-		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor, nil)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -72,6 +95,63 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		assert.Equal(t, expected, bytes.Trim(stream.Msg().GetData(), "\x00"))
 	})
 
+	t.Run("publishes manifests when publisher is configured", func(t *testing.T) {
+		t.Parallel()
+
+		expected := []byte(faker.Word())
+		publisher := &fakeManifestPublisher{}
+		mockGenerator := manifestmock.NewMockGenerator(t)
+		mockGenerator.EXPECT().All(mock.Anything, mock.MatchedBy(allInputMatch), manifestdata.YAML).Return(manifests, nil)
+		mockCompressor := manifestmock.NewMockCompressor(t)
+		mockCompressor.EXPECT().Compress(mock.Anything, manifests).Return(bytes.NewBuffer(expected), nil)
+
+		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor, publisher)
+		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
+
+		testServer := httptest.NewUnstartedServer(handler)
+		testServer.EnableHTTP2 = true
+		testServer.StartTLS()
+		t.Cleanup(testServer.Close)
+
+		client := octantv1alphaconnect.NewConnectionServiceClient(testServer.Client(), testServer.URL)
+		stream, err := client.GenerateManifests(t.Context(), connect.NewRequest(&request))
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+		require.True(t, stream.Receive())
+		assert.Equal(t, expected, bytes.Trim(stream.Msg().GetData(), "\x00"))
+		assert.Equal(t, request.GetScope().GetConnectionName(), publisher.input.ConnectionName)
+		assert.Equal(t, request.GetScope().GetNamespace(), publisher.input.Namespace)
+		assert.Equal(t, request.GetMdaiVersion(), publisher.input.MDAIVersion)
+		assert.Equal(t, manifests, publisher.input.Manifests)
+	})
+
+	t.Run("err publish", func(t *testing.T) {
+		t.Parallel()
+
+		mockGenerator := manifestmock.NewMockGenerator(t)
+		mockGenerator.EXPECT().All(mock.Anything, mock.MatchedBy(allInputMatch), manifestdata.YAML).Return(manifests, nil)
+		mockCompressor := manifestmock.NewMockCompressor(t)
+		publisher := &fakeManifestPublisher{err: errors.New("publish failed")}
+
+		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor, publisher)
+		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
+
+		testServer := httptest.NewUnstartedServer(handler)
+		testServer.EnableHTTP2 = true
+		testServer.StartTLS()
+		t.Cleanup(testServer.Close)
+
+		client := octantv1alphaconnect.NewConnectionServiceClient(testServer.Client(), testServer.URL)
+		stream, err := client.GenerateManifests(t.Context(), connect.NewRequest(&request))
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+		stream.Receive()
+		var connectErr *connect.Error
+		require.ErrorAs(t, stream.Err(), &connectErr)
+		assert.Equal(t, connect.CodeInternal, connectErr.Code())
+		assert.Contains(t, connectErr.Message(), "publish")
+	})
+
 	t.Run("err generate", func(t *testing.T) {
 		t.Parallel()
 
@@ -79,7 +159,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockGenerator.EXPECT().All(mock.Anything, mock.MatchedBy(allInputMatch), manifestdata.YAML).Return(nil, assert.AnError)
 		mockCompressor := manifestmock.NewMockCompressor(t)
 
-		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor, nil)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -106,7 +186,7 @@ func TestConnectionHandler_GenerateManifests(t *testing.T) {
 		mockCompressor := manifestmock.NewMockCompressor(t)
 		mockCompressor.EXPECT().Compress(mock.Anything, manifests).Return(nil, assert.AnError)
 
-		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor)
+		target := NewConnectionHandler(nil, nil, mockGenerator, mockCompressor, nil)
 		_, handler := octantv1alphaconnect.NewConnectionServiceHandler(target)
 
 		testServer := httptest.NewUnstartedServer(handler)
@@ -140,7 +220,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(expectedRuns, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 		resp, err := target.GetConnectionValidatorRunIds(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionValidatorRunIdsRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -163,7 +243,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(expectedRunID, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 		resp, err := target.CreateConnectionValidatorRun(t.Context(), connect.NewRequest(&octantv1alpha.CreateConnectionValidatorRunRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -185,7 +265,7 @@ func TestConnectionHandler_ValidatorEndpoints(t *testing.T) {
 			})).
 			Return(nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 		_, err := target.DeleteConnectionValidator(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionValidatorRequest{
 			Scope: &octantv1alpha.ConnectionScope{
 				Namespace:      "test-ns",
@@ -213,7 +293,7 @@ func TestConnectionHandler_GetConnectionStatus(t *testing.T) {
 		}), "test-run").
 		Return(expectedResponse, nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 	resp, err := target.GetConnectionStatus(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionStatusRequest{
 		Scope: &octantv1alpha.ConnectionScope{
 			Namespace:      "test-ns",
@@ -236,7 +316,7 @@ func TestConnectionHandler_GetConnections(t *testing.T) {
 		GetConnections(mock.Anything, mock.Anything).
 		Return(expectedConns, nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 	resp, err := target.GetConnections(t.Context(), connect.NewRequest(&emptypb.Empty{}))
 
 	require.NoError(t, err)
@@ -268,7 +348,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			})).
 			Return(mockData, nil)
 
-		target := NewConnectionHandler(nil, mockConn, nil, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 		resp, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
 			ConnectionName: "test-conn",
 		}))
@@ -292,7 +372,7 @@ func TestConnectionHandler_GetConnection(t *testing.T) {
 			})).
 			Return(nil, nil) // returns nil, nil when not found
 
-		target := NewConnectionHandler(nil, mockConn, nil, nil)
+		target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 		_, err := target.GetConnection(t.Context(), connect.NewRequest(&octantv1alpha.GetConnectionRequest{
 			ConnectionName: "missing-conn",
 		}))
@@ -346,7 +426,7 @@ func TestConnectionHandler_CreateConnection(t *testing.T) {
 			})).
 			Return(nil)
 
-		target := NewConnectionHandler(conf, mockConn, nil, nil)
+		target := NewConnectionHandler(conf, mockConn, nil, nil, nil)
 		_, err := target.CreateConnection(t.Context(), connect.NewRequest(input))
 
 		require.NoError(t, err)
@@ -363,7 +443,7 @@ func TestConnectionHandler_DeleteConnection(t *testing.T) {
 		})).
 		Return(nil)
 
-	target := NewConnectionHandler(nil, mockConn, nil, nil)
+	target := NewConnectionHandler(nil, mockConn, nil, nil, nil)
 	_, err := target.DeleteConnection(t.Context(), connect.NewRequest(&octantv1alpha.DeleteConnectionRequest{
 		ConnectionName: "test-conn",
 	}))

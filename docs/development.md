@@ -105,6 +105,8 @@ Common settings include:
 | SmartHub install poll interval | `MDAI_INSTALL_POLLING_INTERVAL_MILLIS` | `3000` milliseconds |
 | Validator version | `MDAI_VALIDATOR_VERSION` | `0.1.3` |
 
+GitOps GitHub App publishing has no separate enable/disable environment variable — it activates automatically once a GitHub App integration is saved (see [connections.md](connections.md)), and `GenerateManifests` is a no-op passthrough otherwise.
+
 ## Related Pages
 
 - [Setup and Operations](setup.md)

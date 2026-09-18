@@ -40,8 +40,19 @@ A SmartHub connection defines:
 
 After a connection exists, Octant can list connections, fetch a connection by name, delete a connection and its resources (via API), or generate deployment manifests in JSON or YAML.
 
-If a telemetry signal was not selected when the connection or collector was created, that signal will not appear in downstream Clarity views until the connection and workload routing are updated. Treat this as a configuration change: review the desired signal set, apply the change through the appropriate deployment path, and validate that the collector receives and sends the newly enabled signal.
+When a GitHub App GitOps integration is configured (via Settings in octant-ui, or the `GitOpsService.SaveGitHubAppConnection` RPC), generating manifests also opens a pull request against a configured GitHub CI/CD repository, authenticating as a GitHub App installation — similar to [ArgoCD's GitHub App credential support](https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/#github-app-credential). This lets ArgoCD reconcile desired state from a reviewed GitOps repository instead of relying on a manually downloaded and applied zip artifact. For each publish, Octant:
 
+1. Creates or updates a dedicated branch (`<branchPrefix>/<namespace>-<connectionName>`) off the configured base branch, containing the generated manifests under:
+
+   ```text
+   <basePath>/<namespace>/<connectionName>/<manifest-file>
+   ```
+2. Commits the changes to that branch as the configured committer.
+3. Opens a pull request from that branch into the base branch, or updates the existing one if Octant already opened one for that connection.
+
+GitHub App integration credentials are stored server-side as a Kubernetes Secret (`mdai-github-app-integration`, one of the octant service account's managed [`integrationSecretNames`](../deployment/values.yaml)) rather than in Helm values or environment variables, so the PEM private key is never held in plaintext configuration. Configure the integration once via octant-ui Settings (App ID, installation ID, PEM private key, repository owner/name, base branch, branch prefix, base path, and committer identity) — the GitHub App installation needs repository `contents:write` and `pull_requests:write` permission for the target repository.
+
+## Validation
 ## `octant-demo-load` for Mock Telemetry When Service Data Is Unavailable
 
 When service data is unavailable in a development environment, use our [`octant-demo-load` tool](https://github.com/MyDecisive/octant-demo-load) as a demo and load-generation helper. It can emit realistic Datadog or OTLP traces into a supplied ingest endpoint.

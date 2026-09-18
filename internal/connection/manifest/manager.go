@@ -88,9 +88,10 @@ func (am *ArgoCDManager) Unload(
 
 	for _, app := range apps {
 		if err := am.argoClient.DeleteArgoApp(ctx, argocd.Input{
-			Logger:     input.Logger,
-			ClientOpts: argoClientOpt,
-			AppName:    am.getAppName(app, input.ConnectionName),
+			Logger:       input.Logger,
+			ClientOpts:   argoClientOpt,
+			AppName:      am.getAppName(app, input.ConnectionName),
+			AppNamespace: am.config.Install.ArgoCDNamespace,
 		}); err != nil {
 			return err
 		}
@@ -211,9 +212,10 @@ func (am *ArgoCDManager) load(
 	if syncErr := am.argoClient.SyncApplication(
 		ctx,
 		argocd.Input{
-			Logger:     logger,
-			ClientOpts: argoClientOpt,
-			AppName:    am.getAppName(appType, appData.Name),
+			Logger:       logger,
+			ClientOpts:   argoClientOpt,
+			AppName:      am.getAppName(appType, appData.Name),
+			AppNamespace: am.config.Install.ArgoCDNamespace,
 		},
 		manifests, false); syncErr != nil {
 		return fmt.Errorf("%w: %w", ErrPushManifests, syncErr)

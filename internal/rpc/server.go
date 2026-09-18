@@ -27,6 +27,7 @@ type Server struct {
 	configuration *config.Configuration
 
 	argocdHandler          *rpchandler.ArgoCDHandler
+	gitOpsHandler          *rpchandler.GitOpsHandler
 	installHandler         *rpchandler.InstallHandler
 	datadogHandler         *rpchandler.DatadogHandler
 	connectionHandler      *rpchandler.ConnectionHandler
@@ -40,6 +41,7 @@ type Server struct {
 func NewServer( //nolint:revive // yes, there are a lot of args...
 	configuration *config.Configuration,
 	argocdHandler *rpchandler.ArgoCDHandler,
+	gitOpsHandler *rpchandler.GitOpsHandler,
 	installHandler *rpchandler.InstallHandler,
 	datadogHandler *rpchandler.DatadogHandler,
 	connectionHandler *rpchandler.ConnectionHandler,
@@ -51,6 +53,7 @@ func NewServer( //nolint:revive // yes, there are a lot of args...
 	return &Server{
 		configuration:          configuration,
 		argocdHandler:          argocdHandler,
+		gitOpsHandler:          gitOpsHandler,
 		installHandler:         installHandler,
 		datadogHandler:         datadogHandler,
 		connectionHandler:      connectionHandler,
@@ -82,6 +85,7 @@ func (s Server) Handler() (http.Handler, error) {
 
 	// Service Handlers
 	mux.Handle(octantv1alphaconnect.NewArgoCDServiceHandler(s.argocdHandler, interceptors))
+	mux.Handle(octantv1alphaconnect.NewGitOpsServiceHandler(s.gitOpsHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewInstallServiceHandler(s.installHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewDatadogServiceHandler(s.datadogHandler, interceptors))
 	mux.Handle(octantv1alphaconnect.NewConnectionServiceHandler(s.connectionHandler, interceptors))
@@ -100,6 +104,7 @@ func (s Server) Handler() (http.Handler, error) {
 func (Server) getServices() []string {
 	return []string{
 		octantv1alphaconnect.ArgoCDServiceName,
+		octantv1alphaconnect.GitOpsServiceName,
 		octantv1alphaconnect.InstallServiceName,
 		octantv1alphaconnect.DatadogServiceName,
 		octantv1alphaconnect.ConnectionServiceName,

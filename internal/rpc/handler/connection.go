@@ -13,6 +13,7 @@ import (
 	"github.com/mydecisive/octant/internal/connection"
 	"github.com/mydecisive/octant/internal/connection/manifest"
 	manifestdata "github.com/mydecisive/octant/internal/connection/manifest/data"
+	"github.com/mydecisive/octant/internal/gitops"
 	"github.com/mydecisive/octant/internal/telemetry"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -30,6 +31,7 @@ type ConnectionHandler struct {
 	octantConnection   connection.Connection[connection.OctantConnectionData]
 	manifestGenerator  manifest.Generator
 	manifestCompressor manifest.Compressor
+	manifestPublisher  gitops.Publisher
 }
 
 func NewConnectionHandler(
@@ -37,12 +39,17 @@ func NewConnectionHandler(
 	octantConnection connection.Connection[connection.OctantConnectionData],
 	manifestGenerator manifest.Generator,
 	manifestCompressor manifest.Compressor,
+	manifestPublisher gitops.Publisher,
 ) *ConnectionHandler {
+	if manifestPublisher == nil {
+		manifestPublisher = gitops.NewNoopPublisher()
+	}
 	return &ConnectionHandler{
 		config:             octantConfig,
 		octantConnection:   octantConnection,
 		manifestGenerator:  manifestGenerator,
 		manifestCompressor: manifestCompressor,
+		manifestPublisher:  manifestPublisher,
 	}
 }
 
@@ -109,6 +116,23 @@ func (ch *ConnectionHandler) GenerateManifests(
 	if err != nil {
 		logger.Error("Failed to generate manifests", zap.Error(err))
 		return connect.NewError(connect.CodeInternal, errors.New("generate manifests"))
+	}
+
+	publishResult, err := ch.manifestPublisher.PublishManifests(ctx, gitops.PublishInput{
+		ConnectionName: connScope.GetConnectionName(),
+		Namespace:      connScope.GetNamespace(),
+		MDAIVersion:    request.Msg.GetMdaiVersion(),
+		Manifests:      manifests,
+	})
+	if err != nil {
+		logger.Error("Failed to publish manifests to GitOps repository", zap.Error(err))
+		return connect.NewError(connect.CodeInternal, errors.New("publish manifests"))
+	}
+	if publishResult != nil {
+		logger.Info("Published manifests to GitOps repository",
+			zap.String("branch", publishResult.Branch),
+			zap.String("commitSHA", publishResult.CommitSHA),
+			zap.Int("files", publishResult.Files))
 	}
 
 	buf, err := ch.manifestCompressor.Compress(ctx, manifests)
